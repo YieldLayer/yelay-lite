@@ -11,6 +11,7 @@ contract FundsFacet is SelfOnly {
     using Address for address;
     using SafeTransferLib for ERC20;
 
+    // TODO: implement erc7201!
     ERC20 public underlyingAsset;
 
     // TODO: decide how to support multiple initializers

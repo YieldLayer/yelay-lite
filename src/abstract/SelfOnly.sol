@@ -3,13 +3,15 @@ pragma solidity ^0.8.28;
 
 
 abstract contract SelfOnly {
-    bool transient isSelf;
+    // TODO: implement erc7201 ?
+    bool transient isSelf; 
 
     error NotSelf();
 
     modifier onlySelf() {
         require(isSelf, NotSelf());
         _;
+        isSelf = false;
     }
 
     modifier allowSelf() {
