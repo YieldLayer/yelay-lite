@@ -7,7 +7,9 @@ libs = ["dependencies"]
 forge-std = { version = "1.9.4" }
 diamond = { version = "0.0.1", git = "https://github.com/mudgen/diamond-2-hardhat.git", rev = "bf67b736ad5fa3366551f599e204784856fb3069" }
 solmate = "6.8.0"
-"@openzeppelin-contracts" = "5.1.0"
-"@openzeppelin-contracts-upgradeable" = "5.1.0"
+"@openzeppelin-contracts-upgradeable" = { version = "5.1.0", git = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable.git", tag = "v5.1.0" }
+
+[soldeer]
+recursive_deps = true
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
