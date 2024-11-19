@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {DiamondCutFacet, IDiamondCut} from "@diamond/facets/DiamondCutFacet.sol";
 
+import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {TokenFacet} from "src/facets/TokenFacet.sol";
 
@@ -16,12 +17,14 @@ contract TokenFacetTest is Test {
     address owner = address(0x01);
 
     address yelayLiteVault;
+    YelayLiteVaultInit init;
     DiamondCutFacet diamondCutFacet;
     TokenFacet tokenFacet;
 
     function setUp() external {
         vm.startPrank(owner);
         diamondCutFacet = new DiamondCutFacet();
+        init = new YelayLiteVaultInit();
         yelayLiteVault = address(new YelayLiteVault(owner, address(diamondCutFacet)));
         tokenFacet = new TokenFacet();
         vm.stopPrank();
@@ -32,7 +35,7 @@ contract TokenFacetTest is Test {
         string memory symbol = "Yelay Lite USDC";
 
         vm.startPrank(owner);
-        yelayLiteVault.addTokenFacet(tokenFacet, name, symbol);
+        yelayLiteVault.addTokenFacet(init, tokenFacet, name, symbol);
         vm.stopPrank();
 
         assertEq(TokenFacet(yelayLiteVault).name(), name);

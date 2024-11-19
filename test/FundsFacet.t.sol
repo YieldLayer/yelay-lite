@@ -8,6 +8,7 @@ import {DiamondCutFacet, IDiamondCut} from "@diamond/facets/DiamondCutFacet.sol"
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {TokenFacet} from "src/facets/TokenFacet.sol";
 import {FundsFacet, ERC20} from "src/facets/FundsFacet.sol";
+import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
 
 import {Utils} from "./Utils.sol";
 import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER} from "./Constants.sol";
@@ -23,6 +24,7 @@ contract FundsFacetTest is Test {
     TokenFacet tokenFacet;
     FundsFacet fundsFacet;
     ERC20 underlyingAsset = ERC20(DAI_ADDRESS);
+    YelayLiteVaultInit init;
 
     function setUp() external {
         vm.createSelectFork(vm.envString("MAINNET_URL"), MAINNET_BLOCK_NUMBER);
@@ -32,9 +34,10 @@ contract FundsFacetTest is Test {
         yelayLiteVault = address(new YelayLiteVault(owner, address(diamondCutFacet)));
         tokenFacet = new TokenFacet();
         fundsFacet = new FundsFacet();
+        init = new YelayLiteVaultInit();
 
-        yelayLiteVault.addTokenFacet(tokenFacet, "Yelay DAI Vault", "YLAY-DAI");
-        yelayLiteVault.addFundsFacet(fundsFacet, address(underlyingAsset));
+        yelayLiteVault.addTokenFacet(init, tokenFacet, "Yelay DAI Vault", "YLAY-DAI");
+        yelayLiteVault.addFundsFacet(init, fundsFacet, address(underlyingAsset));
         vm.stopPrank();
     }
 
