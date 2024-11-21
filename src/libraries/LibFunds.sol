@@ -7,6 +7,11 @@ library LibFunds {
     /// @custom:storage-location erc7201:yelay-lite-vault.storage.FundsFacet
     struct FundsStorage {
         ERC20 underlyingAsset;
+        uint256 lastTotalAssets;
+        address yieldExtractor;
+        address[] strategies;
+        address[] depositQueue;
+        address[] withdrawQueue;
     }
 
     // keccak256(abi.encode(uint256(keccak256("yelay-lite-vault.storage.FundsFacet")) - 1)) & ~bytes32(uint256(0xff))

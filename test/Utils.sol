@@ -45,7 +45,7 @@ library Utils {
         IDiamondCut.FacetCut[] memory diamondCut = new IDiamondCut.FacetCut[](1);
         bytes4[] memory functionSelectors = new bytes4[](2);
         functionSelectors[0] = FundsFacet.deposit.selector;
-        functionSelectors[1] = FundsFacet.withdraw.selector;
+        functionSelectors[1] = FundsFacet.redeem.selector;
 
         diamondCut[0] = IDiamondCut.FacetCut({
             facetAddress: address(fundsFacet),

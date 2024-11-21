@@ -19,4 +19,9 @@ library LibToken {
             $.slot := ERC20StorageLocation
         }
     }
+
+    function totalSupply() internal view returns (uint256) {
+        ERC20Storage storage s = _getERC20Storage();
+        return s._totalSupply;
+    }
 }

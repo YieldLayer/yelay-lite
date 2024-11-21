@@ -5,6 +5,12 @@ git = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable.git"
 rev = "fa525310e45f91eb20a6d3baa2644be8e0adba31"
 
 [[dependencies]]
+name = "@solady"
+version = "0.0.268"
+git = "https://github.com/Vectorized/solady.git"
+rev = "1dd8967b93b379ca6cf384640e0715e55ef08e3d"
+
+[[dependencies]]
 name = "diamond"
 version = "0.0.1"
 git = "https://github.com/mudgen/diamond-2-hardhat.git"

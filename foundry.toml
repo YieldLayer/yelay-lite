@@ -11,6 +11,7 @@ diamond                               = { version = "0.0.1", git = "https://gith
 solmate                               = "6.8.0"
 "@openzeppelin-contracts-upgradeable" = { version = "5.1.0", git = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable.git", tag = "v5.1.0" }
 openzeppelin-contracts                = { version = "5.1.0", git = "https://github.com/OpenZeppelin/openzeppelin-contracts.git", tag = "v5.1.0" }
+"@solady" = { version = "0.0.268", git = "https://github.com/Vectorized/solady.git", tag = "v0.0.268" }
 
 [soldeer]
 recursive_deps = true

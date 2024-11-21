@@ -54,7 +54,7 @@ contract FundsFacetTest is Test {
 
         vm.startPrank(user);
         underlyingAsset.approve(yelayLiteVault, type(uint256).max);
-        FundsFacet(yelayLiteVault).deposit(user, toDeposit);
+        FundsFacet(yelayLiteVault).deposit(toDeposit, user);
         vm.stopPrank();
 
         assertEq(underlyingAsset.balanceOf(user), userBalance - toDeposit);
