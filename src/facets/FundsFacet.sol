@@ -12,6 +12,9 @@ import {SelfOnly} from "src/abstract/SelfOnly.sol";
 import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
 
+import {console} from "forge-std/console.sol";
+
+// TODO: add access control
 contract FundsFacet is SelfOnly {
     using Address for address;
     using SafeTransferLib for ERC20;
@@ -25,9 +28,40 @@ contract FundsFacet is SelfOnly {
     // error OnlyView();
     // error CompoundFailure();
 
+    function getDepositQueue() external view returns (address[] memory) {
+        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
+        return s.depositQueue;
+    }
+
+    function updateDepositQueue(address[] calldata depositQueue_) external {
+        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
+        // TODO: improve
+        for (uint256 i; i < s.depositQueue.length; i++) {
+            IStrategyBase(s.depositQueue[i]).onRemove();
+            s.depositQueue[i].functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onRemove.selector));
+        }
+        s.depositQueue = depositQueue_;
+        // TODO: improve
+        for (uint256 i; i < s.depositQueue.length; i++) {
+            s.depositQueue[i].functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onAdd.selector));
+        }
+    }
+
+    function getWithdrawQueue() external view returns (address[] memory) {
+        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
+        return s.withdrawQueue;
+    }
+
+    function updateWithdrawQueue(address[] calldata withdrawQueue_) external {
+        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
+        s.withdrawQueue = withdrawQueue_;
+    }
+
     function deposit(uint256 assets, address receiver) external allowSelf returns (uint256 shares) {
         LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
-        uint256 newTotalAssets = _accrueFee(s);
+
+        uint256 newTotalAssets = totalAssets();
+        _accrueFee(s, newTotalAssets);
 
         shares = _convertToSharesWithTotals(assets, LibToken.totalSupply(), newTotalAssets);
 
@@ -39,27 +73,29 @@ contract FundsFacet is SelfOnly {
                 break;
             }
         }
-        _updateLastTotalAssets(s, s.lastTotalAssets + assets);
+        _updateLastTotalAssets(s, newTotalAssets + assets);
     }
 
     function redeem(uint256 shares, address receiver) external allowSelf {
         LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
-        uint256 newTotalAssets = _accrueFee(s);
+
+        uint256 newTotalAssets = totalAssets();
+        _accrueFee(s, newTotalAssets);
 
         uint256 assets = _convertToAssetsWithTotals(shares, LibToken.totalSupply(), newTotalAssets);
 
         _updateLastTotalAssets(s, newTotalAssets.zeroFloorSub(assets));
 
+        uint256 _assets = assets;
         for (uint256 i; i < s.withdrawQueue.length; i++) {
-            if (assets == 0) break;
+            if (_assets == 0) break;
             // TODO: create smarter method to get precise amount able to be withdrawn
             uint256 assetBalance = IStrategyBase(s.withdrawQueue[i]).assetBalance(address(this));
             if (assetBalance == 0) continue;
-            uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, assets);
-            assets -= availableToWithdraw;
-            s.withdrawQueue[i].functionDelegateCall(abi.encodeCall(IStrategyBase.withdraw, (assets)));
+            uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
+            _assets -= availableToWithdraw;
+            s.withdrawQueue[i].functionDelegateCall(abi.encodeCall(IStrategyBase.withdraw, (availableToWithdraw)));
         }
-        if (assets > 0) revert NotEnoughAssets();
         s.underlyingAsset.safeTransfer(receiver, assets);
         address(this).functionDelegateCall(abi.encodeWithSelector(TokenFacet.burn.selector, msg.sender, shares));
     }
@@ -67,35 +103,24 @@ contract FundsFacet is SelfOnly {
     function totalAssets() public view returns (uint256 assets) {
         LibFunds.FundsStorage memory s = LibFunds._getFundsStorage();
         assets = s.underlyingAsset.balanceOf(address(this));
-        for (uint256 i; i < s.strategies.length; ++i) {
-            assets += IStrategyBase(s.strategies[i]).assetBalance(address(this));
+        for (uint256 i; i < s.depositQueue.length; ++i) {
+            assets += IStrategyBase(s.depositQueue[i]).assetBalance(address(this));
         }
     }
 
-    function _accrueFee(LibFunds.FundsStorage memory s) internal returns (uint256 newTotalAssets) {
-        uint256 feeShares;
-        (feeShares, newTotalAssets) = _accruedFeeShares(s);
-
-        if (feeShares != 0) {
-            address(this).functionDelegateCall(
-                abi.encodeWithSelector(TokenFacet.mint.selector, s.yieldExtractor, feeShares)
-            );
+    function _accrueFee(LibFunds.FundsStorage memory s, uint256 newTotalAssets) internal {
+        uint256 totalInterest = newTotalAssets.zeroFloorSub(s.lastTotalAssets);
+        if (totalInterest > 0) {
+            uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), s.lastTotalAssets);
+            if (feeShares > 0) {
+                address(this).functionDelegateCall(
+                    abi.encodeWithSelector(TokenFacet.mint.selector, s.yieldExtractor, feeShares)
+                );
+            }
         }
+
         // TODO: events
         // emit EventsLib.AccrueInterest(newTotalAssets, feeShares);
-    }
-
-    function _accruedFeeShares(LibFunds.FundsStorage memory s)
-        internal
-        view
-        returns (uint256 feeShares, uint256 newTotalAssets)
-    {
-        newTotalAssets = totalAssets();
-        uint256 totalInterest = newTotalAssets.zeroFloorSub(s.lastTotalAssets);
-        if (totalInterest != 0) {
-            feeShares =
-                _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), newTotalAssets - totalInterest);
-        }
     }
 
     /// @dev Updates `lastTotalAssets` to `updatedTotalAssets`.
@@ -112,15 +137,15 @@ contract FundsFacet is SelfOnly {
         returns (uint256)
     {
         // TODO: support _decimalOffset
-        return assets.mulDiv(newTotalSupply + 1, newTotalAssets + 1);
+        return newTotalSupply == 0 ? assets : assets.mulDiv(newTotalSupply, newTotalAssets);
     }
 
     function _convertToAssetsWithTotals(uint256 shares, uint256 newTotalSupply, uint256 newTotalAssets)
         internal
-        view
+        pure
         returns (uint256)
     {
         // TODO: support _decimalOffset
-        return shares.mulDiv(newTotalAssets + 1, newTotalSupply + 1);
+        return shares.mulDiv(newTotalAssets, newTotalSupply);
     }
 }

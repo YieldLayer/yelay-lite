@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {IPool} from "src/interfaces/external/aave/v3/IPool.sol";
 import {IAToken} from "src/interfaces/external/aave/v3/IAToken.sol";
 import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract AaveV3Strategy is IStrategyBase {
     IPool immutable pool;
@@ -32,8 +33,16 @@ contract AaveV3Strategy is IStrategyBase {
         return aToken.balanceOf(address(vault));
     }
 
-    function onAdd() external {}
-    function onRemove() external {}
+    function onAdd() external {
+        IERC20(asset).approve(address(pool), type(uint256).max);
+        aToken.approve(address(pool), type(uint256).max);
+    }
+
+    function onRemove() external {
+        IERC20(asset).approve(address(pool), 0);
+        aToken.approve(address(pool), 0);
+    }
+
     function claimRewards() external {}
     function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts) {}
 }

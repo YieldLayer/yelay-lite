@@ -39,13 +39,22 @@ library Utils {
         );
     }
 
-    function addFundsFacet(address diamond, YelayLiteVaultInit init, FundsFacet fundsFacet, address underlyingAsset)
-        internal
-    {
+    function addFundsFacet(
+        address diamond,
+        YelayLiteVaultInit init,
+        FundsFacet fundsFacet,
+        address underlyingAsset,
+        address yieldExtractor
+    ) internal {
         IDiamondCut.FacetCut[] memory diamondCut = new IDiamondCut.FacetCut[](1);
-        bytes4[] memory functionSelectors = new bytes4[](2);
+        bytes4[] memory functionSelectors = new bytes4[](7);
         functionSelectors[0] = FundsFacet.deposit.selector;
         functionSelectors[1] = FundsFacet.redeem.selector;
+        functionSelectors[2] = FundsFacet.updateDepositQueue.selector;
+        functionSelectors[3] = FundsFacet.updateWithdrawQueue.selector;
+        functionSelectors[4] = FundsFacet.getDepositQueue.selector;
+        functionSelectors[5] = FundsFacet.getWithdrawQueue.selector;
+        functionSelectors[6] = FundsFacet.totalAssets.selector;
 
         diamondCut[0] = IDiamondCut.FacetCut({
             facetAddress: address(fundsFacet),
@@ -54,7 +63,9 @@ library Utils {
         });
 
         DiamondCutFacet(diamond).diamondCut(
-            diamondCut, address(init), abi.encodeWithSelector(YelayLiteVaultInit.initFunds.selector, underlyingAsset)
+            diamondCut,
+            address(init),
+            abi.encodeWithSelector(YelayLiteVaultInit.initFunds.selector, underlyingAsset, yieldExtractor)
         );
     }
 }
