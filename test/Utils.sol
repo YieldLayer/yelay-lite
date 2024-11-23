@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
 import {FundsFacet} from "src/facets/FundsFacet.sol";
+import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {TokenFacet, ERC1155Upgradeable} from "src/facets/TokenFacet.sol";
 import {DiamondCutFacet, IDiamondCut} from "@diamond/facets/DiamondCutFacet.sol";
 
@@ -39,14 +40,10 @@ library Utils {
         address yieldExtractor
     ) internal {
         IDiamondCut.FacetCut[] memory diamondCut = new IDiamondCut.FacetCut[](1);
-        bytes4[] memory functionSelectors = new bytes4[](7);
+        bytes4[] memory functionSelectors = new bytes4[](3);
         functionSelectors[0] = FundsFacet.deposit.selector;
         functionSelectors[1] = FundsFacet.redeem.selector;
-        functionSelectors[2] = FundsFacet.updateDepositQueue.selector;
-        functionSelectors[3] = FundsFacet.updateWithdrawQueue.selector;
-        functionSelectors[4] = FundsFacet.getDepositQueue.selector;
-        functionSelectors[5] = FundsFacet.getWithdrawQueue.selector;
-        functionSelectors[6] = FundsFacet.totalAssets.selector;
+        functionSelectors[2] = FundsFacet.totalAssets.selector;
 
         diamondCut[0] = IDiamondCut.FacetCut({
             facetAddress: address(fundsFacet),
@@ -59,5 +56,25 @@ library Utils {
             address(init),
             abi.encodeWithSelector(YelayLiteVaultInit.initFunds.selector, underlyingAsset, yieldExtractor)
         );
+    }
+
+    function addManagementFacet(address diamond, ManagementFacet managementFacet) internal {
+        IDiamondCut.FacetCut[] memory diamondCut = new IDiamondCut.FacetCut[](1);
+        bytes4[] memory functionSelectors = new bytes4[](7);
+        functionSelectors[0] = ManagementFacet.addStrategy.selector;
+        functionSelectors[1] = ManagementFacet.removeStrategy.selector;
+        functionSelectors[2] = ManagementFacet.updateDepositQueue.selector;
+        functionSelectors[3] = ManagementFacet.updateWithdrawQueue.selector;
+        functionSelectors[4] = ManagementFacet.getDepositQueue.selector;
+        functionSelectors[5] = ManagementFacet.getWithdrawQueue.selector;
+        functionSelectors[6] = ManagementFacet.getStrategies.selector;
+
+        diamondCut[0] = IDiamondCut.FacetCut({
+            facetAddress: address(managementFacet),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: functionSelectors
+        });
+
+        DiamondCutFacet(diamond).diamondCut(diamondCut, address(0), "");
     }
 }

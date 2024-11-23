@@ -11,6 +11,7 @@ import {TokenFacet} from "src/facets/TokenFacet.sol";
 import {SelfOnly} from "src/abstract/SelfOnly.sol";
 import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
+import {LibManagement} from "src/libraries/LibManagement.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -28,100 +29,76 @@ contract FundsFacet is SelfOnly {
     // error OnlyView();
     // error CompoundFailure();
 
-    // TODO: transfer strategy, deposit, withdraw queue management to different facet
-
-    function getDepositQueue() external view returns (address[] memory) {
-        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
-        return s.depositQueue;
-    }
-
-    function updateDepositQueue(address[] calldata depositQueue_) external {
-        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
-        // TODO: improve
-        for (uint256 i; i < s.depositQueue.length; i++) {
-            IStrategyBase(s.depositQueue[i]).onRemove();
-            s.depositQueue[i].functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onRemove.selector));
-        }
-        s.depositQueue = depositQueue_;
-        // TODO: improve
-        for (uint256 i; i < s.depositQueue.length; i++) {
-            s.depositQueue[i].functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onAdd.selector));
-        }
-    }
-
-    function getWithdrawQueue() external view returns (address[] memory) {
-        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
-        return s.withdrawQueue;
-    }
-
-    function updateWithdrawQueue(address[] calldata withdrawQueue_) external {
-        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
-        s.withdrawQueue = withdrawQueue_;
-    }
-
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
-        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
+        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
+        LibManagement.ManagementStorage memory sM = LibManagement.getStorage();
 
         uint256 newTotalAssets = totalAssets();
-        _accrueFee(s, newTotalAssets);
+        _accrueFee(sF, newTotalAssets);
 
         shares = _convertToSharesWithTotals(assets, LibToken.totalSupply(), newTotalAssets);
 
-        s.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
+        sF.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
         address(this).functionDelegateCall(
             abi.encodeWithSelector(TokenFacet.mint.selector, receiver, projectId, shares)
         );
-        for (uint256 i; i < s.depositQueue.length; i++) {
-            (bool success,) = s.depositQueue[i].delegatecall(abi.encodeCall(IStrategyBase.deposit, (assets)));
+        for (uint256 i; i < sM.depositQueue.length; i++) {
+            (bool success,) =
+                sM.strategies[sM.depositQueue[i]].adapter.delegatecall(abi.encodeCall(IStrategyBase.deposit, (assets)));
             if (success) {
                 break;
             }
         }
-        _updateLastTotalAssets(s, newTotalAssets + assets);
+        _updateLastTotalAssets(sF, newTotalAssets + assets);
     }
 
     function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf {
-        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
+        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
+        LibManagement.ManagementStorage memory sM = LibManagement.getStorage();
 
         uint256 newTotalAssets = totalAssets();
-        _accrueFee(s, newTotalAssets);
+        _accrueFee(sF, newTotalAssets);
 
         uint256 assets = _convertToAssetsWithTotals(shares, LibToken.totalSupply(), newTotalAssets);
 
-        _updateLastTotalAssets(s, newTotalAssets.zeroFloorSub(assets));
+        _updateLastTotalAssets(sF, newTotalAssets.zeroFloorSub(assets));
 
         uint256 _assets = assets;
-        for (uint256 i; i < s.withdrawQueue.length; i++) {
+        for (uint256 i; i < sM.withdrawQueue.length; i++) {
             if (_assets == 0) break;
+            address adapter = sM.strategies[sM.withdrawQueue[i]].adapter;
             // TODO: create smarter method to get precise amount able to be withdrawn
-            uint256 assetBalance = IStrategyBase(s.withdrawQueue[i]).assetBalance(address(this));
+            uint256 assetBalance = IStrategyBase(adapter).assetBalance(address(this));
             if (assetBalance == 0) continue;
             uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
             _assets -= availableToWithdraw;
-            s.withdrawQueue[i].functionDelegateCall(abi.encodeCall(IStrategyBase.withdraw, (availableToWithdraw)));
+            adapter.functionDelegateCall(abi.encodeCall(IStrategyBase.withdraw, (availableToWithdraw)));
         }
-        s.underlyingAsset.safeTransfer(receiver, assets);
+        sF.underlyingAsset.safeTransfer(receiver, assets);
         address(this).functionDelegateCall(
             abi.encodeWithSelector(TokenFacet.burn.selector, msg.sender, projectId, shares)
         );
     }
 
     function totalAssets() public view returns (uint256 assets) {
-        LibFunds.FundsStorage memory s = LibFunds._getFundsStorage();
-        assets = s.underlyingAsset.balanceOf(address(this));
-        for (uint256 i; i < s.depositQueue.length; ++i) {
-            assets += IStrategyBase(s.depositQueue[i]).assetBalance(address(this));
+        LibFunds.FundsStorage memory sF = LibFunds.getStorage();
+        LibManagement.ManagementStorage memory sM = LibManagement.getStorage();
+
+        assets = sF.underlyingAsset.balanceOf(address(this));
+        // TODO: we need to use strategies storage
+        for (uint256 i; i < sM.strategies.length; ++i) {
+            assets += IStrategyBase(sM.strategies[i].adapter).assetBalance(address(this));
         }
     }
 
-    function _accrueFee(LibFunds.FundsStorage memory s, uint256 newTotalAssets) internal {
-        uint256 totalInterest = newTotalAssets.zeroFloorSub(s.lastTotalAssets);
+    function _accrueFee(LibFunds.FundsStorage memory sF, uint256 newTotalAssets) internal {
+        uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);
         if (totalInterest > 0) {
-            uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), s.lastTotalAssets);
+            uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), sF.lastTotalAssets);
             if (feeShares > 0) {
                 address(this).functionDelegateCall(
                     // TODO: yield with projectId 0 ?
-                    abi.encodeWithSelector(TokenFacet.mint.selector, s.yieldExtractor, 0, feeShares)
+                    abi.encodeWithSelector(TokenFacet.mint.selector, sF.yieldExtractor, 0, feeShares)
                 );
             }
         }
@@ -131,8 +108,8 @@ contract FundsFacet is SelfOnly {
     }
 
     /// @dev Updates `lastTotalAssets` to `updatedTotalAssets`.
-    function _updateLastTotalAssets(LibFunds.FundsStorage storage s, uint256 updatedTotalAssets) internal {
-        s.lastTotalAssets = updatedTotalAssets;
+    function _updateLastTotalAssets(LibFunds.FundsStorage storage sF, uint256 updatedTotalAssets) internal {
+        sF.lastTotalAssets = updatedTotalAssets;
 
         // TODO: add event
         // emit EventsLib.UpdateLastTotalAssets(updatedTotalAssets);

@@ -2,22 +2,22 @@
 pragma solidity ^0.8.28;
 
 library LibToken {
-    /// @custom:storage-location erc7201:yelay-lite-vault.storage.TokenFacet
+    /// @custom:storage-location erc7201:yelay-vault.storage.TokenFacet
     struct TokenStorage {
         uint256 _totalSupply;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("yelay-lite-vault.storage.TokenFacet")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant TokenStorageLocation = 0xec66a064b3edd38684de7564f0132f0d10dea7f7aaa0c0e1386cd4f692a12d00;
+    // keccak256(abi.encode(uint256(keccak256("yelay-vault.storage.TokenFacet")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant TokenStorageLocation = 0x96e9bc07e4bbede20d6289a6a6d64136db7633a27b2880fb17b26f032a839200;
 
-    function _getTokenStorage() internal pure returns (TokenStorage storage $) {
+    function getStorage() internal pure returns (TokenStorage storage $) {
         assembly {
             $.slot := TokenStorageLocation
         }
     }
 
     function totalSupply() internal view returns (uint256) {
-        TokenStorage storage s = _getTokenStorage();
+        TokenStorage storage s = getStorage();
         return s._totalSupply;
     }
 

@@ -11,7 +11,7 @@ contract ERC4626Strategy is IStrategyBase {
         vault = IERC4626(vault_);
     }
 
-    function strategy() external view virtual returns (address) {
+    function protocol() external view virtual returns (address) {
         return address(vault);
     }
 

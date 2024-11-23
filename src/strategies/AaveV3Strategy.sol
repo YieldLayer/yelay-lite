@@ -17,7 +17,7 @@ contract AaveV3Strategy is IStrategyBase {
         aToken = IAToken(aToken_);
     }
 
-    function strategy() external view returns (address) {
+    function protocol() external view returns (address) {
         return address(pool);
     }
 

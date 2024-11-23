@@ -4,20 +4,24 @@ pragma solidity ^0.8.28;
 import {ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
 library LibFunds {
-    /// @custom:storage-location erc7201:yelay-lite-vault.storage.FundsFacet
+    struct StrategyData {
+        address adapter;
+        // for instance Morpho requires bytes32 market id
+        // aave3 aToken address
+        bytes supplement;
+    }
+
+    /// @custom:storage-location erc7201:yelay-vault.storage.FundsFacet
     struct FundsStorage {
         ERC20 underlyingAsset;
         uint256 lastTotalAssets;
         address yieldExtractor;
-        address[] strategies;
-        address[] depositQueue;
-        address[] withdrawQueue;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("yelay-lite-vault.storage.FundsFacet")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant FundsStorageLocation = 0xacb92224aed5243c06a7d52fe2324dfee0ba4ce8a4d1e16700c861c6ab4bab00;
+    // keccak256(abi.encode(uint256(keccak256("yelay-vault.storage.FundsFacet")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant FundsStorageLocation = 0xe9f6622f42b3306a25789276a3506ebaae4fda2335fb5bfa8bfd419c0dde8100;
 
-    function _getFundsStorage() internal pure returns (FundsStorage storage $) {
+    function getStorage() internal pure returns (FundsStorage storage $) {
         assembly {
             $.slot := FundsStorageLocation
         }
