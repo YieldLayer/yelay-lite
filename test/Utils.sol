@@ -40,10 +40,14 @@ library Utils {
         address yieldExtractor
     ) internal {
         IDiamondCut.FacetCut[] memory diamondCut = new IDiamondCut.FacetCut[](1);
-        bytes4[] memory functionSelectors = new bytes4[](3);
+        bytes4[] memory functionSelectors = new bytes4[](7);
         functionSelectors[0] = FundsFacet.deposit.selector;
         functionSelectors[1] = FundsFacet.redeem.selector;
         functionSelectors[2] = FundsFacet.totalAssets.selector;
+        functionSelectors[3] = FundsFacet.managedDeposit.selector;
+        functionSelectors[4] = FundsFacet.managedWithdraw.selector;
+        functionSelectors[5] = FundsFacet.reallocate.selector;
+        functionSelectors[6] = FundsFacet.strategyAssets.selector;
 
         diamondCut[0] = IDiamondCut.FacetCut({
             facetAddress: address(fundsFacet),

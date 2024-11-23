@@ -30,9 +30,14 @@ contract FundsFacet is SelfOnly {
     // error OnlyView();
     // error CompoundFailure();
 
+    struct StrategyArgs {
+        uint256 index;
+        uint256 amount;
+    }
+
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
         LibFunds.FundsStorage storage sF = LibFunds.getStorage();
-        LibManagement.ManagementStorage memory sM = LibManagement.getStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
 
         uint256 newTotalAssets = totalAssets();
         _accrueFee(sF, newTotalAssets);
@@ -56,9 +61,62 @@ contract FundsFacet is SelfOnly {
         _updateLastTotalAssets(sF, newTotalAssets + assets);
     }
 
+    // TODO: add access control
+    function managedDeposit(StrategyArgs calldata strategyArgs) public {
+        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
+        uint256 newTotalAssets = totalAssets();
+        _accrueFee(sF, newTotalAssets);
+
+        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        _managedDeposit(sM, strategyArgs);
+    }
+
+    function _managedDeposit(LibManagement.ManagementStorage storage sM, StrategyArgs calldata strategyArgs) internal {
+        sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(
+                IStrategyBase.deposit.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
+            )
+        );
+    }
+
+    // TODO: add access control
+    function managedWithdraw(StrategyArgs calldata strategyArgs) public {
+        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
+        uint256 newTotalAssets = totalAssets();
+        _accrueFee(sF, newTotalAssets);
+
+        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        _managedWithdraw(sM, strategyArgs);
+    }
+
+    function _managedWithdraw(LibManagement.ManagementStorage storage sM, StrategyArgs calldata strategyArgs)
+        internal
+    {
+        sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(
+                IStrategyBase.withdraw.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
+            )
+        );
+    }
+
+    // TODO: add access control
+    function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits) external {
+        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
+        uint256 newTotalAssets = totalAssets();
+        _accrueFee(sF, newTotalAssets);
+
+        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        for (uint256 i; i < withdrawals.length; i++) {
+            _managedWithdraw(sM, withdrawals[i]);
+        }
+        for (uint256 i; i < deposits.length; i++) {
+            _managedDeposit(sM, deposits[i]);
+        }
+    }
+
     function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf {
         LibFunds.FundsStorage storage sF = LibFunds.getStorage();
-        LibManagement.ManagementStorage memory sM = LibManagement.getStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
 
         uint256 newTotalAssets = totalAssets();
         _accrueFee(sF, newTotalAssets);
@@ -70,14 +128,14 @@ contract FundsFacet is SelfOnly {
         uint256 _assets = assets;
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
             if (_assets == 0) break;
-            address adapter = sM.strategies[sM.withdrawQueue[i]].adapter;
-            bytes memory supplement = sM.strategies[sM.withdrawQueue[i]].supplement;
             // TODO: create smarter method to get precise amount able to be withdrawn
-            uint256 assetBalance = IStrategyBase(adapter).assetBalance(address(this), supplement);
+            uint256 assetBalance = _strategyAssets(sM.strategies[sM.withdrawQueue[i]]);
             if (assetBalance == 0) continue;
             uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
-            (bool success,) = adapter.delegatecall(
-                abi.encodeWithSelector(IStrategyBase.withdraw.selector, availableToWithdraw, supplement)
+            (bool success,) = sM.strategies[sM.withdrawQueue[i]].adapter.delegatecall(
+                abi.encodeWithSelector(
+                    IStrategyBase.withdraw.selector, availableToWithdraw, sM.strategies[sM.withdrawQueue[i]].supplement
+                )
             );
             if (success) {
                 _assets -= availableToWithdraw;
@@ -90,17 +148,26 @@ contract FundsFacet is SelfOnly {
     }
 
     function totalAssets() public view returns (uint256 assets) {
-        LibFunds.FundsStorage memory sF = LibFunds.getStorage();
-        LibManagement.ManagementStorage memory sM = LibManagement.getStorage();
+        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
 
         assets = sF.underlyingAsset.balanceOf(address(this));
         // TODO: we need to use strategies storage
         for (uint256 i; i < sM.strategies.length; ++i) {
-            assets += IStrategyBase(sM.strategies[i].adapter).assetBalance(address(this), sM.strategies[i].supplement);
+            assets += _strategyAssets(sM.strategies[i]);
         }
     }
 
-    function _accrueFee(LibFunds.FundsStorage memory sF, uint256 newTotalAssets) internal {
+    function strategyAssets(uint256 index) external view returns (uint256) {
+        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        return _strategyAssets(sM.strategies[index]);
+    }
+
+    function _strategyAssets(LibManagement.StrategyData memory strategy) internal view returns (uint256) {
+        return IStrategyBase(strategy.adapter).assetBalance(address(this), strategy.supplement);
+    }
+
+    function _accrueFee(LibFunds.FundsStorage storage sF, uint256 newTotalAssets) internal {
         uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);
         if (totalInterest > 0) {
             uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), sF.lastTotalAssets);
