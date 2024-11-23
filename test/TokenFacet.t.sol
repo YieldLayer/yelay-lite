@@ -31,14 +31,12 @@ contract TokenFacetTest is Test {
     }
 
     function test_addTokenFacet() external {
-        string memory name = "Yelay Lite USDC";
-        string memory symbol = "Yelay Lite USDC";
+        string memory uri = "https://yelay-lite-vault/{id}.json";
 
         vm.startPrank(owner);
-        yelayLiteVault.addTokenFacet(init, tokenFacet, name, symbol);
+        yelayLiteVault.addTokenFacet(init, tokenFacet, uri);
         vm.stopPrank();
 
-        assertEq(TokenFacet(yelayLiteVault).name(), name);
-        assertEq(TokenFacet(yelayLiteVault).symbol(), symbol);
+        assertEq(TokenFacet(yelayLiteVault).uri(0), uri);
     }
 }

@@ -28,6 +28,8 @@ contract FundsFacet is SelfOnly {
     // error OnlyView();
     // error CompoundFailure();
 
+    // TODO: transfer strategy, deposit, withdraw queue management to different facet
+
     function getDepositQueue() external view returns (address[] memory) {
         LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
         return s.depositQueue;
@@ -57,7 +59,7 @@ contract FundsFacet is SelfOnly {
         s.withdrawQueue = withdrawQueue_;
     }
 
-    function deposit(uint256 assets, address receiver) external allowSelf returns (uint256 shares) {
+    function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
         LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
 
         uint256 newTotalAssets = totalAssets();
@@ -66,7 +68,9 @@ contract FundsFacet is SelfOnly {
         shares = _convertToSharesWithTotals(assets, LibToken.totalSupply(), newTotalAssets);
 
         s.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
-        address(this).functionDelegateCall(abi.encodeWithSelector(TokenFacet.mint.selector, receiver, shares));
+        address(this).functionDelegateCall(
+            abi.encodeWithSelector(TokenFacet.mint.selector, receiver, projectId, shares)
+        );
         for (uint256 i; i < s.depositQueue.length; i++) {
             (bool success,) = s.depositQueue[i].delegatecall(abi.encodeCall(IStrategyBase.deposit, (assets)));
             if (success) {
@@ -76,7 +80,7 @@ contract FundsFacet is SelfOnly {
         _updateLastTotalAssets(s, newTotalAssets + assets);
     }
 
-    function redeem(uint256 shares, address receiver) external allowSelf {
+    function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf {
         LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
 
         uint256 newTotalAssets = totalAssets();
@@ -97,7 +101,9 @@ contract FundsFacet is SelfOnly {
             s.withdrawQueue[i].functionDelegateCall(abi.encodeCall(IStrategyBase.withdraw, (availableToWithdraw)));
         }
         s.underlyingAsset.safeTransfer(receiver, assets);
-        address(this).functionDelegateCall(abi.encodeWithSelector(TokenFacet.burn.selector, msg.sender, shares));
+        address(this).functionDelegateCall(
+            abi.encodeWithSelector(TokenFacet.burn.selector, msg.sender, projectId, shares)
+        );
     }
 
     function totalAssets() public view returns (uint256 assets) {
@@ -114,7 +120,8 @@ contract FundsFacet is SelfOnly {
             uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), s.lastTotalAssets);
             if (feeShares > 0) {
                 address(this).functionDelegateCall(
-                    abi.encodeWithSelector(TokenFacet.mint.selector, s.yieldExtractor, feeShares)
+                    // TODO: yield with projectId 0 ?
+                    abi.encodeWithSelector(TokenFacet.mint.selector, s.yieldExtractor, 0, feeShares)
                 );
             }
         }
@@ -136,7 +143,7 @@ contract FundsFacet is SelfOnly {
         pure
         returns (uint256)
     {
-        // TODO: support _decimalOffset
+        // TODO: support _decimalOffset => prevent inflation attack
         return newTotalSupply == 0 ? assets : assets.mulDiv(newTotalSupply, newTotalAssets);
     }
 
@@ -145,7 +152,7 @@ contract FundsFacet is SelfOnly {
         pure
         returns (uint256)
     {
-        // TODO: support _decimalOffset
+        // TODO: support _decimalOffset => prevent inflation attack
         return shares.mulDiv(newTotalAssets, newTotalSupply);
     }
 }

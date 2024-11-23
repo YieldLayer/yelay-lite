@@ -11,10 +11,10 @@ import {LibFunds, ERC20} from "src/libraries/LibFunds.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
 
 contract YelayLiteVaultInit {
-    function init(address underlyingAsset, address yieldExtractor, string memory name, string memory symbol) public {
+    function init(address underlyingAsset, address yieldExtractor, string memory uri) public {
         initDiamond();
         initFunds(underlyingAsset, yieldExtractor);
-        initToken(name, symbol);
+        initToken(uri);
     }
 
     function initDiamond() public {
@@ -31,9 +31,8 @@ contract YelayLiteVaultInit {
         s.yieldExtractor = yieldExtractor;
     }
 
-    function initToken(string memory name, string memory symbol) public {
-        LibToken.ERC20Storage storage s = LibToken._getERC20Storage();
-        s._name = name;
-        s._symbol = symbol;
+    function initToken(string memory uri) public {
+        LibToken.ERC1155Storage storage s = LibToken._getERC1155Storage();
+        s._uri = uri;
     }
 }
