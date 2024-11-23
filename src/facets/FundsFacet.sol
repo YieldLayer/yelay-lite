@@ -36,11 +36,8 @@ contract FundsFacet is SelfOnly {
     }
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
-        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
+        (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
         LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
-
-        uint256 newTotalAssets = totalAssets();
-        _accrueFee(sF, newTotalAssets);
 
         shares = _convertToSharesWithTotals(assets, LibToken.totalSupply(), newTotalAssets);
 
@@ -63,10 +60,6 @@ contract FundsFacet is SelfOnly {
 
     // TODO: add access control
     function managedDeposit(StrategyArgs calldata strategyArgs) public {
-        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
-        uint256 newTotalAssets = totalAssets();
-        _accrueFee(sF, newTotalAssets);
-
         LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
         _managedDeposit(sM, strategyArgs);
     }
@@ -81,10 +74,6 @@ contract FundsFacet is SelfOnly {
 
     // TODO: add access control
     function managedWithdraw(StrategyArgs calldata strategyArgs) public {
-        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
-        uint256 newTotalAssets = totalAssets();
-        _accrueFee(sF, newTotalAssets);
-
         LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
         _managedWithdraw(sM, strategyArgs);
     }
@@ -101,10 +90,6 @@ contract FundsFacet is SelfOnly {
 
     // TODO: add access control
     function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits) external {
-        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
-        uint256 newTotalAssets = totalAssets();
-        _accrueFee(sF, newTotalAssets);
-
         LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
         for (uint256 i; i < withdrawals.length; i++) {
             _managedWithdraw(sM, withdrawals[i]);
@@ -114,12 +99,15 @@ contract FundsFacet is SelfOnly {
         }
     }
 
-    function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf {
-        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
-        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+    // TODO: add access control?
+    // TODO: add test
+    function accrueFee() external {
+        _accrueFee();
+    }
 
-        uint256 newTotalAssets = totalAssets();
-        _accrueFee(sF, newTotalAssets);
+    function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf {
+        (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
+        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
 
         uint256 assets = _convertToAssetsWithTotals(shares, LibToken.totalSupply(), newTotalAssets);
 
@@ -167,7 +155,10 @@ contract FundsFacet is SelfOnly {
         return IStrategyBase(strategy.adapter).assetBalance(address(this), strategy.supplement);
     }
 
-    function _accrueFee(LibFunds.FundsStorage storage sF, uint256 newTotalAssets) internal {
+    function _accrueFee() internal returns (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) {
+        sF = LibFunds.getStorage();
+        newTotalAssets = totalAssets();
+
         uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);
         if (totalInterest > 0) {
             uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), sF.lastTotalAssets);
