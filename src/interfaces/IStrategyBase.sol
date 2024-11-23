@@ -14,6 +14,7 @@ interface IStrategyBase {
     function onAdd(bytes calldata supplement) external;
     function onRemove(bytes calldata supplement) external;
 
+    // TODO: support rewards
     // function viewRewards(address asset, bytes calldata  supplement) external returns (Reward[] memory rewards);
     // function claimRewards(address asset, Reward[] memory rewards, bytes calldata  supplement) external;
 }

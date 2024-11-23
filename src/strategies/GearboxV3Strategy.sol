@@ -1,60 +1,64 @@
-// // SPDX-License-Identifier: UNLICENSED
-// pragma solidity ^0.8.28;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.28;
 
-// import {ERC4626Strategy} from "src/strategies/ERC4626Strategy.sol";
-// import {IFarmingPool} from "src/interfaces/external/gearbox/v3/IFarmingPool.sol";
+import {ERC4626Strategy} from "src/strategies/ERC4626Strategy.sol";
+import {IFarmingPool} from "src/interfaces/external/gearbox/v3/IFarmingPool.sol";
 
-// import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-// import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-// contract GearboxV3Strategy is ERC4626Strategy {
-//     using Address for address;
+contract GearboxV3Strategy is ERC4626Strategy {
+    constructor(address dToken_) ERC4626Strategy(dToken_) {}
 
-//     IFarmingPool immutable sdToken;
-//     IERC20 immutable gearToken;
+    function _decodeSupplement(bytes calldata supplement)
+        internal
+        pure
+        returns (IFarmingPool sdToken, IERC20 gearToken)
+    {
+        return abi.decode(supplement, (IFarmingPool, IERC20));
+    }
 
-//     constructor(address dToken_, address sdToken_, address gearToken_) ERC4626Strategy(dToken_) {
-//         sdToken = IFarmingPool(sdToken_);
-//         gearToken = IERC20(gearToken_);
-//     }
+    function deposit(uint256 amount, bytes calldata supplement) external override {
+        (IFarmingPool sdToken,) = _decodeSupplement(supplement);
+        uint256 shares = super._deposit(amount);
+        sdToken.deposit(shares);
+    }
 
-//     function deposit(uint256 amount) external override {
-//         uint256 shares = super._deposit(amount);
-//         sdToken.deposit(shares);
-//     }
+    function withdraw(uint256 amount, bytes calldata supplement) external override {
+        (IFarmingPool sdToken,) = _decodeSupplement(supplement);
+        // TODO: double check this logic is correct
+        // dToken and sdToken are equivalent in value
+        uint256 shares = vault.previewWithdraw(amount);
+        sdToken.withdraw(shares);
+        super._withdraw(amount);
+    }
 
-//     function withdraw(uint256 amount) external override {
-//         // TODO: double check this logic is correct
-//         uint256 shares = vault.previewWithdraw(amount);
-//         // dToken and sdToken are equivalent in value
-//         sdToken.withdraw(shares);
-//         super._withdraw(amount);
-//     }
+    function assetBalance(address spoolLiteVault, bytes calldata supplement) external view override returns (uint256) {
+        (IFarmingPool sdToken,) = _decodeSupplement(supplement);
+        // dToken and sdToken are equivalent in value
+        return vault.previewRedeem(sdToken.balanceOf(address(spoolLiteVault)));
+    }
 
-//     function assetBalance(address spoolLiteVault) external view override returns (uint256) {
-//         // dToken and sdToken are equivalent in value
-//         return vault.previewRedeem(sdToken.balanceOf(address(spoolLiteVault)));
-//     }
+    // function viewRewards() external override returns (address[] memory tokens, uint256[] memory amounts) {
+    //     tokens = new address[](1);
+    //     amounts = new uint256[](1);
+    //     tokens[0] = address(gearToken);
+    //     claimRewards();
+    //     amounts[0] = gearToken.balanceOf(address(this));
+    //     return (tokens, amounts);
+    // }
 
-//     function viewRewards() external override returns (address[] memory tokens, uint256[] memory amounts) {
-//         tokens = new address[](1);
-//         amounts = new uint256[](1);
-//         tokens[0] = address(gearToken);
-//         claimRewards();
-//         amounts[0] = gearToken.balanceOf(address(this));
-//         return (tokens, amounts);
-//     }
+    // function claimRewards() public override {
+    //     sdToken.claim();
+    // }
 
-//     function claimRewards() public override {
-//         sdToken.claim();
-//     }
+    function onAdd(bytes calldata supplement) external override {
+        (IFarmingPool sdToken,) = _decodeSupplement(supplement);
+        vault.approve(address(sdToken), type(uint256).max);
+    }
 
-//     function onAdd() external override {
-//         vault.approve(address(sdToken), type(uint256).max);
-//     }
-
-//     function onRemove() external override {
-//         vault.approve(address(sdToken), 0);
-//     }
-// }
+    function onRemove(bytes calldata supplement) external override {
+        (IFarmingPool sdToken,) = _decodeSupplement(supplement);
+        vault.approve(address(sdToken), 0);
+    }
+}

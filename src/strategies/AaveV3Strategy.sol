@@ -13,9 +13,8 @@ contract AaveV3Strategy is IStrategyBase {
         pool = IPool(pool_);
     }
 
-    function _decodeSupplement(bytes calldata supplement) internal pure returns (address, IAToken) {
-        (address token, IAToken aToken) = abi.decode(supplement, (address, IAToken));
-        return (token, aToken);
+    function _decodeSupplement(bytes calldata supplement) internal pure returns (address token, IAToken aToken) {
+        return abi.decode(supplement, (address, IAToken));
     }
 
     function protocol() external view returns (address) {
