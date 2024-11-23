@@ -45,20 +45,22 @@ contract ManagementFacet {
         LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
         sM.strategies.push(strategy);
         _approveStrategy(strategy, type(uint256).max);
-        strategy.adapter.functionDelegateCall(abi.encodeCall(IStrategyBase.onAdd, ()));
+        strategy.adapter.functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onAdd.selector, strategy.supplement));
     }
 
     function removeStrategy(uint256 index) external {
         LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
         _approveStrategy(sM.strategies[index], 0);
-        sM.strategies[index].adapter.functionDelegateCall(abi.encodeCall(IStrategyBase.onRemove, ()));
+        sM.strategies[index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.strategies[index].supplement)
+        );
         sM.strategies[index] = sM.strategies[sM.strategies.length - 1];
         sM.strategies.pop();
     }
 
     function _approveStrategy(LibManagement.StrategyData memory strategy, uint256 amount) internal {
-        LibFunds.FundsStorage memory sM = LibFunds.getStorage();
+        LibFunds.FundsStorage memory sF = LibFunds.getStorage();
         address protocol = IStrategyBase(strategy.adapter).protocol();
-        sM.underlyingAsset.approve(protocol, amount);
+        sF.underlyingAsset.approve(protocol, amount);
     }
 }

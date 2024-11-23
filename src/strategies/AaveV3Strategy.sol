@@ -8,41 +8,47 @@ import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract AaveV3Strategy is IStrategyBase {
     IPool immutable pool;
-    address public immutable asset;
-    IAToken public immutable aToken;
 
-    constructor(address pool_, address asset_, address aToken_) {
+    constructor(address pool_) {
         pool = IPool(pool_);
-        asset = asset_;
-        aToken = IAToken(aToken_);
+    }
+
+    function _decodeSupplement(bytes calldata supplement) internal pure returns (address, IAToken) {
+        (address token, IAToken aToken) = abi.decode(supplement, (address, IAToken));
+        return (token, aToken);
     }
 
     function protocol() external view returns (address) {
         return address(pool);
     }
 
-    function deposit(uint256 amount) external {
+    function deposit(uint256 amount, bytes calldata supplement) external {
+        (address asset,) = _decodeSupplement(supplement);
         pool.supply(asset, amount, address(this), 0);
     }
 
-    function withdraw(uint256 amount) external {
+    function withdraw(uint256 amount, bytes calldata supplement) external {
+        (address asset,) = _decodeSupplement(supplement);
         pool.withdraw(asset, amount, address(this));
     }
 
-    function assetBalance(address vault) external view returns (uint256) {
-        return aToken.balanceOf(address(vault));
+    function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {
+        (, IAToken aToken) = _decodeSupplement(supplement);
+        return aToken.balanceOf(address(yelayLiteVault));
     }
 
-    function onAdd() external {
+    function onAdd(bytes calldata supplement) external {
+        (address asset, IAToken aToken) = _decodeSupplement(supplement);
         IERC20(asset).approve(address(pool), type(uint256).max);
         aToken.approve(address(pool), type(uint256).max);
     }
 
-    function onRemove() external {
+    function onRemove(bytes calldata supplement) external {
+        (address asset, IAToken aToken) = _decodeSupplement(supplement);
         IERC20(asset).approve(address(pool), 0);
         aToken.approve(address(pool), 0);
     }
 
-    function claimRewards() external {}
-    function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts) {}
+    // function claimRewards() external {}
+    // function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts) {}
 }

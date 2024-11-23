@@ -15,9 +15,11 @@ contract AaveV3Test is AbstractStrategyTest {
         vm.startPrank(owner);
         IPool.ReserveData memory reserveData = IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset));
         strategyShare = reserveData.aTokenAddress;
-        strategyAdapter = address(new AaveV3Strategy(AAVE_V3_POOL, address(underlyingAsset), strategyShare));
-        LibManagement.StrategyData memory strategy =
-            LibManagement.StrategyData({adapter: strategyAdapter, supplement: ""});
+        strategyAdapter = address(new AaveV3Strategy(AAVE_V3_POOL));
+        LibManagement.StrategyData memory strategy = LibManagement.StrategyData({
+            adapter: strategyAdapter,
+            supplement: abi.encode(address(underlyingAsset), strategyShare)
+        });
         ManagementFacet(yelayLiteVault).addStrategy(strategy);
         uint256[] memory queue = new uint256[](1);
         queue[0] = 0;

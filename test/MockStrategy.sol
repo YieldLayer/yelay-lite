@@ -14,17 +14,13 @@ contract MockStrategy is IStrategyBase {
         return mockProtocol;
     }
 
-    function deposit(uint256 amount) external {}
+    function deposit(uint256 amount, bytes calldata supplement) external {}
+    function withdraw(uint256 amount, bytes calldata supplement) external {}
+    function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {}
+    function onAdd(bytes calldata supplement) external {}
+    function onRemove(bytes calldata supplement) external {}
 
-    function withdraw(uint256 amount) external {}
+    // function claimRewards() external {}
 
-    function assetBalance(address vault) external view returns (uint256) {}
-
-    function onAdd() external {}
-
-    function onRemove() external {}
-
-    function claimRewards() external {}
-
-    function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts) {}
+    // function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts) {}
 }

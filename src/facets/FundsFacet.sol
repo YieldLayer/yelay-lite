@@ -43,8 +43,11 @@ contract FundsFacet is SelfOnly {
             abi.encodeWithSelector(TokenFacet.mint.selector, receiver, projectId, shares)
         );
         for (uint256 i; i < sM.depositQueue.length; i++) {
-            (bool success,) =
-                sM.strategies[sM.depositQueue[i]].adapter.delegatecall(abi.encodeCall(IStrategyBase.deposit, (assets)));
+            (bool success,) = sM.strategies[sM.depositQueue[i]].adapter.delegatecall(
+                abi.encodeWithSelector(
+                    IStrategyBase.deposit.selector, assets, sM.strategies[sM.depositQueue[i]].supplement
+                )
+            );
             if (success) {
                 break;
             }
@@ -67,12 +70,15 @@ contract FundsFacet is SelfOnly {
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
             if (_assets == 0) break;
             address adapter = sM.strategies[sM.withdrawQueue[i]].adapter;
+            bytes memory supplement = sM.strategies[sM.withdrawQueue[i]].supplement;
             // TODO: create smarter method to get precise amount able to be withdrawn
-            uint256 assetBalance = IStrategyBase(adapter).assetBalance(address(this));
+            uint256 assetBalance = IStrategyBase(adapter).assetBalance(address(this), supplement);
             if (assetBalance == 0) continue;
             uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
             _assets -= availableToWithdraw;
-            adapter.functionDelegateCall(abi.encodeCall(IStrategyBase.withdraw, (availableToWithdraw)));
+            adapter.functionDelegateCall(
+                abi.encodeWithSelector(IStrategyBase.withdraw.selector, availableToWithdraw, supplement)
+            );
         }
         sF.underlyingAsset.safeTransfer(receiver, assets);
         address(this).functionDelegateCall(
@@ -87,7 +93,7 @@ contract FundsFacet is SelfOnly {
         assets = sF.underlyingAsset.balanceOf(address(this));
         // TODO: we need to use strategies storage
         for (uint256 i; i < sM.strategies.length; ++i) {
-            assets += IStrategyBase(sM.strategies[i].adapter).assetBalance(address(this));
+            assets += IStrategyBase(sM.strategies[i].adapter).assetBalance(address(this), sM.strategies[i].supplement);
         }
     }
 

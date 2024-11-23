@@ -2,14 +2,18 @@
 pragma solidity ^0.8.28;
 
 interface IStrategyBase {
+    struct Reward {
+        address token;
+        uint256 amount;
+    }
+
     function protocol() external returns (address);
-    function deposit(uint256 amount) external;
-    function withdraw(uint256 amount) external;
-    function assetBalance(address vault) external view returns (uint256);
+    function deposit(uint256 amount, bytes calldata supplement) external;
+    function withdraw(uint256 amount, bytes calldata supplement) external;
+    function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256);
+    function onAdd(bytes calldata supplement) external;
+    function onRemove(bytes calldata supplement) external;
 
-    function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts);
-    function claimRewards() external;
-
-    function onAdd() external;
-    function onRemove() external;
+    // function viewRewards(address asset, bytes calldata  supplement) external returns (Reward[] memory rewards);
+    // function claimRewards(address asset, Reward[] memory rewards, bytes calldata  supplement) external;
 }
