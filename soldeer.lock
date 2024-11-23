@@ -1,16 +1,4 @@
 [[dependencies]]
-name = "@openzeppelin-contracts-upgradeable"
-version = "5.1.0"
-git = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable.git"
-rev = "fa525310e45f91eb20a6d3baa2644be8e0adba31"
-
-[[dependencies]]
-name = "@solady"
-version = "0.0.268"
-git = "https://github.com/Vectorized/solady.git"
-rev = "1dd8967b93b379ca6cf384640e0715e55ef08e3d"
-
-[[dependencies]]
 name = "diamond"
 version = "0.0.1"
 git = "https://github.com/mudgen/diamond-2-hardhat.git"
@@ -24,10 +12,28 @@ checksum = "b5be24beb5e4dab5e42221b2ad1288b64c826bee5ee71b6159ba93ffe86f14d4"
 integrity = "3874463846ab995a6a9a88412913cacec6144f7605daa1af57c2d8bf3f210b13"
 
 [[dependencies]]
+name = "morpho-blue"
+version = "1.0.0"
+git = "https://github.com/morpho-org/morpho-blue.git"
+rev = "12b8a453643d5ef9d55abd88b9f8cfa866882aa5"
+
+[[dependencies]]
 name = "openzeppelin-contracts"
 version = "5.1.0"
 git = "https://github.com/OpenZeppelin/openzeppelin-contracts.git"
 rev = "69c8def5f222ff96f2b5beff05dfba996368aa79"
+
+[[dependencies]]
+name = "openzeppelin-contracts-upgradeable"
+version = "5.1.0"
+git = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable.git"
+rev = "v5.1.0"
+
+[[dependencies]]
+name = "solady"
+version = "0.0.268"
+git = "https://github.com/Vectorized/solady.git"
+rev = "v0.0.268"
 
 [[dependencies]]
 name = "solmate"
