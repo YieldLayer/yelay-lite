@@ -5,8 +5,6 @@ import {Test, console} from "forge-std/Test.sol";
 
 import {DiamondCutFacet, IDiamondCut} from "@diamond/facets/DiamondCutFacet.sol";
 
-import {IPool} from "src/interfaces/external/aave/v3/IPool.sol";
-
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {TokenFacet, ERC1155Upgradeable} from "src/facets/TokenFacet.sol";
 import {FundsFacet} from "src/facets/FundsFacet.sol";

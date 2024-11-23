@@ -1,4 +1,10 @@
 [[dependencies]]
+name = "aave-v3-core"
+version = "1.19.4"
+git = "https://github.com/aave/aave-v3-core.git"
+rev = "b74526a7bc67a3a117a1963fc871b3eb8cea8435"
+
+[[dependencies]]
 name = "diamond"
 version = "0.0.1"
 git = "https://github.com/mudgen/diamond-2-hardhat.git"

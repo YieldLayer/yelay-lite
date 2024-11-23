@@ -6,15 +6,14 @@ import {LibManagement} from "src/libraries/LibManagement.sol";
 
 import {AbstractStrategyTest} from "./AbstractStrategyTest.sol";
 
-import {IPool} from "src/interfaces/external/aave/v3/IPool.sol";
+import {IPool} from "@aave-v3-core/interfaces/IPool.sol";
 import {AaveV3Strategy} from "src/strategies/AaveV3Strategy.sol";
 import {AAVE_V3_POOL} from "../Constants.sol";
 
 contract AaveV3Test is AbstractStrategyTest {
     function _setupStrategy() internal override {
         vm.startPrank(owner);
-        IPool.ReserveData memory reserveData = IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset));
-        strategyShare = reserveData.aTokenAddress;
+        strategyShare = IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress;
         strategyAdapter = address(new AaveV3Strategy(AAVE_V3_POOL));
         LibManagement.StrategyData memory strategy = LibManagement.StrategyData({
             adapter: strategyAdapter,

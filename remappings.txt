@@ -4,5 +4,6 @@
 @openzeppelin/=dependencies/openzeppelin-contracts-5.1.0/contracts
 @solady/=dependencies/solady-0.0.268/src/
 @solmate/=dependencies/solmate-6.8.0/src/
+@aave-v3-core/=dependencies/aave-v3-core-1.19.4/contracts/
 forge-std/=dependencies/forge-std-1.9.4/src/
 src/=src/

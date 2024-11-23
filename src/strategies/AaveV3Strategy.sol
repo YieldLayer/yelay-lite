@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {IPool} from "src/interfaces/external/aave/v3/IPool.sol";
-import {IAToken} from "src/interfaces/external/aave/v3/IAToken.sol";
-import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
 import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
+import {IPool} from "@aave-v3-core/interfaces/IPool.sol";
+import {IAToken} from "@aave-v3-core/interfaces/IAToken.sol";
+
+import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
 
 contract AaveV3Strategy is IStrategyBase {
     IPool immutable pool;
