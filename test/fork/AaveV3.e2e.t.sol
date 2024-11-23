@@ -8,7 +8,7 @@ import {AbstractStrategyTest} from "./AbstractStrategyTest.sol";
 
 import {IPool} from "src/interfaces/external/aave/v3/IPool.sol";
 import {AaveV3Strategy} from "src/strategies/AaveV3Strategy.sol";
-import {AAVE_V3_POOL} from "./Constants.sol";
+import {AAVE_V3_POOL} from "../Constants.sol";
 
 contract AaveV3Test is AbstractStrategyTest {
     function _setupStrategy() internal override {

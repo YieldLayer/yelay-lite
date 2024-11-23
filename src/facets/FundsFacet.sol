@@ -22,6 +22,7 @@ contract FundsFacet is SelfOnly {
     using FixedPointMathLib for uint256;
 
     error NotEnoughAssets();
+    error NotEnoughLiquidity();
     // error CapReached();
     // error InconsistentLength();
     // error InconsistentReallocation();
@@ -75,10 +76,12 @@ contract FundsFacet is SelfOnly {
             uint256 assetBalance = IStrategyBase(adapter).assetBalance(address(this), supplement);
             if (assetBalance == 0) continue;
             uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
-            _assets -= availableToWithdraw;
-            adapter.functionDelegateCall(
+            (bool success,) = adapter.delegatecall(
                 abi.encodeWithSelector(IStrategyBase.withdraw.selector, availableToWithdraw, supplement)
             );
+            if (success) {
+                _assets -= availableToWithdraw;
+            }
         }
         sF.underlyingAsset.safeTransfer(receiver, assets);
         address(this).functionDelegateCall(

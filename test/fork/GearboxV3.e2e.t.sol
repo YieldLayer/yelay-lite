@@ -7,7 +7,7 @@ import {LibManagement} from "src/libraries/LibManagement.sol";
 import {AbstractStrategyTest} from "./AbstractStrategyTest.sol";
 
 import {GearboxV3Strategy} from "src/strategies/GearboxV3Strategy.sol";
-import {GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING, GEARBOX_TOKEN} from "./Constants.sol";
+import {GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING, GEARBOX_TOKEN} from "../Constants.sol";
 
 contract GearboxV3Test is AbstractStrategyTest {
     function _setupStrategy() internal override {

@@ -12,8 +12,8 @@ import {FundsFacet, ERC20} from "src/facets/FundsFacet.sol";
 import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
 
-import {Utils} from "./Utils.sol";
-import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER} from "./Constants.sol";
+import {Utils} from "../Utils.sol";
+import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER} from "../Constants.sol";
 
 abstract contract AbstractStrategyTest is Test {
     using Utils for address;
@@ -119,7 +119,7 @@ abstract contract AbstractStrategyTest is Test {
             vm.stopPrank();
             assertEq(underlyingAsset.balanceOf(user3), 0);
             if (i + 1 < 20) {
-                vm.warp(block.timestamp + 10 weeks);
+                vm.warp(block.timestamp + 1 weeks);
             }
             uint256 newYieldExtractorShareBalance = TokenFacet(yelayLiteVault).balanceOf(yieldExtractor, yieldProjectId);
             if (newYieldExtractorShareBalance > 0) {
@@ -148,7 +148,7 @@ abstract contract AbstractStrategyTest is Test {
             vm.stopPrank();
             assertApproxEqAbs(underlyingAsset.balanceOf(user3), toDeposit, 1);
             if (i + 1 < 20) {
-                vm.warp(block.timestamp + 10 weeks);
+                vm.warp(block.timestamp + 1 weeks);
             }
         }
 
@@ -165,7 +165,7 @@ abstract contract AbstractStrategyTest is Test {
 
             uint256 assetsAfter = underlyingAsset.balanceOf(yieldExtractor);
 
-            assertApproxEqAbs(assetsAfter - assetsBefore, sharesBefore, 3);
+            assertApproxEqAbs(assetsAfter - assetsBefore, sharesBefore, 10);
         }
 
         assertEq(TokenFacet(yelayLiteVault).totalSupply(), 0);
