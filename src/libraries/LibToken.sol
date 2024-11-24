@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {Address} from "@openzeppelin/utils/Address.sol";
+
+import {TokenFacet} from "src/facets/TokenFacet.sol";
+
 library LibToken {
+    using Address for address;
+
     /// @custom:storage-location erc7201:yelay-vault.storage.TokenFacet
     struct TokenStorage {
         uint256 _totalSupply;
@@ -19,6 +25,18 @@ library LibToken {
     function totalSupply() internal view returns (uint256) {
         TokenStorage storage s = _getTokenStorage();
         return s._totalSupply;
+    }
+
+    function mint(address to, uint256 id, uint256 value) internal {
+        TokenStorage storage sT = LibToken._getTokenStorage();
+        sT._totalSupply += value;
+        address(this).functionDelegateCall(abi.encodeWithSelector(TokenFacet.mint.selector, to, id, value));
+    }
+
+    function burn(address from, uint256 id, uint256 value) internal {
+        TokenStorage storage sT = LibToken._getTokenStorage();
+        sT._totalSupply -= value;
+        address(this).functionDelegateCall(abi.encodeWithSelector(TokenFacet.burn.selector, from, id, value));
     }
 
     /// @custom:storage-location erc7201:openzeppelin.storage.ERC1155

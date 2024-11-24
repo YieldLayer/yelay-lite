@@ -11,19 +11,14 @@ import {ITokenFacet} from "src/interfaces/ITokenFacet.sol";
 // TODO: decimals always 18?
 contract TokenFacet is ERC1155Upgradeable, SelfOnly, ITokenFacet {
     function mint(address to, uint256 id, uint256 value) external onlySelf {
-        LibToken.TokenStorage storage sT = LibToken._getTokenStorage();
-        sT._totalSupply += value;
         _mint(to, id, value, "");
     }
 
     function burn(address from, uint256 id, uint256 value) external onlySelf {
-        LibToken.TokenStorage storage sT = LibToken._getTokenStorage();
-        sT._totalSupply -= value;
         _burn(from, id, value);
     }
 
     function totalSupply() external view returns (uint256) {
-        LibToken.TokenStorage storage sT = LibToken._getTokenStorage();
-        return sT._totalSupply;
+        return LibToken.totalSupply();
     }
 }

@@ -6,16 +6,16 @@ import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 
-import {TokenFacet} from "src/facets/TokenFacet.sol";
 import {SelfOnly} from "src/abstract/SelfOnly.sol";
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
+
 import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
-
-import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
+import {LibEvents} from "src/libraries/LibEvents.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -28,12 +28,41 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
 
     error NotEnoughAssets();
     error NotEnoughLiquidity();
-    // error CapReached();
-    // error InconsistentLength();
-    // error InconsistentReallocation();
-    // error StrategyExists();
-    // error OnlyView();
-    // error CompoundFailure();
+
+    function lastTotalAssets() external view returns (uint256) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return sF.lastTotalAssets;
+    }
+
+    function underlyingBalance() external view returns (uint256) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return sF.underlyingBalance;
+    }
+
+    function underlyingAsset() external view returns (address) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return address(sF.underlyingAsset);
+    }
+
+    function yieldExtractor() external view returns (address) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return sF.yieldExtractor;
+    }
+
+    function totalAssets() public view returns (uint256 assets) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+
+        assets = sF.underlyingBalance;
+        for (uint256 i; i < sM.strategies.length; ++i) {
+            assets += IStrategyBase(sM.strategies[i].adapter).assetBalance(address(this), sM.strategies[i].supplement);
+        }
+    }
+
+    function strategyAssets(uint256 index) external view returns (uint256) {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);
+    }
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
         (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
@@ -42,9 +71,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         shares = _convertToSharesWithTotals(assets, LibToken.totalSupply(), newTotalAssets);
 
         sF.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
-        address(this).functionDelegateCall(
-            abi.encodeWithSelector(TokenFacet.mint.selector, receiver, projectId, shares)
-        );
+        LibToken.mint(receiver, projectId, shares);
         bool success;
         for (uint256 i; i < sM.depositQueue.length; i++) {
             (success,) = sM.strategies[sM.depositQueue[i]].adapter.delegatecall(
@@ -60,63 +87,8 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
             sF.underlyingBalance += assets;
         }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
-    }
 
-    function managedDeposit(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
-        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        _managedDeposit(sM, sF, strategyArgs);
-    }
-
-    function _managedDeposit(
-        LibManagement.ManagementStorage storage sM,
-        LibFunds.FundsStorage storage sF,
-        StrategyArgs calldata strategyArgs
-    ) internal {
-        sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(
-                IStrategyBase.deposit.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
-            )
-        );
-        sF.underlyingBalance -= strategyArgs.amount;
-    }
-
-    function managedWithdraw(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
-        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        _managedWithdraw(sM, sF, strategyArgs);
-    }
-
-    function _managedWithdraw(
-        LibManagement.ManagementStorage storage sM,
-        LibFunds.FundsStorage storage sF,
-        StrategyArgs calldata strategyArgs
-    ) internal {
-        sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(
-                IStrategyBase.withdraw.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
-            )
-        );
-        sF.underlyingBalance += strategyArgs.amount;
-    }
-
-    function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits)
-        external
-        onlyRole(LibRoles.FUNDS_OPERATOR)
-    {
-        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        for (uint256 i; i < withdrawals.length; i++) {
-            _managedWithdraw(sM, sF, withdrawals[i]);
-        }
-        for (uint256 i; i < deposits.length; i++) {
-            _managedDeposit(sM, sF, deposits[i]);
-        }
-    }
-
-    // TODO: add test
-    function accrueFee() external onlyRole(LibRoles.FUNDS_OPERATOR) {
-        _accrueFee();
+        emit LibEvents.Deposit(projectId, msg.sender, receiver, assets, shares);
     }
 
     function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf {
@@ -149,24 +121,69 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
             sF.underlyingBalance -= _assets;
         }
         sF.underlyingAsset.safeTransfer(receiver, assets);
-        address(this).functionDelegateCall(
-            abi.encodeWithSelector(TokenFacet.burn.selector, msg.sender, projectId, shares)
-        );
+        LibToken.burn(msg.sender, projectId, shares);
+
+        emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }
 
-    function totalAssets() public view returns (uint256 assets) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+    function managedDeposit(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        _managedDeposit(sM, sF, strategyArgs);
+    }
 
-        assets = sF.underlyingBalance;
-        for (uint256 i; i < sM.strategies.length; ++i) {
-            assets += IStrategyBase(sM.strategies[i].adapter).assetBalance(address(this), sM.strategies[i].supplement);
+    function managedWithdraw(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        _managedWithdraw(sM, sF, strategyArgs);
+    }
+
+    // TODO: add compounding of rewards
+    function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits)
+        external
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+    {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        for (uint256 i; i < withdrawals.length; i++) {
+            _managedWithdraw(sM, sF, withdrawals[i]);
+        }
+        for (uint256 i; i < deposits.length; i++) {
+            _managedDeposit(sM, sF, deposits[i]);
         }
     }
 
-    function strategyAssets(uint256 index) external view returns (uint256) {
-        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);
+    // TODO: add test
+    function accrueFee() external onlyRole(LibRoles.FUNDS_OPERATOR) {
+        _accrueFee();
+    }
+
+    function _managedDeposit(
+        LibManagement.ManagementStorage storage sM,
+        LibFunds.FundsStorage storage sF,
+        StrategyArgs calldata strategyArgs
+    ) internal {
+        sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(
+                IStrategyBase.deposit.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
+            )
+        );
+        sF.underlyingBalance -= strategyArgs.amount;
+        emit LibEvents.ManagedDeposit(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
+    }
+
+    function _managedWithdraw(
+        LibManagement.ManagementStorage storage sM,
+        LibFunds.FundsStorage storage sF,
+        StrategyArgs calldata strategyArgs
+    ) internal {
+        sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(
+                IStrategyBase.withdraw.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
+            )
+        );
+        sF.underlyingBalance += strategyArgs.amount;
+        emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
     }
 
     function _accrueFee() internal returns (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) {
@@ -177,22 +194,16 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         if (totalInterest > 0) {
             uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), sF.lastTotalAssets);
             if (feeShares > 0) {
-                address(this).functionDelegateCall(
-                    abi.encodeWithSelector(TokenFacet.mint.selector, sF.yieldExtractor, YIELD_PROJECT_ID, feeShares)
-                );
+                LibToken.mint(sF.yieldExtractor, YIELD_PROJECT_ID, feeShares);
             }
+            emit LibEvents.AccrueInterest(newTotalAssets, totalInterest, feeShares);
         }
-
-        // TODO: events
-        // emit EventsLib.AccrueInterest(newTotalAssets, feeShares);
     }
 
-    /// @dev Updates `lastTotalAssets` to `updatedTotalAssets`.
     function _updateLastTotalAssets(LibFunds.FundsStorage storage sF, uint256 updatedTotalAssets) internal {
         sF.lastTotalAssets = updatedTotalAssets;
-
         // TODO: add event
-        // emit EventsLib.UpdateLastTotalAssets(updatedTotalAssets);
+        emit LibEvents.UpdateLastTotalAssets(updatedTotalAssets);
     }
 
     function _convertToSharesWithTotals(uint256 assets, uint256 newTotalSupply, uint256 newTotalAssets)
@@ -209,25 +220,5 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         returns (uint256)
     {
         return shares.mulDiv(newTotalAssets, newTotalSupply);
-    }
-
-    function lastTotalAssets() external view returns (uint256) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        return sF.lastTotalAssets;
-    }
-
-    function underlyingBalance() external view returns (uint256) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        return sF.underlyingBalance;
-    }
-
-    function underlyingAsset() external view returns (address) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        return address(sF.underlyingAsset);
-    }
-
-    function yieldExtractor() external view returns (address) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        return sF.yieldExtractor;
     }
 }

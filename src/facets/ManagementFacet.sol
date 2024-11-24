@@ -4,12 +4,15 @@ pragma solidity ^0.8.28;
 import {Address} from "@openzeppelin/utils/Address.sol";
 import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
+import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IManagementFacet, StrategyData} from "src/interfaces/IManagementFacet.sol";
+
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
+
 import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
-import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
-import {IManagementFacet, StrategyData} from "src/interfaces/IManagementFacet.sol";
+import {LibEvents} from "src/libraries/LibEvents.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -35,11 +38,13 @@ contract ManagementFacet is RoleCheck, IManagementFacet {
     function updateDepositQueue(uint256[] calldata depositQueue_) external onlyRole(LibRoles.QUEUES_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.depositQueue = depositQueue_;
+        emit LibEvents.UpdateDepositQueue();
     }
 
     function updateWithdrawQueue(uint256[] calldata withdrawQueue_) external onlyRole(LibRoles.QUEUES_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.withdrawQueue = withdrawQueue_;
+        emit LibEvents.UpdateWithdrawQueue();
     }
 
     function addStrategy(StrategyData calldata strategy) external onlyRole(LibRoles.STRATEGY_AUTHORITY) {
@@ -47,6 +52,7 @@ contract ManagementFacet is RoleCheck, IManagementFacet {
         sM.strategies.push(strategy);
         _approveStrategy(strategy, type(uint256).max);
         strategy.adapter.functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onAdd.selector, strategy.supplement));
+        emit LibEvents.AddStrategy(strategy.adapter, strategy.supplement);
     }
 
     function removeStrategy(uint256 index) external onlyRole(LibRoles.STRATEGY_AUTHORITY) {
@@ -55,6 +61,7 @@ contract ManagementFacet is RoleCheck, IManagementFacet {
         sM.strategies[index].adapter.functionDelegateCall(
             abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.strategies[index].supplement)
         );
+        emit LibEvents.RemoveStrategy(sM.strategies[index].adapter, sM.strategies[index].supplement);
         sM.strategies[index] = sM.strategies[sM.strategies.length - 1];
         sM.strategies.pop();
     }
