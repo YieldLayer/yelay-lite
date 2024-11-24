@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
 import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 
-import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 
 contract MorphoBlueStrategy is IStrategyBase {
@@ -50,6 +50,6 @@ contract MorphoBlueStrategy is IStrategyBase {
         IERC20(asset).approve(address(morpho), 0);
     }
 
-    // function claimRewards() external {}
-    // function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts) {}
+    function viewRewards(bytes calldata supplement) external view returns (Reward[] memory rewards) {}
+    function claimRewards(bytes calldata supplement) external {}
 }

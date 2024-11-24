@@ -32,9 +32,6 @@ contract ManagedOperationsTest is Test {
 
     IERC20 underlyingAsset = IERC20(DAI_ADDRESS);
 
-    address strategyAdapter;
-    address strategyShare;
-
     function _setupStrategy() internal {
         vm.startPrank(owner);
         {

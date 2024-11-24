@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 import {IPool} from "@aave-v3-core/interfaces/IPool.sol";
 import {IAToken} from "@aave-v3-core/interfaces/IAToken.sol";
 
-import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 
 contract AaveV3Strategy is IStrategyBase {
     IPool immutable pool;
@@ -49,6 +49,6 @@ contract AaveV3Strategy is IStrategyBase {
         aToken.approve(address(pool), 0);
     }
 
-    // function claimRewards() external {}
-    // function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts) {}
+    function viewRewards(bytes calldata supplement) external view returns (Reward[] memory rewards) {}
+    function claimRewards(bytes calldata supplement) external {}
 }

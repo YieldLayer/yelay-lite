@@ -26,8 +26,6 @@ abstract contract AbstractStrategyTest is Test {
 
     IERC20 underlyingAsset = IERC20(DAI_ADDRESS);
 
-    address strategyAdapter;
-
     // Override this to test particular strategy
     function _setupStrategy() internal virtual {}
 

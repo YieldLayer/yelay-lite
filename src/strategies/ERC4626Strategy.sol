@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 
 contract ERC4626Strategy is IStrategyBase {
     IERC4626 immutable vault;
@@ -37,4 +37,6 @@ contract ERC4626Strategy is IStrategyBase {
 
     function onAdd(bytes calldata) external virtual {}
     function onRemove(bytes calldata) external virtual {}
+    function viewRewards(bytes calldata supplement) external view virtual returns (Reward[] memory rewards) {}
+    function claimRewards(bytes calldata supplement) external virtual {}
 }

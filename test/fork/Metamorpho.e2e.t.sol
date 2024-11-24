@@ -11,7 +11,7 @@ import {METAMORPHO_GAUNTLET_DAI_CORE} from "../Constants.sol";
 contract MetamorphoTest is AbstractStrategyTest {
     function _setupStrategy() internal override {
         vm.startPrank(owner);
-        strategyAdapter = address(new ERC4626Strategy(METAMORPHO_GAUNTLET_DAI_CORE));
+        address strategyAdapter = address(new ERC4626Strategy(METAMORPHO_GAUNTLET_DAI_CORE));
         StrategyData memory strategy = StrategyData({adapter: strategyAdapter, supplement: ""});
         yelayLiteVault.addStrategy(strategy);
         uint256[] memory queue = new uint256[](1);

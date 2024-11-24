@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 
 contract MockStrategy is IStrategyBase {
     address mockProtocol;
@@ -19,8 +19,6 @@ contract MockStrategy is IStrategyBase {
     function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {}
     function onAdd(bytes calldata supplement) external {}
     function onRemove(bytes calldata supplement) external {}
-
-    // function claimRewards() external {}
-
-    // function viewRewards() external returns (address[] memory tokens, uint256[] memory amounts) {}
+    function viewRewards(bytes calldata supplement) external view returns (Reward[] memory rewards) {}
+    function claimRewards(bytes calldata supplement) external {}
 }

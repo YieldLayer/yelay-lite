@@ -10,10 +10,12 @@ import {IERC165} from "@diamond/interfaces/IERC165.sol";
 import {LibFunds, ERC20} from "src/libraries/LibFunds.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
 
+import {ISwapper} from "src/interfaces/ISwapper.sol";
+
 contract YelayLiteVaultInit {
-    function init(address underlyingAsset, address yieldExtractor, string memory uri) public {
+    function init(address underlyingAsset, address yieldExtractor, ISwapper swapper, string memory uri) public {
         _initDiamond();
-        _initFunds(underlyingAsset, yieldExtractor);
+        _initFunds(underlyingAsset, yieldExtractor, swapper);
         _initToken(uri);
     }
 
@@ -25,10 +27,11 @@ contract YelayLiteVaultInit {
         ds.supportedInterfaces[type(IERC173).interfaceId] = true;
     }
 
-    function _initFunds(address underlyingAsset, address yieldExtractor) internal {
+    function _initFunds(address underlyingAsset, address yieldExtractor, ISwapper swapper) internal {
         LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
         s.underlyingAsset = ERC20(underlyingAsset);
         s.yieldExtractor = yieldExtractor;
+        s.swapper = swapper;
     }
 
     function _initToken(string memory uri) internal {

@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {ERC1967Proxy} from "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import {DiamondCutFacet, IDiamondCut} from "@diamond/facets/DiamondCutFacet.sol";
 
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
+import {Swapper} from "src/Swapper.sol";
+
 import {FundsFacet} from "src/facets/FundsFacet.sol";
 import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {TokenFacet, ERC1155Upgradeable} from "src/facets/TokenFacet.sol";
 
+import {ISwapper, ExchangeArgs} from "src/interfaces/ISwapper.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 
 library Utils {
@@ -17,6 +21,11 @@ library Utils {
         internal
         returns (IYelayLiteVault)
     {
+        Swapper swapperImpl = new Swapper();
+        ISwapper swapper = ISwapper(
+            address(new ERC1967Proxy(address(swapperImpl), abi.encodeWithSelector(Swapper.initialize.selector, owner)))
+        );
+
         DiamondCutFacet diamondCutFacet = new DiamondCutFacet();
 
         address diamond = address(new YelayLiteVault(owner, address(diamondCutFacet)));
@@ -45,7 +54,7 @@ library Utils {
         DiamondCutFacet(diamond).diamondCut(
             diamondCut,
             address(new YelayLiteVaultInit()),
-            abi.encodeWithSelector(YelayLiteVaultInit.init.selector, underlyingAsset, yieldExtractor, uri)
+            abi.encodeWithSelector(YelayLiteVaultInit.init.selector, underlyingAsset, yieldExtractor, swapper, uri)
         );
         return IYelayLiteVault(diamond);
     }
@@ -63,7 +72,7 @@ library Utils {
     }
 
     function _fundsFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory functionSelectors = new bytes4[](12);
+        bytes4[] memory functionSelectors = new bytes4[](16);
         functionSelectors[0] = FundsFacet.deposit.selector;
         functionSelectors[1] = FundsFacet.redeem.selector;
         functionSelectors[2] = FundsFacet.totalAssets.selector;
@@ -76,6 +85,10 @@ library Utils {
         functionSelectors[9] = FundsFacet.underlyingAsset.selector;
         functionSelectors[10] = FundsFacet.yieldExtractor.selector;
         functionSelectors[11] = FundsFacet.accrueFee.selector;
+        functionSelectors[12] = FundsFacet.strategyRewards.selector;
+        functionSelectors[13] = FundsFacet.claimStrategyRewards.selector;
+        functionSelectors[14] = FundsFacet.swapper.selector;
+        functionSelectors[15] = FundsFacet.compound.selector;
         return functionSelectors;
     }
 
@@ -99,5 +112,12 @@ library Utils {
         functionSelectors[3] = AccessFacet.checkRole.selector;
         functionSelectors[4] = AccessFacet.owner.selector;
         return functionSelectors;
+    }
+
+    function addExchange(IYelayLiteVault yelayLiteVault, address exchange) internal {
+        ISwapper swapper = ISwapper(yelayLiteVault.swapper());
+        ExchangeArgs[] memory exchangeArgs = new ExchangeArgs[](1);
+        exchangeArgs[0] = ExchangeArgs({exchange: exchange, allowed: true});
+        swapper.updateExchangeAllowlist(exchangeArgs);
     }
 }

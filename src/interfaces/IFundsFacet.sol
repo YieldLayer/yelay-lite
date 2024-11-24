@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+import {Reward} from "./IStrategyBase.sol";
+import {SwapArgs} from "./ISwapper.sol";
+
 struct StrategyArgs {
     uint256 index;
     uint256 amount;
@@ -19,4 +22,8 @@ interface IFundsFacet {
     function underlyingAsset() external view returns (address);
     function underlyingBalance() external view returns (uint256);
     function yieldExtractor() external view returns (address);
+    function strategyRewards(uint256 index) external returns (Reward[] memory rewards);
+    function claimStrategyRewards(uint256 index) external;
+    function swapper() external view returns (address);
+    function compound(SwapArgs[] memory swapArgs) external returns (uint256 compounded);
 }

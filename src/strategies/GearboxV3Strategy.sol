@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {ERC4626Strategy} from "src/strategies/ERC4626Strategy.sol";
+import {ERC4626Strategy, Reward} from "src/strategies/ERC4626Strategy.sol";
 import {IFarmingPool} from "src/interfaces/external/gearbox/v3/IFarmingPool.sol";
 
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -39,18 +39,17 @@ contract GearboxV3Strategy is ERC4626Strategy {
         return vault.previewRedeem(sdToken.balanceOf(address(spoolLiteVault)));
     }
 
-    // function viewRewards() external override returns (address[] memory tokens, uint256[] memory amounts) {
-    //     tokens = new address[](1);
-    //     amounts = new uint256[](1);
-    //     tokens[0] = address(gearToken);
-    //     claimRewards();
-    //     amounts[0] = gearToken.balanceOf(address(this));
-    //     return (tokens, amounts);
-    // }
+    function viewRewards(bytes calldata supplement) external view override returns (Reward[] memory) {
+        (IFarmingPool sdToken, IERC20 gearToken) = _decodeSupplement(supplement);
+        Reward[] memory rewards = new Reward[](1);
+        rewards[0] = Reward({token: address(gearToken), amount: sdToken.farmed(address(this))});
+        return rewards;
+    }
 
-    // function claimRewards() public override {
-    //     sdToken.claim();
-    // }
+    function claimRewards(bytes calldata supplement) external override {
+        (IFarmingPool sdToken,) = _decodeSupplement(supplement);
+        sdToken.claim();
+    }
 
     function onAdd(bytes calldata supplement) external override {
         (IFarmingPool sdToken,) = _decodeSupplement(supplement);

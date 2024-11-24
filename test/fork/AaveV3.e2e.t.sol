@@ -12,7 +12,7 @@ import {AAVE_V3_POOL} from "../Constants.sol";
 contract AaveV3Test is AbstractStrategyTest {
     function _setupStrategy() internal override {
         vm.startPrank(owner);
-        strategyAdapter = address(new AaveV3Strategy(AAVE_V3_POOL));
+        address strategyAdapter = address(new AaveV3Strategy(AAVE_V3_POOL));
         StrategyData memory strategy = StrategyData({
             adapter: strategyAdapter,
             supplement: abi.encode(

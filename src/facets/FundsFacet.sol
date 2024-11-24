@@ -5,8 +5,9 @@ import {Address} from "@openzeppelin/utils/Address.sol";
 import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
-import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
+import {SwapArgs} from "src/interfaces/ISwapper.sol";
 
 import {SelfOnly} from "src/abstract/SelfOnly.sol";
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
@@ -28,6 +29,8 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
 
     error NotEnoughAssets();
     error NotEnoughLiquidity();
+    error OnlyView();
+    error CompoundUnderlyingForbidden();
 
     function lastTotalAssets() external view returns (uint256) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -49,6 +52,11 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         return sF.yieldExtractor;
     }
 
+    function swapper() external view returns (address) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return address(sF.swapper);
+    }
+
     function totalAssets() public view returns (uint256 assets) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
@@ -62,6 +70,15 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     function strategyAssets(uint256 index) external view returns (uint256) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);
+    }
+
+    function strategyRewards(uint256 index) external returns (Reward[] memory rewards) {
+        require(tx.origin == address(0), OnlyView());
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        bytes memory result = sM.strategies[index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(IStrategyBase.viewRewards.selector, sM.strategies[index].supplement)
+        );
+        (rewards) = abi.decode(result, (Reward[]));
     }
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
@@ -138,7 +155,6 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         _managedWithdraw(sM, sF, strategyArgs);
     }
 
-    // TODO: add compounding of rewards
     function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
@@ -153,8 +169,36 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         }
     }
 
-    function accrueFee() external allowSelf onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function compound(SwapArgs[] memory swapArgs)
+        external
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+        allowSelf
+        returns (uint256 compounded)
+    {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        address _underlyingAsset = address(sF.underlyingAsset);
+        address _swapper = address(sF.swapper);
+        for (uint256 i; i < swapArgs.length; i++) {
+            require(swapArgs[i].tokenIn != _underlyingAsset, CompoundUnderlyingForbidden());
+            uint256 tokenInAmount = ERC20(swapArgs[i].tokenIn).balanceOf(address(this));
+            ERC20(swapArgs[i].tokenIn).safeTransfer(_swapper, tokenInAmount);
+        }
+        compounded = sF.swapper.swap(swapArgs, _underlyingAsset);
+        sF.underlyingBalance += compounded;
+        // TODO: probably can skip?
         _accrueFee();
+        emit LibEvents.Compounded(compounded);
+    }
+
+    function accrueFee() public allowSelf onlyRole(LibRoles.FUNDS_OPERATOR) {
+        _accrueFee();
+    }
+
+    function claimStrategyRewards(uint256 index) external onlyRole(LibRoles.FUNDS_OPERATOR) {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        sM.strategies[index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(IStrategyBase.claimRewards.selector, sM.strategies[index].supplement)
+        );
     }
 
     function _managedDeposit(

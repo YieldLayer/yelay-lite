@@ -13,6 +13,7 @@ library LibEvents {
     event ManagedWithdraw(address indexed strategy, uint256 amount);
     event AccrueInterest(uint256 newTotalAssets, uint256 interest, uint256 feeShares);
     event UpdateLastTotalAssets(uint256 lastTotalAssets);
+    event Compounded(uint256 amount);
 
     // ManagementFacet
     event UpdateDepositQueue();
