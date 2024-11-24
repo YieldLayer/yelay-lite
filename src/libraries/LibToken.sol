@@ -10,14 +10,14 @@ library LibToken {
     // keccak256(abi.encode(uint256(keccak256("yelay-vault.storage.TokenFacet")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant TokenStorageLocation = 0x96e9bc07e4bbede20d6289a6a6d64136db7633a27b2880fb17b26f032a839200;
 
-    function getStorage() internal pure returns (TokenStorage storage $) {
+    function _getTokenStorage() internal pure returns (TokenStorage storage $) {
         assembly {
             $.slot := TokenStorageLocation
         }
     }
 
     function totalSupply() internal view returns (uint256) {
-        TokenStorage storage s = getStorage();
+        TokenStorage storage s = _getTokenStorage();
         return s._totalSupply;
     }
 

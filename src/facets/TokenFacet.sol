@@ -9,19 +9,19 @@ import {LibToken} from "src/libraries/LibToken.sol";
 // TODO: decimals always 18?
 contract TokenFacet is ERC1155Upgradeable, SelfOnly {
     function mint(address to, uint256 id, uint256 value) external onlySelf {
-        LibToken.TokenStorage storage sT = LibToken.getStorage();
+        LibToken.TokenStorage storage sT = LibToken._getTokenStorage();
         sT._totalSupply += value;
         _mint(to, id, value, "");
     }
 
     function burn(address from, uint256 id, uint256 value) external onlySelf {
-        LibToken.TokenStorage storage sT = LibToken.getStorage();
+        LibToken.TokenStorage storage sT = LibToken._getTokenStorage();
         sT._totalSupply -= value;
         _burn(from, id, value);
     }
 
     function totalSupply() external view returns (uint256) {
-        LibToken.TokenStorage storage sT = LibToken.getStorage();
+        LibToken.TokenStorage storage sT = LibToken._getTokenStorage();
         return sT._totalSupply;
     }
 }

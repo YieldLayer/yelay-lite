@@ -26,7 +26,7 @@ contract YelayLiteVaultInit {
     }
 
     function initFunds(address underlyingAsset, address yieldExtractor) public {
-        LibFunds.FundsStorage storage s = LibFunds.getStorage();
+        LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
         s.underlyingAsset = ERC20(underlyingAsset);
         s.yieldExtractor = yieldExtractor;
     }

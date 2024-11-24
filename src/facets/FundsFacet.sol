@@ -15,11 +15,12 @@ import {LibManagement} from "src/libraries/LibManagement.sol";
 
 import {console} from "forge-std/console.sol";
 
-// TODO: add access control
 contract FundsFacet is SelfOnly {
     using Address for address;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
+
+    uint256 constant YIELD_PROJECT_ID = 0;
 
     error NotEnoughAssets();
     error NotEnoughLiquidity();
@@ -37,7 +38,7 @@ contract FundsFacet is SelfOnly {
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
         (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
-        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
         shares = _convertToSharesWithTotals(assets, LibToken.totalSupply(), newTotalAssets);
 
@@ -45,8 +46,9 @@ contract FundsFacet is SelfOnly {
         address(this).functionDelegateCall(
             abi.encodeWithSelector(TokenFacet.mint.selector, receiver, projectId, shares)
         );
+        bool success;
         for (uint256 i; i < sM.depositQueue.length; i++) {
-            (bool success,) = sM.strategies[sM.depositQueue[i]].adapter.delegatecall(
+            (success,) = sM.strategies[sM.depositQueue[i]].adapter.delegatecall(
                 abi.encodeWithSelector(
                     IStrategyBase.deposit.selector, assets, sM.strategies[sM.depositQueue[i]].supplement
                 )
@@ -55,47 +57,61 @@ contract FundsFacet is SelfOnly {
                 break;
             }
         }
+        if (!success) {
+            sF.underlyingBalance += assets;
+        }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
     }
 
     // TODO: add access control
     function managedDeposit(StrategyArgs calldata strategyArgs) public {
-        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
-        _managedDeposit(sM, strategyArgs);
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        _managedDeposit(sM, sF, strategyArgs);
     }
 
-    function _managedDeposit(LibManagement.ManagementStorage storage sM, StrategyArgs calldata strategyArgs) internal {
+    function _managedDeposit(
+        LibManagement.ManagementStorage storage sM,
+        LibFunds.FundsStorage storage sF,
+        StrategyArgs calldata strategyArgs
+    ) internal {
         sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
             abi.encodeWithSelector(
                 IStrategyBase.deposit.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
             )
         );
+        sF.underlyingBalance -= strategyArgs.amount;
     }
 
     // TODO: add access control
     function managedWithdraw(StrategyArgs calldata strategyArgs) public {
-        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
-        _managedWithdraw(sM, strategyArgs);
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        _managedWithdraw(sM, sF, strategyArgs);
     }
 
-    function _managedWithdraw(LibManagement.ManagementStorage storage sM, StrategyArgs calldata strategyArgs)
-        internal
-    {
+    function _managedWithdraw(
+        LibManagement.ManagementStorage storage sM,
+        LibFunds.FundsStorage storage sF,
+        StrategyArgs calldata strategyArgs
+    ) internal {
         sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
             abi.encodeWithSelector(
                 IStrategyBase.withdraw.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
             )
         );
+        sF.underlyingBalance += strategyArgs.amount;
     }
 
     // TODO: add access control
     function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits) external {
-        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         for (uint256 i; i < withdrawals.length; i++) {
-            _managedWithdraw(sM, withdrawals[i]);
+            _managedWithdraw(sM, sF, withdrawals[i]);
         }
         for (uint256 i; i < deposits.length; i++) {
-            _managedDeposit(sM, deposits[i]);
+            _managedDeposit(sM, sF, deposits[i]);
         }
     }
 
@@ -107,7 +123,7 @@ contract FundsFacet is SelfOnly {
 
     function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf {
         (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
-        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
         uint256 assets = _convertToAssetsWithTotals(shares, LibToken.totalSupply(), newTotalAssets);
 
@@ -129,6 +145,9 @@ contract FundsFacet is SelfOnly {
                 _assets -= availableToWithdraw;
             }
         }
+        if (_assets > 0) {
+            sF.underlyingBalance -= _assets;
+        }
         sF.underlyingAsset.safeTransfer(receiver, assets);
         address(this).functionDelegateCall(
             abi.encodeWithSelector(TokenFacet.burn.selector, msg.sender, projectId, shares)
@@ -136,18 +155,17 @@ contract FundsFacet is SelfOnly {
     }
 
     function totalAssets() public view returns (uint256 assets) {
-        LibFunds.FundsStorage storage sF = LibFunds.getStorage();
-        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
-        assets = sF.underlyingAsset.balanceOf(address(this));
-        // TODO: we need to use strategies storage
+        assets = sF.underlyingBalance;
         for (uint256 i; i < sM.strategies.length; ++i) {
             assets += _strategyAssets(sM.strategies[i]);
         }
     }
 
     function strategyAssets(uint256 index) external view returns (uint256) {
-        LibManagement.ManagementStorage storage sM = LibManagement.getStorage();
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         return _strategyAssets(sM.strategies[index]);
     }
 
@@ -156,7 +174,7 @@ contract FundsFacet is SelfOnly {
     }
 
     function _accrueFee() internal returns (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) {
-        sF = LibFunds.getStorage();
+        sF = LibFunds._getFundsStorage();
         newTotalAssets = totalAssets();
 
         uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);
@@ -164,8 +182,7 @@ contract FundsFacet is SelfOnly {
             uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), sF.lastTotalAssets);
             if (feeShares > 0) {
                 address(this).functionDelegateCall(
-                    // TODO: yield with projectId 0 ?
-                    abi.encodeWithSelector(TokenFacet.mint.selector, sF.yieldExtractor, 0, feeShares)
+                    abi.encodeWithSelector(TokenFacet.mint.selector, sF.yieldExtractor, YIELD_PROJECT_ID, feeShares)
                 );
             }
         }
@@ -187,7 +204,6 @@ contract FundsFacet is SelfOnly {
         pure
         returns (uint256)
     {
-        // TODO: support _decimalOffset => prevent inflation attack
         return newTotalSupply == 0 ? assets : assets.mulDiv(newTotalSupply, newTotalAssets);
     }
 
@@ -196,7 +212,6 @@ contract FundsFacet is SelfOnly {
         pure
         returns (uint256)
     {
-        // TODO: support _decimalOffset => prevent inflation attack
         return shares.mulDiv(newTotalAssets, newTotalSupply);
     }
 }

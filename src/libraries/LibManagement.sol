@@ -23,7 +23,7 @@ library LibManagement {
     bytes32 private constant ManagementStorageLocation =
         0xe63bd6ac2e2e77423b5d37c9b15c55e67bb68fc23e21066ec76e46b260bfb100;
 
-    function getStorage() internal pure returns (ManagementStorage storage $) {
+    function _getManagementStorage() internal pure returns (ManagementStorage storage $) {
         assembly {
             $.slot := ManagementStorageLocation
         }
