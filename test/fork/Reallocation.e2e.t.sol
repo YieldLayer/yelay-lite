@@ -1,216 +1,207 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.28;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
 
-// import {Test, console} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 
-// import {DiamondCutFacet, IDiamondCut} from "@diamond/facets/DiamondCutFacet.sol";
+import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 
-// import {YelayLiteVault} from "src/YelayLiteVault.sol";
-// import {LibManagement} from "src/libraries/LibManagement.sol";
-// import {TokenFacet, ERC1155Upgradeable} from "src/facets/TokenFacet.sol";
-// import {FundsFacet, ERC20} from "src/facets/FundsFacet.sol";
-// import {ManagementFacet} from "src/facets/ManagementFacet.sol";
-// import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
+import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
+import {StrategyData} from "src/interfaces/IManagementFacet.sol";
+import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 
-// import {Utils} from "../Utils.sol";
+import {LibRoles} from "src/libraries/LibRoles.sol";
 
-// import {MorphoBlueStrategy} from "src/strategies/MorphoBlueStrategy.sol";
-// import {AaveV3Strategy} from "src/strategies/AaveV3Strategy.sol";
-// import {IPool} from "@aave-v3-core/interfaces/IPool.sol";
-// import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER, MORPHO_BLUE, MORPHO_BLUE_DAI_ID, AAVE_V3_POOL} from "../Constants.sol";
+import {Utils} from "../Utils.sol";
 
-// contract ReallocationTest is Test {
-//     using Utils for address;
+import {MorphoBlueStrategy} from "src/strategies/MorphoBlueStrategy.sol";
+import {AaveV3Strategy} from "src/strategies/AaveV3Strategy.sol";
+import {IPool} from "@aave-v3-core/interfaces/IPool.sol";
+import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER, MORPHO_BLUE, MORPHO_BLUE_DAI_ID, AAVE_V3_POOL} from "../Constants.sol";
 
-//     address owner = address(0x01);
-//     address user = address(0x02);
-//     address user2 = address(0x03);
-//     address yieldExtractor = address(0x04);
+contract ReallocationTest is Test {
+    using Utils for address;
 
-//     address yelayLiteVault;
-//     DiamondCutFacet diamondCutFacet;
-//     TokenFacet tokenFacet;
-//     FundsFacet fundsFacet;
-//     ManagementFacet managementFacet;
+    address constant owner = address(0x01);
+    address constant user = address(0x02);
+    address constant user2 = address(0x03);
+    address constant yieldExtractor = address(0x04);
+    uint256 constant yieldProjectId = 0;
+    uint256 constant projectId = 1;
 
-//     ERC20 underlyingAsset = ERC20(DAI_ADDRESS);
-//     YelayLiteVaultInit init;
+    IYelayLiteVault yelayLiteVault;
 
-//     address strategyAdapter;
-//     address strategyShare;
-//     uint256 yieldProjectId = 0;
-//     uint256 projectId = 1;
+    IERC20 underlyingAsset = IERC20(DAI_ADDRESS);
 
-//     function _setupStrategy() internal {
-//         vm.startPrank(owner);
-//         {
-//             LibManagement.StrategyData memory strategy = LibManagement.StrategyData({
-//                 adapter: address(new AaveV3Strategy(AAVE_V3_POOL)),
-//                 supplement: abi.encode(
-//                     address(underlyingAsset), IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress
-//                 )
-//             });
-//             ManagementFacet(yelayLiteVault).addStrategy(strategy);
-//         }
-//         {
-//             LibManagement.StrategyData memory strategy = LibManagement.StrategyData({
-//                 adapter: address(new MorphoBlueStrategy(MORPHO_BLUE)),
-//                 supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID)
-//             });
-//             ManagementFacet(yelayLiteVault).addStrategy(strategy);
-//         }
-//         uint256[] memory queue = new uint256[](2);
-//         queue[0] = 0;
-//         queue[1] = 1;
-//         ManagementFacet(yelayLiteVault).updateDepositQueue(queue);
-//         ManagementFacet(yelayLiteVault).updateWithdrawQueue(queue);
-//         vm.stopPrank();
-//     }
+    address strategyAdapter;
+    address strategyShare;
 
-//     function setUp() external {
-//         vm.createSelectFork(vm.envString("MAINNET_URL"), MAINNET_BLOCK_NUMBER);
+    function _setupStrategy() internal {
+        vm.startPrank(owner);
+        {
+            StrategyData memory strategy = StrategyData({
+                adapter: address(new AaveV3Strategy(AAVE_V3_POOL)),
+                supplement: abi.encode(
+                    address(underlyingAsset), IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress
+                )
+            });
+            yelayLiteVault.addStrategy(strategy);
+        }
+        {
+            StrategyData memory strategy = StrategyData({
+                adapter: address(new MorphoBlueStrategy(MORPHO_BLUE)),
+                supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID)
+            });
+            yelayLiteVault.addStrategy(strategy);
+        }
+        uint256[] memory queue = new uint256[](2);
+        queue[0] = 0;
+        queue[1] = 1;
+        yelayLiteVault.updateDepositQueue(queue);
+        yelayLiteVault.updateWithdrawQueue(queue);
+        vm.stopPrank();
+    }
 
-//         vm.startPrank(owner);
-//         diamondCutFacet = new DiamondCutFacet();
-//         yelayLiteVault = address(new YelayLiteVault(owner, address(diamondCutFacet)));
-//         tokenFacet = new TokenFacet();
-//         fundsFacet = new FundsFacet();
-//         managementFacet = new ManagementFacet();
-//         init = new YelayLiteVaultInit();
+    function setUp() external {
+        vm.createSelectFork(vm.envString("MAINNET_URL"), MAINNET_BLOCK_NUMBER);
 
-//         yelayLiteVault.addTokenFacet(init, tokenFacet, "https://yelay-lite-vault/{id}.json");
-//         yelayLiteVault.addFundsFacet(init, fundsFacet, address(underlyingAsset), yieldExtractor);
-//         yelayLiteVault.addManagementFacet(managementFacet);
-//         vm.stopPrank();
+        vm.startPrank(owner);
+        yelayLiteVault =
+            Utils.deployDiamond(owner, address(underlyingAsset), yieldExtractor, "https://yelay-lite-vault/{id}.json");
+        yelayLiteVault.grantRole(LibRoles.QUEUES_OPERATOR, owner);
+        yelayLiteVault.grantRole(LibRoles.STRATEGY_AUTHORITY, owner);
+        yelayLiteVault.grantRole(LibRoles.STRATEGY_OPERATOR, owner);
 
-//         vm.startPrank(user);
-//         underlyingAsset.approve(yelayLiteVault, type(uint256).max);
-//         vm.stopPrank();
-//         vm.startPrank(user2);
-//         underlyingAsset.approve(yelayLiteVault, type(uint256).max);
-//         vm.stopPrank();
-//     }
+        yelayLiteVault.grantRole(LibRoles.FUNDS_OPERATOR, owner);
+        vm.stopPrank();
 
-//     function test_managed_deposit() external {
-//         uint256 userBalance = 10_000e18;
-//         uint256 toDeposit = 1000e18;
-//         deal(address(underlyingAsset), user, userBalance);
+        vm.startPrank(user);
+        underlyingAsset.approve(address(yelayLiteVault), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(user2);
+        underlyingAsset.approve(address(yelayLiteVault), type(uint256).max);
+        vm.stopPrank();
+    }
 
-//         vm.startPrank(user);
-//         FundsFacet(yelayLiteVault).deposit(toDeposit, projectId, user);
-//         vm.stopPrank();
+    function test_managed_deposit() external {
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
 
-//         _setupStrategy();
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
 
-//         {
-//             vm.startPrank(owner);
-//             FundsFacet.StrategyArgs memory strategyArgs = FundsFacet.StrategyArgs({index: 0, amount: toDeposit / 2});
-//             FundsFacet(yelayLiteVault).managedDeposit(strategyArgs);
-//             vm.stopPrank();
-//         }
+        _setupStrategy();
 
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), toDeposit / 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).totalAssets(), toDeposit, 1);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(0), toDeposit / 2, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(1), 0, 2);
+        {
+            vm.startPrank(owner);
+            StrategyArgs memory strategyArgs = StrategyArgs({index: 0, amount: toDeposit / 2});
+            yelayLiteVault.managedDeposit(strategyArgs);
+            vm.stopPrank();
+        }
 
-//         {
-//             vm.startPrank(owner);
-//             FundsFacet.StrategyArgs memory strategyArgs = FundsFacet.StrategyArgs({index: 1, amount: toDeposit / 4});
-//             FundsFacet(yelayLiteVault).managedDeposit(strategyArgs);
-//             vm.stopPrank();
-//         }
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), toDeposit / 2);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), toDeposit, 1);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit / 2, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), 0, 2);
 
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), toDeposit / 4);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).totalAssets(), toDeposit, 1);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(0), toDeposit / 2, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(1), toDeposit / 4, 2);
-//     }
+        {
+            vm.startPrank(owner);
+            StrategyArgs memory strategyArgs = StrategyArgs({index: 1, amount: toDeposit / 4});
+            yelayLiteVault.managedDeposit(strategyArgs);
+            vm.stopPrank();
+        }
 
-//     function test_managed_withdraw() external {
-//         _setupStrategy();
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), toDeposit / 4);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), toDeposit, 1);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit / 2, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), toDeposit / 4, 2);
+    }
 
-//         uint256 userBalance = 10_000e18;
-//         uint256 toDeposit = 1000e18;
-//         deal(address(underlyingAsset), user, userBalance);
+    function test_managed_withdraw() external {
+        _setupStrategy();
 
-//         vm.startPrank(user);
-//         FundsFacet(yelayLiteVault).deposit(toDeposit, projectId, user);
-//         vm.stopPrank();
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
 
-//         {
-//             // swap deposit queue
-//             vm.startPrank(owner);
-//             uint256[] memory queue = new uint256[](2);
-//             queue[0] = 1;
-//             queue[1] = 0;
-//             ManagementFacet(yelayLiteVault).updateDepositQueue(queue);
-//             ManagementFacet(yelayLiteVault).updateWithdrawQueue(queue);
-//             vm.stopPrank();
-//         }
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
 
-//         // deposit second time in another strategy
-//         vm.startPrank(user);
-//         FundsFacet(yelayLiteVault).deposit(toDeposit, projectId, user);
-//         vm.stopPrank();
+        {
+            // swap deposit queue
+            vm.startPrank(owner);
+            uint256[] memory queue = new uint256[](2);
+            queue[0] = 1;
+            queue[1] = 0;
+            yelayLiteVault.updateDepositQueue(queue);
+            yelayLiteVault.updateWithdrawQueue(queue);
+            vm.stopPrank();
+        }
 
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(0), toDeposit, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(1), toDeposit, 2);
+        // deposit second time in another strategy
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
 
-//         {
-//             vm.startPrank(owner);
-//             FundsFacet.StrategyArgs memory strategyArgs = FundsFacet.StrategyArgs({index: 0, amount: toDeposit / 2});
-//             FundsFacet(yelayLiteVault).managedWithdraw(strategyArgs);
-//             vm.stopPrank();
-//         }
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), toDeposit, 2);
 
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), toDeposit / 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).totalAssets(), toDeposit * 2, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(0), toDeposit / 2, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(1), toDeposit, 2);
+        {
+            vm.startPrank(owner);
+            StrategyArgs memory strategyArgs = StrategyArgs({index: 0, amount: toDeposit / 2});
+            yelayLiteVault.managedWithdraw(strategyArgs);
+            vm.stopPrank();
+        }
 
-//         {
-//             vm.startPrank(owner);
-//             FundsFacet.StrategyArgs memory strategyArgs = FundsFacet.StrategyArgs({index: 1, amount: toDeposit / 4});
-//             FundsFacet(yelayLiteVault).managedWithdraw(strategyArgs);
-//             vm.stopPrank();
-//         }
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), toDeposit / 2);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), toDeposit * 2, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit / 2, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), toDeposit, 2);
 
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), 3 * toDeposit / 4);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).totalAssets(), 2 * toDeposit, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(0), toDeposit / 2, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(1), 3 * toDeposit / 4, 2);
-//     }
+        {
+            vm.startPrank(owner);
+            StrategyArgs memory strategyArgs = StrategyArgs({index: 1, amount: toDeposit / 4});
+            yelayLiteVault.managedWithdraw(strategyArgs);
+            vm.stopPrank();
+        }
 
-//     function test_reallocation() external {
-//         _setupStrategy();
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), 3 * toDeposit / 4);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), 2 * toDeposit, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit / 2, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), 3 * toDeposit / 4, 2);
+    }
 
-//         uint256 userBalance = 10_000e18;
-//         uint256 toDeposit = 1000e18;
-//         deal(address(underlyingAsset), user, userBalance);
+    function test_reallocation() external {
+        _setupStrategy();
 
-//         vm.startPrank(user);
-//         FundsFacet(yelayLiteVault).deposit(toDeposit, projectId, user);
-//         vm.stopPrank();
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
 
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), 0);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).totalAssets(), toDeposit, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(0), toDeposit, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(1), 0, 2);
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
 
-//         {
-//             vm.startPrank(owner);
-//             FundsFacet.StrategyArgs[] memory withdrawals = new FundsFacet.StrategyArgs[](1);
-//             FundsFacet.StrategyArgs[] memory deposits = new FundsFacet.StrategyArgs[](1);
-//             withdrawals[0] = FundsFacet.StrategyArgs({index: 0, amount: toDeposit / 2});
-//             deposits[0] = FundsFacet.StrategyArgs({index: 1, amount: toDeposit / 2});
-//             FundsFacet(yelayLiteVault).reallocate(withdrawals, deposits);
-//             vm.stopPrank();
-//         }
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), 0);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), toDeposit, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), 0, 2);
 
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), 0);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).totalAssets(), toDeposit, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(0), toDeposit / 2, 2);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).strategyAssets(1), toDeposit / 2, 2);
-//     }
-// }
+        {
+            vm.startPrank(owner);
+            StrategyArgs[] memory withdrawals = new StrategyArgs[](1);
+            StrategyArgs[] memory deposits = new StrategyArgs[](1);
+            withdrawals[0] = StrategyArgs({index: 0, amount: toDeposit / 2});
+            deposits[0] = StrategyArgs({index: 1, amount: toDeposit / 2});
+            yelayLiteVault.reallocate(withdrawals, deposits);
+            vm.stopPrank();
+        }
+
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), 0);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), toDeposit, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit / 2, 2);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), toDeposit / 2, 2);
+    }
+}

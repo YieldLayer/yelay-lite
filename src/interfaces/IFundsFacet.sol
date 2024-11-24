@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-interface IFundsFacet {
-    struct StrategyArgs {
-        uint256 index;
-        uint256 amount;
-    }
+struct StrategyArgs {
+    uint256 index;
+    uint256 amount;
+}
 
+interface IFundsFacet {
     function accrueFee() external;
     function deposit(uint256 assets, uint256 projectId, address receiver) external returns (uint256 shares);
     function lastTotalAssets() external view returns (uint256);

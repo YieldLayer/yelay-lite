@@ -9,15 +9,17 @@ import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
 
 import {TokenFacet} from "src/facets/TokenFacet.sol";
 import {SelfOnly} from "src/abstract/SelfOnly.sol";
+import {RoleCheck} from "src/abstract/RoleCheck.sol";
 import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
+import {LibRoles} from "src/libraries/LibRoles.sol";
 
-import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
+import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 
 import {console} from "forge-std/console.sol";
 
-contract FundsFacet is SelfOnly, IFundsFacet {
+contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
@@ -60,8 +62,7 @@ contract FundsFacet is SelfOnly, IFundsFacet {
         _updateLastTotalAssets(sF, newTotalAssets + assets);
     }
 
-    // TODO: add access control
-    function managedDeposit(StrategyArgs calldata strategyArgs) public {
+    function managedDeposit(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         _managedDeposit(sM, sF, strategyArgs);
@@ -80,8 +81,7 @@ contract FundsFacet is SelfOnly, IFundsFacet {
         sF.underlyingBalance -= strategyArgs.amount;
     }
 
-    // TODO: add access control
-    function managedWithdraw(StrategyArgs calldata strategyArgs) public {
+    function managedWithdraw(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         _managedWithdraw(sM, sF, strategyArgs);
@@ -100,8 +100,10 @@ contract FundsFacet is SelfOnly, IFundsFacet {
         sF.underlyingBalance += strategyArgs.amount;
     }
 
-    // TODO: add access control
-    function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits) external {
+    function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits)
+        external
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+    {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         for (uint256 i; i < withdrawals.length; i++) {
@@ -112,9 +114,8 @@ contract FundsFacet is SelfOnly, IFundsFacet {
         }
     }
 
-    // TODO: add access control?
     // TODO: add test
-    function accrueFee() external {
+    function accrueFee() external onlyRole(LibRoles.FUNDS_OPERATOR) {
         _accrueFee();
     }
 

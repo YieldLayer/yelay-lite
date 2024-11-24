@@ -1,175 +1,162 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.28;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
 
-// import {Test, console} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 
-// import {DiamondCutFacet, IDiamondCut} from "@diamond/facets/DiamondCutFacet.sol";
+import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 
-// import {YelayLiteVault} from "src/YelayLiteVault.sol";
-// import {LibManagement} from "src/libraries/LibManagement.sol";
-// import {TokenFacet, ERC1155Upgradeable} from "src/facets/TokenFacet.sol";
-// import {FundsFacet, ERC20} from "src/facets/FundsFacet.sol";
-// import {ManagementFacet} from "src/facets/ManagementFacet.sol";
-// import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
+import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 
-// import {Utils} from "../Utils.sol";
-// import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER} from "../Constants.sol";
+import {LibRoles} from "src/libraries/LibRoles.sol";
 
-// abstract contract AbstractStrategyTest is Test {
-//     using Utils for address;
+import {Utils} from "../Utils.sol";
+import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER} from "../Constants.sol";
 
-//     address owner = address(0x01);
-//     address user = address(0x02);
-//     address user2 = address(0x03);
-//     address yieldExtractor = address(0x04);
+abstract contract AbstractStrategyTest is Test {
+    using Utils for address;
 
-//     address yelayLiteVault;
-//     DiamondCutFacet diamondCutFacet;
-//     TokenFacet tokenFacet;
-//     FundsFacet fundsFacet;
-//     ManagementFacet managementFacet;
+    address constant owner = address(0x01);
+    address constant user = address(0x02);
+    address constant user2 = address(0x03);
+    address constant yieldExtractor = address(0x04);
+    uint256 constant yieldProjectId = 0;
+    uint256 constant projectId = 1;
 
-//     ERC20 underlyingAsset = ERC20(DAI_ADDRESS);
-//     YelayLiteVaultInit init;
+    IYelayLiteVault yelayLiteVault;
 
-//     address strategyAdapter;
-//     address strategyShare;
-//     uint256 yieldProjectId = 0;
-//     uint256 projectId = 1;
+    IERC20 underlyingAsset = IERC20(DAI_ADDRESS);
 
-//     // Override this to test particular strategy
-//     function _setupStrategy() internal virtual {}
+    address strategyAdapter;
+    address strategyShare;
 
-//     function setUp() external {
-//         vm.createSelectFork(vm.envString("MAINNET_URL"), MAINNET_BLOCK_NUMBER);
+    // Override this to test particular strategy
+    function _setupStrategy() internal virtual {}
 
-//         vm.startPrank(owner);
-//         diamondCutFacet = new DiamondCutFacet();
-//         yelayLiteVault = address(new YelayLiteVault(owner, address(diamondCutFacet)));
-//         tokenFacet = new TokenFacet();
-//         fundsFacet = new FundsFacet();
-//         managementFacet = new ManagementFacet();
-//         init = new YelayLiteVaultInit();
+    function setUp() external {
+        vm.createSelectFork(vm.envString("MAINNET_URL"), MAINNET_BLOCK_NUMBER);
 
-//         yelayLiteVault.addTokenFacet(init, tokenFacet, "https://yelay-lite-vault/{id}.json");
-//         yelayLiteVault.addFundsFacet(init, fundsFacet, address(underlyingAsset), yieldExtractor);
-//         yelayLiteVault.addManagementFacet(managementFacet);
-//         vm.stopPrank();
+        vm.startPrank(owner);
+        yelayLiteVault =
+            Utils.deployDiamond(owner, address(underlyingAsset), yieldExtractor, "https://yelay-lite-vault/{id}.json");
+        yelayLiteVault.grantRole(LibRoles.QUEUES_OPERATOR, owner);
+        yelayLiteVault.grantRole(LibRoles.STRATEGY_AUTHORITY, owner);
+        yelayLiteVault.grantRole(LibRoles.STRATEGY_OPERATOR, owner);
+        vm.stopPrank();
 
-//         vm.startPrank(user);
-//         underlyingAsset.approve(yelayLiteVault, type(uint256).max);
-//         vm.stopPrank();
-//         vm.startPrank(user2);
-//         underlyingAsset.approve(yelayLiteVault, type(uint256).max);
-//         vm.stopPrank();
+        vm.startPrank(user);
+        underlyingAsset.approve(address(yelayLiteVault), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(user2);
+        underlyingAsset.approve(address(yelayLiteVault), type(uint256).max);
+        vm.stopPrank();
 
-//         _setupStrategy();
-//     }
+        _setupStrategy();
+    }
 
-//     function test_deposit_with_strategy() external {
-//         uint256 userBalance = 10_000e18;
-//         uint256 toDeposit = 1000e18;
-//         deal(address(underlyingAsset), user, userBalance);
+    function test_deposit_with_strategy() external {
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
 
-//         assertEq(underlyingAsset.balanceOf(user), userBalance);
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), 0);
-//         assertEq(FundsFacet(yelayLiteVault).totalAssets(), 0);
-//         assertEq(TokenFacet(yelayLiteVault).totalSupply(), 0);
-//         assertEq(TokenFacet(yelayLiteVault).balanceOf(user, projectId), 0);
+        assertEq(underlyingAsset.balanceOf(user), userBalance);
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), 0);
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertEq(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.balanceOf(user, projectId), 0);
 
-//         vm.startPrank(user);
-//         FundsFacet(yelayLiteVault).deposit(toDeposit, projectId, user);
-//         vm.stopPrank();
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
 
-//         assertEq(underlyingAsset.balanceOf(user), userBalance - toDeposit);
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), 0);
-//         assertApproxEqAbs(FundsFacet(yelayLiteVault).totalAssets(), toDeposit, 1);
-//         assertEq(TokenFacet(yelayLiteVault).totalSupply(), toDeposit);
-//         assertEq(TokenFacet(yelayLiteVault).balanceOf(user, projectId), toDeposit);
-//         // TODO: in case of Gearbox staking token there is descrepancy
-//         // assertApproxEqAbs(ERC20(strategyShare).balanceOf(yelayLiteVault), toDeposit, 1);
-//     }
+        assertEq(underlyingAsset.balanceOf(user), userBalance - toDeposit);
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), 0);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), toDeposit, 1);
+        assertEq(yelayLiteVault.totalSupply(), toDeposit);
+        assertEq(yelayLiteVault.balanceOf(user, projectId), toDeposit);
+        // TODO: in case of Gearbox staking token there is descrepancy
+        // assertApproxEqAbs(ERC20(strategyShare).balanceOf(address(yelayLiteVault)), toDeposit, 1);
+    }
 
-//     function test_withdraw_with_strategy() external {
-//         uint256 userBalance = 10_000e18;
-//         uint256 toDeposit = 1000e18;
-//         deal(address(underlyingAsset), user, userBalance);
+    function test_withdraw_with_strategy() external {
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
 
-//         vm.startPrank(user);
-//         FundsFacet(yelayLiteVault).deposit(toDeposit, projectId, user);
-//         FundsFacet(yelayLiteVault).redeem(toDeposit, projectId, user);
-//         vm.stopPrank();
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        yelayLiteVault.redeem(toDeposit, projectId, user);
+        vm.stopPrank();
 
-//         assertApproxEqAbs(underlyingAsset.balanceOf(user), userBalance, 1);
-//         assertEq(underlyingAsset.balanceOf(yelayLiteVault), 0);
-//         assertEq(TokenFacet(yelayLiteVault).totalSupply(), 0);
-//         assertEq(TokenFacet(yelayLiteVault).balanceOf(user, projectId), 0);
-//     }
+        assertApproxEqAbs(underlyingAsset.balanceOf(user), userBalance, 1);
+        assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), 0);
+        assertEq(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.balanceOf(user, projectId), 0);
+    }
 
-//     function test_yield_extraction() external {
-//         uint256 toDeposit = 1_000e18;
-//         uint256 yieldExtractorShareBalance;
+    function test_yield_extraction() external {
+        uint256 toDeposit = 1_000e18;
+        uint256 yieldExtractorShareBalance;
 
-//         for (uint256 i = 1; i < 20; i++) {
-//             address user3 = address(bytes20(bytes32(111111111111111111111111111111111111111111 * i)));
-//             deal(address(underlyingAsset), user3, toDeposit);
-//             vm.startPrank(user3);
-//             underlyingAsset.approve(yelayLiteVault, type(uint256).max);
-//             FundsFacet(yelayLiteVault).deposit(toDeposit, i, user3);
-//             vm.stopPrank();
-//             assertEq(underlyingAsset.balanceOf(user3), 0);
-//             if (i + 1 < 20) {
-//                 vm.warp(block.timestamp + 1 weeks);
-//             }
-//             uint256 newYieldExtractorShareBalance = TokenFacet(yelayLiteVault).balanceOf(yieldExtractor, yieldProjectId);
-//             if (newYieldExtractorShareBalance > 0) {
-//                 assertGt(newYieldExtractorShareBalance, yieldExtractorShareBalance);
-//             }
-//             yieldExtractorShareBalance = newYieldExtractorShareBalance;
-//         }
+        for (uint256 i = 1; i < 20; i++) {
+            address user3 = address(bytes20(bytes32(111111111111111111111111111111111111111111 * i)));
+            deal(address(underlyingAsset), user3, toDeposit);
+            vm.startPrank(user3);
+            underlyingAsset.approve(address(yelayLiteVault), type(uint256).max);
+            yelayLiteVault.deposit(toDeposit, i, user3);
+            vm.stopPrank();
+            assertEq(underlyingAsset.balanceOf(user3), 0);
+            if (i + 1 < 20) {
+                vm.warp(block.timestamp + 1 weeks);
+            }
+            uint256 newYieldExtractorShareBalance = yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId);
+            if (newYieldExtractorShareBalance > 0) {
+                assertGt(newYieldExtractorShareBalance, yieldExtractorShareBalance);
+            }
+            yieldExtractorShareBalance = newYieldExtractorShareBalance;
+        }
 
-//         assertEq(underlyingAsset.balanceOf(yieldExtractor), 0);
+        assertEq(underlyingAsset.balanceOf(yieldExtractor), 0);
 
-//         vm.startPrank(yieldExtractor);
-//         FundsFacet(yelayLiteVault).redeem(yieldExtractorShareBalance, yieldProjectId, yieldExtractor);
-//         vm.stopPrank();
+        vm.startPrank(yieldExtractor);
+        yelayLiteVault.redeem(yieldExtractorShareBalance, yieldProjectId, yieldExtractor);
+        vm.stopPrank();
 
-//         assertGt(underlyingAsset.balanceOf(yieldExtractor), 0);
-//         assertApproxEqAbs(underlyingAsset.balanceOf(yieldExtractor), yieldExtractorShareBalance, 1);
+        assertGt(underlyingAsset.balanceOf(yieldExtractor), 0);
+        assertApproxEqAbs(underlyingAsset.balanceOf(yieldExtractor), yieldExtractorShareBalance, 1);
 
-//         assertApproxEqAbs(TokenFacet(yelayLiteVault).totalSupply(), FundsFacet(yelayLiteVault).totalAssets(), 1);
+        assertApproxEqAbs(yelayLiteVault.totalSupply(), yelayLiteVault.totalAssets(), 1);
 
-//         assertEq(TokenFacet(yelayLiteVault).balanceOf(yieldExtractor, yieldProjectId), 0);
+        assertEq(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0);
 
-//         for (uint256 i = 1; i < 20; i++) {
-//             address user3 = address(bytes20(bytes32(111111111111111111111111111111111111111111 * i)));
-//             vm.startPrank(user3);
-//             FundsFacet(yelayLiteVault).redeem(TokenFacet(yelayLiteVault).balanceOf(user3, i), i, user3);
-//             vm.stopPrank();
-//             assertApproxEqAbs(underlyingAsset.balanceOf(user3), toDeposit, 1);
-//             if (i + 1 < 20) {
-//                 vm.warp(block.timestamp + 1 weeks);
-//             }
-//         }
+        for (uint256 i = 1; i < 20; i++) {
+            address user3 = address(bytes20(bytes32(111111111111111111111111111111111111111111 * i)));
+            vm.startPrank(user3);
+            yelayLiteVault.redeem(yelayLiteVault.balanceOf(user3, i), i, user3);
+            vm.stopPrank();
+            assertApproxEqAbs(underlyingAsset.balanceOf(user3), toDeposit, 1);
+            if (i + 1 < 20) {
+                vm.warp(block.timestamp + 1 weeks);
+            }
+        }
 
-//         assertGt(TokenFacet(yelayLiteVault).totalSupply(), 0);
-//         assertGt(FundsFacet(yelayLiteVault).totalAssets(), 0);
-//         assertGt(TokenFacet(yelayLiteVault).balanceOf(yieldExtractor, yieldProjectId), 0);
+        assertGt(yelayLiteVault.totalSupply(), 0);
+        assertGt(yelayLiteVault.totalAssets(), 0);
+        assertGt(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0);
 
-//         {
-//             uint256 sharesBefore = TokenFacet(yelayLiteVault).balanceOf(yieldExtractor, yieldProjectId);
-//             uint256 assetsBefore = underlyingAsset.balanceOf(yieldExtractor);
-//             vm.startPrank(yieldExtractor);
-//             FundsFacet(yelayLiteVault).redeem(sharesBefore, yieldProjectId, yieldExtractor);
-//             vm.stopPrank();
+        {
+            uint256 sharesBefore = yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId);
+            uint256 assetsBefore = underlyingAsset.balanceOf(yieldExtractor);
+            vm.startPrank(yieldExtractor);
+            yelayLiteVault.redeem(sharesBefore, yieldProjectId, yieldExtractor);
+            vm.stopPrank();
 
-//             uint256 assetsAfter = underlyingAsset.balanceOf(yieldExtractor);
+            uint256 assetsAfter = underlyingAsset.balanceOf(yieldExtractor);
 
-//             assertApproxEqAbs(assetsAfter - assetsBefore, sharesBefore, 10);
-//         }
+            assertApproxEqAbs(assetsAfter - assetsBefore, sharesBefore, 10);
+        }
 
-//         assertEq(TokenFacet(yelayLiteVault).totalSupply(), 0);
-//         assertEq(FundsFacet(yelayLiteVault).totalAssets(), 0);
-//         assertEq(TokenFacet(yelayLiteVault).balanceOf(yieldExtractor, yieldProjectId), 0);
-//     }
-// }
+        assertEq(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertEq(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0);
+    }
+}

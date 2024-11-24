@@ -13,7 +13,6 @@ import {IManagementFacet, StrategyData} from "src/interfaces/IManagementFacet.so
 
 import {console} from "forge-std/console.sol";
 
-// TODO: add access control
 contract ManagementFacet is RoleCheck, IManagementFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
