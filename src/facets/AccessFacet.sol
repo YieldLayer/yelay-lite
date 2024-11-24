@@ -6,7 +6,9 @@ import {AccessControlEnumerableUpgradeable} from
 import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
 import {LibDiamond} from "@diamond/libraries/LibDiamond.sol";
 
-contract AccessFacet is AccessControlEnumerableUpgradeable {
+import {IAccessFacet} from "src/interfaces/IAccessFacet.sol";
+
+contract AccessFacet is AccessControlEnumerableUpgradeable, IAccessFacet {
     modifier onlyOwner() {
         LibDiamond.enforceIsContractOwner();
         _;
@@ -34,5 +36,9 @@ contract AccessFacet is AccessControlEnumerableUpgradeable {
 
     function checkRole(bytes32 role) external view {
         _checkRole(role);
+    }
+
+    function owner() external view returns (address) {
+        return LibDiamond.contractOwner();
     }
 }

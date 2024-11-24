@@ -13,9 +13,11 @@ import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 
+import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
+
 import {console} from "forge-std/console.sol";
 
-contract FundsFacet is SelfOnly {
+contract FundsFacet is SelfOnly, IFundsFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
@@ -30,11 +32,6 @@ contract FundsFacet is SelfOnly {
     // error StrategyExists();
     // error OnlyView();
     // error CompoundFailure();
-
-    struct StrategyArgs {
-        uint256 index;
-        uint256 amount;
-    }
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
         (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
@@ -133,7 +130,9 @@ contract FundsFacet is SelfOnly {
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
             if (_assets == 0) break;
             // TODO: create smarter method to get precise amount able to be withdrawn
-            uint256 assetBalance = _strategyAssets(sM.strategies[sM.withdrawQueue[i]]);
+            uint256 assetBalance = IStrategyBase(sM.strategies[sM.withdrawQueue[i]].adapter).assetBalance(
+                address(this), sM.strategies[sM.withdrawQueue[i]].supplement
+            );
             if (assetBalance == 0) continue;
             uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
             (bool success,) = sM.strategies[sM.withdrawQueue[i]].adapter.delegatecall(
@@ -160,17 +159,13 @@ contract FundsFacet is SelfOnly {
 
         assets = sF.underlyingBalance;
         for (uint256 i; i < sM.strategies.length; ++i) {
-            assets += _strategyAssets(sM.strategies[i]);
+            assets += IStrategyBase(sM.strategies[i].adapter).assetBalance(address(this), sM.strategies[i].supplement);
         }
     }
 
     function strategyAssets(uint256 index) external view returns (uint256) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        return _strategyAssets(sM.strategies[index]);
-    }
-
-    function _strategyAssets(LibManagement.StrategyData memory strategy) internal view returns (uint256) {
-        return IStrategyBase(strategy.adapter).assetBalance(address(this), strategy.supplement);
+        return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);
     }
 
     function _accrueFee() internal returns (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) {
@@ -213,5 +208,25 @@ contract FundsFacet is SelfOnly {
         returns (uint256)
     {
         return shares.mulDiv(newTotalAssets, newTotalSupply);
+    }
+
+    function lastTotalAssets() external view returns (uint256) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return sF.lastTotalAssets;
+    }
+
+    function underlyingBalance() external view returns (uint256) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return sF.underlyingBalance;
+    }
+
+    function underlyingAsset() external view returns (address) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return address(sF.underlyingAsset);
+    }
+
+    function yieldExtractor() external view returns (address) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return sF.yieldExtractor;
     }
 }

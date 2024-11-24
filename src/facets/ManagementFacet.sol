@@ -9,15 +9,16 @@ import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
+import {IManagementFacet, StrategyData} from "src/interfaces/IManagementFacet.sol";
 
 import {console} from "forge-std/console.sol";
 
 // TODO: add access control
-contract ManagementFacet is RoleCheck {
+contract ManagementFacet is RoleCheck, IManagementFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
 
-    function getStrategies() external view returns (LibManagement.StrategyData[] memory) {
+    function getStrategies() external view returns (StrategyData[] memory) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         return sM.strategies;
     }
@@ -42,7 +43,7 @@ contract ManagementFacet is RoleCheck {
         sM.withdrawQueue = withdrawQueue_;
     }
 
-    function addStrategy(LibManagement.StrategyData calldata strategy) external onlyRole(LibRoles.STRATEGY_AUTHORITY) {
+    function addStrategy(StrategyData calldata strategy) external onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.strategies.push(strategy);
         _approveStrategy(strategy, type(uint256).max);
@@ -59,7 +60,7 @@ contract ManagementFacet is RoleCheck {
         sM.strategies.pop();
     }
 
-    function _approveStrategy(LibManagement.StrategyData memory strategy, uint256 amount) internal {
+    function _approveStrategy(StrategyData memory strategy, uint256 amount) internal {
         LibFunds.FundsStorage memory sF = LibFunds._getFundsStorage();
         address protocol = IStrategyBase(strategy.adapter).protocol();
         sF.underlyingAsset.approve(protocol, amount);

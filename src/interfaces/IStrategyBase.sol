@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-interface IStrategyBase {
-    struct Reward {
-        address token;
-        uint256 amount;
-    }
+struct Reward {
+    address token;
+    uint256 amount;
+}
 
+interface IStrategyBase {
     function protocol() external returns (address);
     function deposit(uint256 amount, bytes calldata supplement) external;
     function withdraw(uint256 amount, bytes calldata supplement) external;
