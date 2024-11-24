@@ -12,12 +12,12 @@ import {LibToken} from "src/libraries/LibToken.sol";
 
 contract YelayLiteVaultInit {
     function init(address underlyingAsset, address yieldExtractor, string memory uri) public {
-        initDiamond();
-        initFunds(underlyingAsset, yieldExtractor);
-        initToken(uri);
+        _initDiamond();
+        _initFunds(underlyingAsset, yieldExtractor);
+        _initToken(uri);
     }
 
-    function initDiamond() public {
+    function _initDiamond() internal {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
@@ -25,13 +25,13 @@ contract YelayLiteVaultInit {
         ds.supportedInterfaces[type(IERC173).interfaceId] = true;
     }
 
-    function initFunds(address underlyingAsset, address yieldExtractor) public {
+    function _initFunds(address underlyingAsset, address yieldExtractor) internal {
         LibFunds.FundsStorage storage s = LibFunds._getFundsStorage();
         s.underlyingAsset = ERC20(underlyingAsset);
         s.yieldExtractor = yieldExtractor;
     }
 
-    function initToken(string memory uri) public {
+    function _initToken(string memory uri) internal {
         LibToken.ERC1155Storage storage s = LibToken._getERC1155Storage();
         s._uri = uri;
     }

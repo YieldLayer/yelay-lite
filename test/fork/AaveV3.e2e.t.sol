@@ -12,10 +12,13 @@ import {AAVE_V3_POOL} from "../Constants.sol";
 contract AaveV3Test is AbstractStrategyTest {
     function _setupStrategy() internal override {
         vm.startPrank(owner);
-        strategyShare = IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress;
         strategyAdapter = address(new AaveV3Strategy(AAVE_V3_POOL));
-        StrategyData memory strategy =
-            StrategyData({adapter: strategyAdapter, supplement: abi.encode(address(underlyingAsset), strategyShare)});
+        StrategyData memory strategy = StrategyData({
+            adapter: strategyAdapter,
+            supplement: abi.encode(
+                address(underlyingAsset), IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress
+            )
+        });
         yelayLiteVault.addStrategy(strategy);
         uint256[] memory queue = new uint256[](1);
         queue[0] = 0;

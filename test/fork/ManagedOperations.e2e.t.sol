@@ -18,7 +18,7 @@ import {AaveV3Strategy} from "src/strategies/AaveV3Strategy.sol";
 import {IPool} from "@aave-v3-core/interfaces/IPool.sol";
 import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER, MORPHO_BLUE, MORPHO_BLUE_DAI_ID, AAVE_V3_POOL} from "../Constants.sol";
 
-contract ReallocationTest is Test {
+contract ManagedOperationsTest is Test {
     using Utils for address;
 
     address constant owner = address(0x01);
@@ -203,5 +203,27 @@ contract ReallocationTest is Test {
         assertApproxEqAbs(yelayLiteVault.totalAssets(), toDeposit, 2);
         assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit / 2, 2);
         assertApproxEqAbs(yelayLiteVault.strategyAssets(1), toDeposit / 2, 2);
+    }
+
+    function test_accrue_fee() external {
+        _setupStrategy();
+
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1 weeks);
+
+        assertEq(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0);
+
+        vm.startPrank(owner);
+        yelayLiteVault.accrueFee();
+        vm.stopPrank();
+
+        assertGt(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0);
     }
 }

@@ -27,7 +27,6 @@ abstract contract AbstractStrategyTest is Test {
     IERC20 underlyingAsset = IERC20(DAI_ADDRESS);
 
     address strategyAdapter;
-    address strategyShare;
 
     // Override this to test particular strategy
     function _setupStrategy() internal virtual {}
@@ -73,8 +72,7 @@ abstract contract AbstractStrategyTest is Test {
         assertApproxEqAbs(yelayLiteVault.totalAssets(), toDeposit, 1);
         assertEq(yelayLiteVault.totalSupply(), toDeposit);
         assertEq(yelayLiteVault.balanceOf(user, projectId), toDeposit);
-        // TODO: in case of Gearbox staking token there is descrepancy
-        // assertApproxEqAbs(ERC20(strategyShare).balanceOf(address(yelayLiteVault)), toDeposit, 1);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit, 1);
     }
 
     function test_withdraw_with_strategy() external {

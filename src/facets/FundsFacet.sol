@@ -102,7 +102,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         uint256 _assets = assets;
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
             if (_assets == 0) break;
-            // TODO: create smarter method to get precise amount able to be withdrawn
+            // TODO: create smarter method to get precise amount able to be withdrawn?
             uint256 assetBalance = IStrategyBase(sM.strategies[sM.withdrawQueue[i]].adapter).assetBalance(
                 address(this), sM.strategies[sM.withdrawQueue[i]].supplement
             );
@@ -153,8 +153,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         }
     }
 
-    // TODO: add test
-    function accrueFee() external onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function accrueFee() external allowSelf onlyRole(LibRoles.FUNDS_OPERATOR) {
         _accrueFee();
     }
 
@@ -202,7 +201,6 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
 
     function _updateLastTotalAssets(LibFunds.FundsStorage storage sF, uint256 updatedTotalAssets) internal {
         sF.lastTotalAssets = updatedTotalAssets;
-        // TODO: add event
         emit LibEvents.UpdateLastTotalAssets(updatedTotalAssets);
     }
 

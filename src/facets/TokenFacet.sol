@@ -8,7 +8,6 @@ import {LibToken} from "src/libraries/LibToken.sol";
 
 import {ITokenFacet} from "src/interfaces/ITokenFacet.sol";
 
-// TODO: decimals always 18?
 contract TokenFacet is ERC1155Upgradeable, SelfOnly, ITokenFacet {
     function mint(address to, uint256 id, uint256 value) external onlySelf {
         _mint(to, id, value, "");

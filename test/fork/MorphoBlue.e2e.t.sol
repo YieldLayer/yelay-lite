@@ -11,7 +11,6 @@ import {MORPHO_BLUE, MORPHO_BLUE_DAI_ID} from "../Constants.sol";
 contract MorphoBlueTest is AbstractStrategyTest {
     function _setupStrategy() internal override {
         vm.startPrank(owner);
-        strategyShare = MORPHO_BLUE;
         strategyAdapter = address(new MorphoBlueStrategy(MORPHO_BLUE));
         StrategyData memory strategy = StrategyData({
             adapter: strategyAdapter,

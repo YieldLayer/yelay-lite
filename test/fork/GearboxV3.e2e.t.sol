@@ -11,10 +11,9 @@ import {GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING, GEARBOX_TOKEN} from "../Constants
 contract GearboxV3Test is AbstractStrategyTest {
     function _setupStrategy() internal override {
         vm.startPrank(owner);
-        strategyShare = GEARBOX_DAI_STAKING;
         strategyAdapter = address(new GearboxV3Strategy(GEARBOX_DAI_POOL));
         StrategyData memory strategy =
-            StrategyData({adapter: strategyAdapter, supplement: abi.encode(strategyShare, GEARBOX_TOKEN)});
+            StrategyData({adapter: strategyAdapter, supplement: abi.encode(GEARBOX_DAI_STAKING, GEARBOX_TOKEN)});
         yelayLiteVault.addStrategy(strategy);
         uint256[] memory queue = new uint256[](1);
         queue[0] = 0;

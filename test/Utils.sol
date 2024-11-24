@@ -63,7 +63,7 @@ library Utils {
     }
 
     function _fundsFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory functionSelectors = new bytes4[](11);
+        bytes4[] memory functionSelectors = new bytes4[](12);
         functionSelectors[0] = FundsFacet.deposit.selector;
         functionSelectors[1] = FundsFacet.redeem.selector;
         functionSelectors[2] = FundsFacet.totalAssets.selector;
@@ -75,6 +75,7 @@ library Utils {
         functionSelectors[8] = FundsFacet.underlyingBalance.selector;
         functionSelectors[9] = FundsFacet.underlyingAsset.selector;
         functionSelectors[10] = FundsFacet.yieldExtractor.selector;
+        functionSelectors[11] = FundsFacet.accrueFee.selector;
         return functionSelectors;
     }
 
