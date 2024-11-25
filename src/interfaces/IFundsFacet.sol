@@ -26,4 +26,5 @@ interface IFundsFacet {
     function claimStrategyRewards(uint256 index) external;
     function swapper() external view returns (address);
     function compound(SwapArgs[] memory swapArgs) external returns (uint256 compounded);
+    function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external;
 }

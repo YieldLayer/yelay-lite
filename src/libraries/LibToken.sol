@@ -39,6 +39,12 @@ library LibToken {
         address(this).functionDelegateCall(abi.encodeWithSelector(TokenFacet.burn.selector, from, id, value));
     }
 
+    function migrate(address account, uint256 fromId, uint256 toId, uint256 value) internal {
+        address(this).functionDelegateCall(
+            abi.encodeWithSelector(TokenFacet.migrate.selector, account, fromId, toId, value)
+        );
+    }
+
     /// @custom:storage-location erc7201:openzeppelin.storage.ERC1155
     struct ERC1155Storage {
         mapping(uint256 id => mapping(address account => uint256)) _balances;

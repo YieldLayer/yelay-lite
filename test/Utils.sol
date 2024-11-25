@@ -60,7 +60,7 @@ library Utils {
     }
 
     function _tokenFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory functionSelectors = new bytes4[](7);
+        bytes4[] memory functionSelectors = new bytes4[](8);
         functionSelectors[0] = ERC1155Upgradeable.uri.selector;
         functionSelectors[1] = ERC1155Upgradeable.balanceOf.selector;
         functionSelectors[2] = ERC1155Upgradeable.safeTransferFrom.selector;
@@ -68,11 +68,12 @@ library Utils {
         functionSelectors[4] = TokenFacet.mint.selector;
         functionSelectors[5] = TokenFacet.burn.selector;
         functionSelectors[6] = TokenFacet.totalSupply.selector;
+        functionSelectors[7] = TokenFacet.migrate.selector;
         return functionSelectors;
     }
 
     function _fundsFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory functionSelectors = new bytes4[](16);
+        bytes4[] memory functionSelectors = new bytes4[](17);
         functionSelectors[0] = FundsFacet.deposit.selector;
         functionSelectors[1] = FundsFacet.redeem.selector;
         functionSelectors[2] = FundsFacet.totalAssets.selector;
@@ -89,6 +90,7 @@ library Utils {
         functionSelectors[13] = FundsFacet.claimStrategyRewards.selector;
         functionSelectors[14] = FundsFacet.swapper.selector;
         functionSelectors[15] = FundsFacet.compound.selector;
+        functionSelectors[16] = FundsFacet.migratePosition.selector;
         return functionSelectors;
     }
 

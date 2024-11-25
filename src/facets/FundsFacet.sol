@@ -143,6 +143,12 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }
 
+    function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external allowSelf {
+        _accrueFee();
+        LibToken.migrate(msg.sender, fromProjectId, toProjectId, amount);
+        emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
+    }
+
     function managedDeposit(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();

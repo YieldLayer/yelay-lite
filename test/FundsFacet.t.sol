@@ -74,4 +74,20 @@ contract FundsFacetTest is Test {
         assertEq(yelayLiteVault.totalSupply(), 0);
         assertEq(yelayLiteVault.balanceOf(user, projectId), 0);
     }
+
+    function test_migrate_position() external {
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
+
+        uint256 newProjectId = 2;
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        yelayLiteVault.migratePosition(projectId, newProjectId, toDeposit / 4);
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.balanceOf(user, projectId), 3 * toDeposit / 4);
+        assertEq(yelayLiteVault.balanceOf(user, newProjectId), toDeposit / 4);
+    }
 }

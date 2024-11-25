@@ -17,6 +17,11 @@ contract TokenFacet is ERC1155Upgradeable, SelfOnly, ITokenFacet {
         _burn(from, id, value);
     }
 
+    function migrate(address account, uint256 fromId, uint256 toId, uint256 value) external onlySelf {
+        _burn(account, fromId, value);
+        _mint(account, toId, value, "");
+    }
+
     function totalSupply() external view returns (uint256) {
         return LibToken.totalSupply();
     }
