@@ -16,7 +16,7 @@ interface IFundsFacet {
     function managedDeposit(StrategyArgs memory strategyArgs) external;
     function managedWithdraw(StrategyArgs memory strategyArgs) external;
     function reallocate(StrategyArgs[] memory withdrawals, StrategyArgs[] memory deposits) external;
-    function redeem(uint256 shares, uint256 projectId, address receiver) external;
+    function redeem(uint256 shares, uint256 projectId, address receiver) external returns (uint256 assets);
     function strategyAssets(uint256 index) external view returns (uint256);
     function totalAssets() external view returns (uint256 assets);
     function underlyingAsset() external view returns (address);

@@ -13,6 +13,7 @@ import {SelfOnly} from "src/abstract/SelfOnly.sol";
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
 
 import {LibFunds} from "src/libraries/LibFunds.sol";
+import {LibProjects} from "src/libraries/LibProjects.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
@@ -27,6 +28,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
 
     uint256 constant YIELD_PROJECT_ID = 0;
 
+    error ProjectInactive();
     error NotEnoughAssets();
     error NotEnoughLiquidity();
     error OnlyView();
@@ -82,6 +84,8 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     }
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
+        require(LibProjects.isProjectActive(projectId), ProjectInactive());
+
         (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
@@ -105,14 +109,16 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
 
+        LibProjects.onDeposit(projectId, msg.sender, receiver, assets, shares);
+
         emit LibEvents.Deposit(projectId, msg.sender, receiver, assets, shares);
     }
 
-    function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf {
+    function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf returns (uint256 assets) {
         (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
-        uint256 assets = _convertToAssetsWithTotals(shares, LibToken.totalSupply(), newTotalAssets);
+        assets = _convertToAssetsWithTotals(shares, LibToken.totalSupply(), newTotalAssets);
 
         _updateLastTotalAssets(sF, newTotalAssets.zeroFloorSub(assets));
 
@@ -139,6 +145,8 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         }
         sF.underlyingAsset.safeTransfer(receiver, assets);
         LibToken.burn(msg.sender, projectId, shares);
+
+        LibProjects.onRedeem(projectId, msg.sender, receiver, assets, shares);
 
         emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }

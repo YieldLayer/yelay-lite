@@ -11,6 +11,7 @@ import {Swapper} from "src/Swapper.sol";
 import {FundsFacet} from "src/facets/FundsFacet.sol";
 import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
+import {ProjectsFacet} from "src/facets/ProjectsFacet.sol";
 import {TokenFacet, ERC1155Upgradeable} from "src/facets/TokenFacet.sol";
 
 import {ISwapper, ExchangeArgs} from "src/interfaces/ISwapper.sol";
@@ -30,7 +31,7 @@ library Utils {
 
         address diamond = address(new YelayLiteVault(owner, address(diamondCutFacet)));
 
-        IDiamondCut.FacetCut[] memory diamondCut = new IDiamondCut.FacetCut[](4);
+        IDiamondCut.FacetCut[] memory diamondCut = new IDiamondCut.FacetCut[](5);
         diamondCut[0] = IDiamondCut.FacetCut({
             facetAddress: address(new TokenFacet()),
             action: IDiamondCut.FacetCutAction.Add,
@@ -51,11 +52,20 @@ library Utils {
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _accessFacetSelectors()
         });
+        diamondCut[4] = IDiamondCut.FacetCut({
+            facetAddress: address(new ProjectsFacet()),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: _projectsFacetSelectors()
+        });
         DiamondCutFacet(diamond).diamondCut(
             diamondCut,
             address(new YelayLiteVaultInit()),
             abi.encodeWithSelector(YelayLiteVaultInit.init.selector, underlyingAsset, yieldExtractor, swapper, uri)
         );
+        IYelayLiteVault(diamond).grantProjectIds(owner, 1, 100);
+        for (uint256 i = 1; i < 100; i++) {
+            IYelayLiteVault(diamond).activateProject(i);
+        }
         return IYelayLiteVault(diamond);
     }
 
@@ -113,6 +123,18 @@ library Utils {
         functionSelectors[2] = AccessFacet.transferOwnership.selector;
         functionSelectors[3] = AccessFacet.checkRole.selector;
         functionSelectors[4] = AccessFacet.owner.selector;
+        return functionSelectors;
+    }
+
+    function _projectsFacetSelectors() private pure returns (bytes4[] memory) {
+        bytes4[] memory functionSelectors = new bytes4[](7);
+        functionSelectors[0] = ProjectsFacet.grantProjectIds.selector;
+        functionSelectors[1] = ProjectsFacet.transferProjectIdsOwnership.selector;
+        functionSelectors[2] = ProjectsFacet.activateProject.selector;
+        functionSelectors[3] = ProjectsFacet.setProjectOption.selector;
+        functionSelectors[4] = ProjectsFacet.setLockConfig.selector;
+        functionSelectors[5] = ProjectsFacet.depositHook.selector;
+        functionSelectors[6] = ProjectsFacet.redeemHook.selector;
         return functionSelectors;
     }
 
