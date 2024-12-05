@@ -5,6 +5,6 @@ import {ITokenFacet} from "./ITokenFacet.sol";
 import {IFundsFacet} from "./IFundsFacet.sol";
 import {IManagementFacet} from "./IManagementFacet.sol";
 import {IAccessFacet} from "./IAccessFacet.sol";
-import {IProjectsFacet} from "./IProjectsFacet.sol";
+import {IClientsFacet} from "./IClientsFacet.sol";
 
-interface IYelayLiteVault is ITokenFacet, IFundsFacet, IManagementFacet, IAccessFacet, IProjectsFacet {}
+interface IYelayLiteVault is ITokenFacet, IFundsFacet, IManagementFacet, IAccessFacet, IClientsFacet {}

@@ -22,9 +22,9 @@ library LibEvents {
     event AddStrategy(address strategy, bytes supplement);
     event RemoveStrategy(address strategy, bytes supplement);
 
-    // ProjectsFacet
-    event NewProjectIds(address owner, uint256 min, uint256 max);
-    event OwnershipTransferProjectIds(address owner, uint256 min, uint256 max);
+    // ClientsFacet
+    event NewProjectIds(address owner, uint256 minProjectId, uint256 maxProjectId);
+    event OwnershipTransferProjectIds(address owner, uint256 minProjectId, uint256 maxProjectId);
     event ProjectActivated(uint256 project);
     event ProjectOptionSet(uint256 projectId, uint256 option);
     event LockConfigSet(uint256 projectId, uint256 duration);

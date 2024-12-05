@@ -13,7 +13,7 @@ import {SelfOnly} from "src/abstract/SelfOnly.sol";
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
 
 import {LibFunds} from "src/libraries/LibFunds.sol";
-import {LibProjects} from "src/libraries/LibProjects.sol";
+import {LibClients} from "src/libraries/LibClients.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
@@ -33,6 +33,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     error NotEnoughLiquidity();
     error OnlyView();
     error CompoundUnderlyingForbidden();
+    error PositionMigrationForbidden();
 
     function lastTotalAssets() external view returns (uint256) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -84,7 +85,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     }
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
-        require(LibProjects.isProjectActive(projectId), ProjectInactive());
+        require(LibClients.isProjectActive(projectId), ProjectInactive());
 
         (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
@@ -109,7 +110,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
 
-        LibProjects.onDeposit(projectId, msg.sender, receiver, assets, shares);
+        LibClients.onDeposit(projectId, msg.sender, receiver, assets, shares);
 
         emit LibEvents.Deposit(projectId, msg.sender, receiver, assets, shares);
     }
@@ -146,12 +147,17 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         sF.underlyingAsset.safeTransfer(receiver, assets);
         LibToken.burn(msg.sender, projectId, shares);
 
-        LibProjects.onRedeem(projectId, msg.sender, receiver, assets, shares);
+        LibClients.onRedeem(projectId, msg.sender, receiver, assets, shares);
 
         emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }
 
     function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external allowSelf {
+        require(
+            LibClients.isProjectActive(fromProjectId) && LibClients.isProjectActive(toProjectId)
+                && LibClients.sameClient(fromProjectId, toProjectId),
+            PositionMigrationForbidden()
+        );
         _accrueFee();
         LibToken.migrate(msg.sender, fromProjectId, toProjectId, amount);
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
