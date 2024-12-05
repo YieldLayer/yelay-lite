@@ -15,7 +15,8 @@ library LibFunds {
 
     /// @custom:storage-location erc7201:yelay-vault.storage.FundsFacet
     struct FundsStorage {
-        uint256 lastTotalAssets;
+        uint192 lastTotalAssets;
+        uint64 lastTotalAssetsTimestamp;
         // balance of underlying asset in the vault
         uint256 underlyingBalance;
         ERC20 underlyingAsset;

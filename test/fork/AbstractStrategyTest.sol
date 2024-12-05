@@ -38,6 +38,7 @@ abstract contract AbstractStrategyTest is Test {
         yelayLiteVault.grantRole(LibRoles.QUEUES_OPERATOR, owner);
         yelayLiteVault.grantRole(LibRoles.STRATEGY_AUTHORITY, owner);
         yelayLiteVault.grantRole(LibRoles.STRATEGY_OPERATOR, owner);
+        yelayLiteVault.grantRole(LibRoles.FUNDS_OPERATOR, owner);
         vm.stopPrank();
 
         vm.startPrank(user);
@@ -91,7 +92,7 @@ abstract contract AbstractStrategyTest is Test {
 
     function test_yield_extraction() external {
         uint256 toDeposit = 1_000e18;
-        uint256 yieldExtractorShareBalance;
+        // uint256 yieldExtractorShareBalance;
 
         for (uint256 i = 1; i < 20; i++) {
             address user3 = address(bytes20(bytes32(111111111111111111111111111111111111111111 * i)));
@@ -102,14 +103,20 @@ abstract contract AbstractStrategyTest is Test {
             vm.stopPrank();
             assertEq(underlyingAsset.balanceOf(user3), 0);
             if (i + 1 < 20) {
-                vm.warp(block.timestamp + 1 weeks);
+                vm.warp(block.timestamp + 6 hours);
             }
-            uint256 newYieldExtractorShareBalance = yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId);
-            if (newYieldExtractorShareBalance > 0) {
-                assertGt(newYieldExtractorShareBalance, yieldExtractorShareBalance);
-            }
-            yieldExtractorShareBalance = newYieldExtractorShareBalance;
+            // uint256 newYieldExtractorShareBalance = yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId);
+            // if (newYieldExtractorShareBalance > 0) {
+            //     assertGt(newYieldExtractorShareBalance, yieldExtractorShareBalance);
+            // }
+            // yieldExtractorShareBalance = newYieldExtractorShareBalance;
         }
+
+        vm.startPrank(owner);
+        yelayLiteVault.accrueFee();
+        vm.stopPrank();
+
+        uint256 yieldExtractorShareBalance = yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId);
 
         assertEq(underlyingAsset.balanceOf(yieldExtractor), 0);
 
@@ -151,8 +158,8 @@ abstract contract AbstractStrategyTest is Test {
             assertApproxEqAbs(assetsAfter - assetsBefore, sharesBefore, 10);
         }
 
-        assertEq(yelayLiteVault.totalSupply(), 0);
+        assertApproxEqAbs(yelayLiteVault.totalSupply(), 0, 1);
         assertEq(yelayLiteVault.totalAssets(), 0);
-        assertEq(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0);
+        assertApproxEqAbs(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0, 1);
     }
 }

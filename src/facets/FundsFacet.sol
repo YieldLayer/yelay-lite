@@ -88,7 +88,17 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         require(LibClients.isProjectActive(projectId), ProjectInactive());
 
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        uint256 newTotalAssets = _accrueFee(sF);
+        uint256 newTotalAssets;
+        // TODO: in case there will be multiple strategies i.e. 5
+        // it could be beneficial to not accrue fee on each deposit
+        // to save on users gas?
+        // TODO: cover in test
+        bool needYieldAccrual = sF.lastTotalAssetsTimestamp + 12 hours < block.timestamp;
+        if (needYieldAccrual) {
+            newTotalAssets = _accrueFee(sF);
+        } else {
+            newTotalAssets = sF.lastTotalAssets;
+        }
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
         shares = _convertToShares(assets, LibToken.totalSupply(), newTotalAssets);
@@ -110,6 +120,10 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
             sF.underlyingBalance += assets;
         }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
+        // TODO: cover in test
+        if (needYieldAccrual) {
+            sF.lastTotalAssetsTimestamp = uint64(block.timestamp);
+        }
 
         LibClients.onDeposit(projectId, msg.sender, receiver, assets, shares);
 
@@ -162,7 +176,9 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
             PositionMigrationForbidden()
         );
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        _accrueFee(sF);
+        // TODO: cover in test
+        uint256 newTotalAssets = _accrueFee(sF);
+        _updateLastTotalAssets(sF, newTotalAssets);
         LibToken.migrate(msg.sender, fromProjectId, toProjectId, amount);
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
     }
@@ -208,15 +224,19 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
             ERC20(swapArgs[i].tokenIn).safeTransfer(_swapper, tokenInAmount);
         }
         compounded = sF.swapper.swap(swapArgs, _underlyingAsset);
+        // TODO: cover this in test
         sF.underlyingBalance += compounded;
-        // TODO: probably can skip?
-        _accrueFee(sF);
+        uint256 newTotalAssets = _accrueFee(sF);
+        _updateLastTotalAssets(sF, newTotalAssets + compounded);
+        sF.lastTotalAssetsTimestamp = uint64(block.timestamp);
         emit LibEvents.Compounded(compounded);
     }
 
     function accrueFee() public allowSelf onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        _accrueFee(sF);
+        // TODO: cover this in test
+        uint256 newTotalAssets = _accrueFee(sF);
+        _updateLastTotalAssets(sF, newTotalAssets);
     }
 
     function claimStrategyRewards(uint256 index) external onlyRole(LibRoles.FUNDS_OPERATOR) {
@@ -268,7 +288,8 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     }
 
     function _updateLastTotalAssets(LibFunds.FundsStorage storage sF, uint256 updatedTotalAssets) internal {
-        sF.lastTotalAssets = updatedTotalAssets;
+        // TODO: safe cast?
+        sF.lastTotalAssets = uint192(updatedTotalAssets);
         emit LibEvents.UpdateLastTotalAssets(updatedTotalAssets);
     }
 

@@ -9,6 +9,7 @@ import {LibDiamond} from "@diamond/libraries/LibDiamond.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibClients, ClientData, LockConfig, ProjectInterceptor, UserLock} from "src/libraries/LibClients.sol";
 
+// TODO: cover with tests
 contract ClientsFacet is SelfOnly, IClientsFacet {
     error MinIsZero();
     error MaxLessThanMin();
