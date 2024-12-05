@@ -60,7 +60,7 @@ library LibClients {
         return clientStorage.projectIdActive[projectId];
     }
 
-    function sameClient(uint256 projectId1, uint256 projectId2) internal returns (bool) {
+    function sameClient(uint256 projectId1, uint256 projectId2) internal view returns (bool) {
         ClientsStorage storage clientStorage = _getClientsStorage();
         return clientStorage.projectIdToClientName[projectId1] == clientStorage.projectIdToClientName[projectId2];
     }
@@ -71,7 +71,9 @@ library LibClients {
         ClientsStorage storage clientStorage = _getClientsStorage();
         if (clientStorage.projectIdToProjectInterceptor[projectId] != ProjectInterceptor.None) {
             address(this).functionDelegateCall(
-                abi.encodeWithSelector(ClientsFacet.depositHook.selector, projectId, depositor, receiver, shares)
+                abi.encodeWithSelector(
+                    ClientsFacet.depositHook.selector, projectId, depositor, receiver, assets, shares
+                )
             );
         }
     }
@@ -80,7 +82,7 @@ library LibClients {
         ClientsStorage storage clientStorage = _getClientsStorage();
         if (clientStorage.projectIdToProjectInterceptor[projectId] != ProjectInterceptor.None) {
             address(this).functionDelegateCall(
-                abi.encodeWithSelector(ClientsFacet.redeemHook.selector, projectId, redeemer, receiver, shares)
+                abi.encodeWithSelector(ClientsFacet.redeemHook.selector, projectId, redeemer, receiver, assets, shares)
             );
         }
     }
