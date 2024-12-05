@@ -74,6 +74,7 @@ contract ClientsFacet is SelfOnly, IClientsFacet {
         emit LibEvents.ProjectOptionSet(projectId, uint256(projectInterceptor));
     }
 
+    // TODO: should we split interceptors to separate facets??
     function setLockConfig(uint256 projectId, LockConfig calldata lockConfig) external {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];

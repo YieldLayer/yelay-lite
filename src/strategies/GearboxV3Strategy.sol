@@ -8,6 +8,8 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract GearboxV3Strategy is ERC4626Strategy {
+    // TODO: ERC4626Strategy should not store dToken to be reusable
+    // or we need to store IFarmingPool sdToken, IERC20 gearToken because they are tight to dToken
     constructor(address dToken_) ERC4626Strategy(dToken_) {}
 
     function _decodeSupplement(bytes calldata supplement)

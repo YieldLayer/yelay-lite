@@ -87,10 +87,11 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
         require(LibClients.isProjectActive(projectId), ProjectInactive());
 
-        (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        uint256 newTotalAssets = _accrueFee(sF);
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
-        shares = _convertToSharesWithTotals(assets, LibToken.totalSupply(), newTotalAssets);
+        shares = _convertToShares(assets, LibToken.totalSupply(), newTotalAssets);
 
         sF.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
         LibToken.mint(receiver, projectId, shares);
@@ -116,10 +117,12 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     }
 
     function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf returns (uint256 assets) {
-        (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) = _accrueFee();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
-        assets = _convertToAssetsWithTotals(shares, LibToken.totalSupply(), newTotalAssets);
+        uint256 newTotalAssets = _accrueFee(sF);
+
+        assets = _convertToAssets(shares, LibToken.totalSupply(), newTotalAssets);
 
         _updateLastTotalAssets(sF, newTotalAssets.zeroFloorSub(assets));
 
@@ -158,7 +161,8 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
                 && LibClients.sameClient(fromProjectId, toProjectId),
             PositionMigrationForbidden()
         );
-        _accrueFee();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        _accrueFee(sF);
         LibToken.migrate(msg.sender, fromProjectId, toProjectId, amount);
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
     }
@@ -206,12 +210,13 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         compounded = sF.swapper.swap(swapArgs, _underlyingAsset);
         sF.underlyingBalance += compounded;
         // TODO: probably can skip?
-        _accrueFee();
+        _accrueFee(sF);
         emit LibEvents.Compounded(compounded);
     }
 
     function accrueFee() public allowSelf onlyRole(LibRoles.FUNDS_OPERATOR) {
-        _accrueFee();
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        _accrueFee(sF);
     }
 
     function claimStrategyRewards(uint256 index) external onlyRole(LibRoles.FUNDS_OPERATOR) {
@@ -249,13 +254,12 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
     }
 
-    function _accrueFee() internal returns (LibFunds.FundsStorage storage sF, uint256 newTotalAssets) {
-        sF = LibFunds._getFundsStorage();
+    function _accrueFee(LibFunds.FundsStorage storage sF) internal returns (uint256 newTotalAssets) {
         newTotalAssets = totalAssets();
 
         uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);
         if (totalInterest > 0) {
-            uint256 feeShares = _convertToSharesWithTotals(totalInterest, LibToken.totalSupply(), sF.lastTotalAssets);
+            uint256 feeShares = _convertToShares(totalInterest, LibToken.totalSupply(), sF.lastTotalAssets);
             if (feeShares > 0) {
                 LibToken.mint(sF.yieldExtractor, YIELD_PROJECT_ID, feeShares);
             }
@@ -268,7 +272,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         emit LibEvents.UpdateLastTotalAssets(updatedTotalAssets);
     }
 
-    function _convertToSharesWithTotals(uint256 assets, uint256 newTotalSupply, uint256 newTotalAssets)
+    function _convertToShares(uint256 assets, uint256 newTotalSupply, uint256 newTotalAssets)
         internal
         pure
         returns (uint256)
@@ -276,7 +280,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         return newTotalSupply == 0 ? assets : assets.mulDiv(newTotalSupply, newTotalAssets);
     }
 
-    function _convertToAssetsWithTotals(uint256 shares, uint256 newTotalSupply, uint256 newTotalAssets)
+    function _convertToAssets(uint256 shares, uint256 newTotalSupply, uint256 newTotalAssets)
         internal
         pure
         returns (uint256)
