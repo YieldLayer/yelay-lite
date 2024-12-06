@@ -1,30 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {LibDiamond} from "@diamond/libraries/LibDiamond.sol";
-import {IDiamondLoupe} from "@diamond/interfaces/IDiamondLoupe.sol";
-import {IDiamondCut} from "@diamond/interfaces/IDiamondCut.sol";
-import {IERC173} from "@diamond/interfaces/IERC173.sol";
-import {IERC165} from "@diamond/interfaces/IERC165.sol";
+import {ISwapper} from "src/interfaces/ISwapper.sol";
+import {IYelayLiteVaultInit} from "src/interfaces/IYelayLiteVaultInit.sol";
 
 import {LibFunds, ERC20} from "src/libraries/LibFunds.sol";
 import {LibToken} from "src/libraries/LibToken.sol";
+import {LibOwner} from "src/libraries/LibOwner.sol";
 
-import {ISwapper} from "src/interfaces/ISwapper.sol";
-
-contract YelayLiteVaultInit {
-    function init(address underlyingAsset, address yieldExtractor, ISwapper swapper, string memory uri) public {
-        _initDiamond();
+contract YelayLiteVaultInit is IYelayLiteVaultInit {
+    function init(ISwapper swapper, address underlyingAsset, address yieldExtractor, string memory uri) public {
+        LibOwner.onlyOwner();
         _initFunds(underlyingAsset, yieldExtractor, swapper);
         _initToken(uri);
-    }
-
-    function _initDiamond() internal {
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        ds.supportedInterfaces[type(IERC165).interfaceId] = true;
-        ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
-        ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
-        ds.supportedInterfaces[type(IERC173).interfaceId] = true;
     }
 
     function _initFunds(address underlyingAsset, address yieldExtractor, ISwapper swapper) internal {

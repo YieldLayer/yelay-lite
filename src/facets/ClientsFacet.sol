@@ -5,7 +5,7 @@ import {SelfOnly} from "src/abstract/SelfOnly.sol";
 
 import {IClientsFacet} from "src/interfaces/IClientsFacet.sol";
 
-import {LibDiamond} from "@diamond/libraries/LibDiamond.sol";
+import {LibOwner} from "src/libraries/LibOwner.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibClients, ClientData, LockConfig, ProjectInterceptor, UserLock} from "src/libraries/LibClients.sol";
 
@@ -28,7 +28,7 @@ contract ClientsFacet is SelfOnly, IClientsFacet {
     function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
         external
     {
-        LibDiamond.enforceIsContractOwner();
+        LibOwner.onlyOwner();
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         require(minProjectId > 0, MinIsZero());
         require(maxProjectId > minProjectId, MaxLessThanMin());

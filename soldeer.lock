@@ -5,12 +5,6 @@ git = "https://github.com/aave/aave-v3-core.git"
 rev = "b74526a7bc67a3a117a1963fc871b3eb8cea8435"
 
 [[dependencies]]
-name = "diamond"
-version = "0.0.1"
-git = "https://github.com/mudgen/diamond-2-hardhat.git"
-rev = "bf67b736ad5fa3366551f599e204784856fb3069"
-
-[[dependencies]]
 name = "forge-std"
 version = "1.9.4"
 url = "https://soldeer-revisions.s3.amazonaws.com/forge-std/1_9_4_25-10-2024_14:36:59_forge-std-1.9.zip"

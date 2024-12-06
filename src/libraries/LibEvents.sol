@@ -28,4 +28,9 @@ library LibEvents {
     event ProjectActivated(uint256 project);
     event ProjectOptionSet(uint256 projectId, uint256 option);
     event LockConfigSet(uint256 projectId, uint256 duration);
+
+    // OwnerFacet
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event SelectorToFacetSet(bytes4 indexed selector, address indexed facet);
 }
