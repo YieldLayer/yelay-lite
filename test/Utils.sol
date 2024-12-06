@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {ERC1967Proxy} from "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1155Upgradeable} from "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
@@ -11,7 +12,7 @@ import {FundsFacet} from "src/facets/FundsFacet.sol";
 import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {ClientsFacet} from "src/facets/ClientsFacet.sol";
-import {TokenFacet, ERC1155Upgradeable} from "src/facets/TokenFacet.sol";
+import {TokenFacet} from "src/facets/TokenFacet.sol";
 import {OwnerFacet} from "src/facets/OwnerFacet.sol";
 
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
@@ -74,15 +75,16 @@ library Utils {
     }
 
     function _tokenFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](8);
+        bytes4[] memory selectors = new bytes4[](9);
         selectors[0] = ERC1155Upgradeable.uri.selector;
         selectors[1] = ERC1155Upgradeable.balanceOf.selector;
         selectors[2] = ERC1155Upgradeable.safeTransferFrom.selector;
         selectors[3] = ERC1155Upgradeable.setApprovalForAll.selector;
         selectors[4] = TokenFacet.mint.selector;
         selectors[5] = TokenFacet.burn.selector;
-        selectors[6] = TokenFacet.totalSupply.selector;
-        selectors[7] = TokenFacet.migrate.selector;
+        selectors[6] = bytes4(keccak256("totalSupply()"));
+        selectors[7] = bytes4(keccak256("totalSupply(uint256)"));
+        selectors[8] = TokenFacet.migrate.selector;
         return selectors;
     }
 

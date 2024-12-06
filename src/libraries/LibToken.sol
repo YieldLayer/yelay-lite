@@ -8,34 +8,11 @@ import {TokenFacet} from "src/facets/TokenFacet.sol";
 library LibToken {
     using Address for address;
 
-    /// @custom:storage-location erc7201:yelay-vault.storage.TokenFacet
-    struct TokenStorage {
-        uint256 _totalSupply;
-    }
-
-    // keccak256(abi.encode(uint256(keccak256("yelay-vault.storage.TokenFacet")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant TokenStorageLocation = 0x96e9bc07e4bbede20d6289a6a6d64136db7633a27b2880fb17b26f032a839200;
-
-    function _getTokenStorage() internal pure returns (TokenStorage storage $) {
-        assembly {
-            $.slot := TokenStorageLocation
-        }
-    }
-
-    function totalSupply() internal view returns (uint256) {
-        TokenStorage storage s = _getTokenStorage();
-        return s._totalSupply;
-    }
-
     function mint(address to, uint256 id, uint256 value) internal {
-        TokenStorage storage sT = LibToken._getTokenStorage();
-        sT._totalSupply += value;
         address(this).functionDelegateCall(abi.encodeWithSelector(TokenFacet.mint.selector, to, id, value));
     }
 
     function burn(address from, uint256 id, uint256 value) internal {
-        TokenStorage storage sT = LibToken._getTokenStorage();
-        sT._totalSupply -= value;
         address(this).functionDelegateCall(abi.encodeWithSelector(TokenFacet.burn.selector, from, id, value));
     }
 
@@ -60,5 +37,29 @@ library LibToken {
         assembly {
             $.slot := ERC1155StorageLocation
         }
+    }
+
+    /// @custom:storage-location erc7201:openzeppelin.storage.ERC1155Supply
+    struct ERC1155SupplyStorage {
+        mapping(uint256 id => uint256) _totalSupply;
+        uint256 _totalSupplyAll;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC1155Supply")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ERC1155SupplyStorageLocation =
+        0x4a593662ee04d27b6a00ebb31be7fe0c102c2ade82a7c5d764f2df05dc4e2800;
+
+    function _getERC1155SupplyStorage() private pure returns (ERC1155SupplyStorage storage $) {
+        assembly {
+            $.slot := ERC1155SupplyStorageLocation
+        }
+    }
+
+    function totalSupply() internal view returns (uint256) {
+        return _getERC1155SupplyStorage()._totalSupplyAll;
+    }
+
+    function totalSupply(uint256 id) internal view returns (uint256) {
+        return _getERC1155SupplyStorage()._totalSupply[id];
     }
 }

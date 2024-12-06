@@ -6,4 +6,5 @@ import {IERC1155MetadataURI} from "@openzeppelin/token/ERC1155/extensions/IERC11
 
 interface ITokenFacet is IERC1155, IERC1155MetadataURI {
     function totalSupply() external view returns (uint256);
+    function totalSupply(uint256 id) external view returns (uint256);
 }
