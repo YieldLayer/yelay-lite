@@ -57,18 +57,20 @@ library Utils {
         address yieldExtractor,
         string memory uri
     ) private {
+        bytes[] memory data = new bytes[](3);
         YelayLiteVaultInit yelayLiteVaultInit = new YelayLiteVaultInit();
         {
             SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](5);
             selectorsToFacets[0] = SelectorsToFacet({facet: address(yelayLiteVaultInit), selectors: _initSelectors()});
-            yelayLiteVault.setSelectorToFacets(selectorsToFacets);
+            data[0] = abi.encodeWithSelector(yelayLiteVault.setSelectorToFacets.selector, selectorsToFacets);
         }
-        yelayLiteVault.init(swapper, underlyingAsset, yieldExtractor, uri);
+        data[1] = abi.encodeWithSelector(yelayLiteVault.init.selector, swapper, underlyingAsset, yieldExtractor, uri);
         {
             SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](5);
             selectorsToFacets[0] = SelectorsToFacet({facet: address(0), selectors: _initSelectors()});
-            yelayLiteVault.setSelectorToFacets(selectorsToFacets);
+            data[2] = abi.encodeWithSelector(yelayLiteVault.setSelectorToFacets.selector, selectorsToFacets);
         }
+        yelayLiteVault.multicall(data);
     }
 
     function _tokenFacetSelectors() private pure returns (bytes4[] memory) {
