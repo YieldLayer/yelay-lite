@@ -18,6 +18,7 @@ import {LibToken} from "src/libraries/LibToken.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -27,13 +28,6 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     using FixedPointMathLib for uint256;
 
     uint256 constant YIELD_PROJECT_ID = 0;
-
-    error ProjectInactive();
-    error NotEnoughAssets();
-    error NotEnoughLiquidity();
-    error OnlyView();
-    error CompoundUnderlyingForbidden();
-    error PositionMigrationForbidden();
 
     function lastTotalAssets() external view returns (uint256) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -76,7 +70,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     }
 
     function strategyRewards(uint256 index) external returns (Reward[] memory rewards) {
-        require(tx.origin == address(0), OnlyView());
+        require(tx.origin == address(0), LibErrors.OnlyView());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         bytes memory result = sM.strategies[index].adapter.functionDelegateCall(
             abi.encodeWithSelector(IStrategyBase.viewRewards.selector, sM.strategies[index].supplement)
@@ -85,7 +79,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     }
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
-        require(LibClients.isProjectActive(projectId), ProjectInactive());
+        require(LibClients.isProjectActive(projectId), LibErrors.ProjectInactive());
 
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         uint256 newTotalAssets;
@@ -173,7 +167,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         require(
             LibClients.isProjectActive(fromProjectId) && LibClients.isProjectActive(toProjectId)
                 && LibClients.sameClient(fromProjectId, toProjectId),
-            PositionMigrationForbidden()
+            LibErrors.PositionMigrationForbidden()
         );
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         // TODO: cover in test
@@ -219,7 +213,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         address _underlyingAsset = address(sF.underlyingAsset);
         address _swapper = address(sF.swapper);
         for (uint256 i; i < swapArgs.length; i++) {
-            require(swapArgs[i].tokenIn != _underlyingAsset, CompoundUnderlyingForbidden());
+            require(swapArgs[i].tokenIn != _underlyingAsset, LibErrors.CompoundUnderlyingForbidden());
             uint256 tokenInAmount = ERC20(swapArgs[i].tokenIn).balanceOf(address(this));
             ERC20(swapArgs[i].tokenIn).safeTransfer(_swapper, tokenInAmount);
         }
