@@ -5,7 +5,9 @@ import {Test} from "forge-std/Test.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 
-import {MockToken} from "./MockToken.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
+
+import {MockToken, ERC20} from "./MockToken.sol";
 import {Utils} from "./Utils.sol";
 
 contract YelayLiteVaultTest is Test {
@@ -13,7 +15,7 @@ contract YelayLiteVaultTest is Test {
     address constant yieldExtractor = address(0x02);
     string constant uri = "https://yelay-lite-vault/{id}.json";
 
-    function test_addTokenFacet() external {
+    function test_facets() external {
         address underlyingAsset = address(new MockToken("Y-Test", "Y-T", 18));
 
         vm.startPrank(owner);
@@ -24,5 +26,9 @@ contract YelayLiteVaultTest is Test {
         assertEq(yelayLiteVault.yieldExtractor(), yieldExtractor);
         assertEq(yelayLiteVault.owner(), owner);
         assertEq(yelayLiteVault.uri(0), uri);
+        vm.expectRevert(
+            abi.encodeWithSelector(LibErrors.InvalidSelector.selector, bytes4(keccak256("balanceOf(address)")))
+        );
+        ERC20(address(yelayLiteVault)).balanceOf(address(this));
     }
 }
