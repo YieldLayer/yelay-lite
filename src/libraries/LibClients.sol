@@ -35,7 +35,7 @@ library LibClients {
 
     /// @custom:storage-location erc7201:yelay-vault.storage.ClientsFacet
     struct ClientsStorage {
-        uint256 nextProjectId;
+        uint256 lastProjectId;
         mapping(address => ClientData) ownerToClientData;
         mapping(bytes32 => bool) clientNameTaken;
         mapping(uint256 => bytes32) projectIdToClientName;

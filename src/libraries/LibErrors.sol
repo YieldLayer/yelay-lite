@@ -22,15 +22,15 @@ library LibErrors {
 
     error MinIsZero();
     error MaxLessThanMin();
-    error MinLessThanNextProjectId();
+    error MinLessThanLastProjectId();
     error NotClientOwner();
     error OutOfBoundProjectId();
-    error ProjectInterceptorIsNone();
-    error ProjectInterceptorIsSet();
+    error ProjectInterceptorNone();
+    error ProjectInterceptorSet();
     error ProjectInterceptorIsNotLock();
-    error ProjectIsActive();
+    error ProjectActive();
     error ClientNameEmpty();
-    error ClientNameIsTaken();
+    error ClientNameTaken();
     error UserLocked();
 
     // ===================== FundsFacet ================================

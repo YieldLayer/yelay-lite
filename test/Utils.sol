@@ -40,7 +40,7 @@ library Utils {
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: _managementFacetSelectors()});
         selectorsToFacets[3] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
         selectorsToFacets[4] =
-            SelectorsToFacet({facet: address(new ClientsFacet()), selectors: _projectsFacetSelectors()});
+            SelectorsToFacet({facet: address(new ClientsFacet()), selectors: _clientsFacetSelectors()});
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
         yelayLiteVault.createClient(owner, 1, 100, "test");
@@ -130,8 +130,8 @@ library Utils {
         return selectors;
     }
 
-    function _projectsFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](7);
+    function _clientsFacetSelectors() private pure returns (bytes4[] memory) {
+        bytes4[] memory selectors = new bytes4[](15);
         selectors[0] = ClientsFacet.createClient.selector;
         selectors[1] = ClientsFacet.transferClientOwnership.selector;
         selectors[2] = ClientsFacet.activateProject.selector;
@@ -139,6 +139,14 @@ library Utils {
         selectors[4] = ClientsFacet.setLockConfig.selector;
         selectors[5] = ClientsFacet.depositHook.selector;
         selectors[6] = ClientsFacet.redeemHook.selector;
+        selectors[7] = ClientsFacet.lastProjectId.selector;
+        selectors[8] = ClientsFacet.clientNameTaken.selector;
+        selectors[9] = ClientsFacet.ownerToClientData.selector;
+        selectors[10] = ClientsFacet.projectIdToClientName.selector;
+        selectors[11] = ClientsFacet.projectIdActive.selector;
+        selectors[12] = ClientsFacet.projectIdToProjectInterceptor.selector;
+        selectors[13] = ClientsFacet.projectIdToLockConfig.selector;
+        selectors[14] = ClientsFacet.userToProjectIdToUserLock.selector;
         return selectors;
     }
 
