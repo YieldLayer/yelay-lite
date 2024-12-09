@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {ERC1967Proxy} from "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import {ERC1155Upgradeable} from "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {IAccessControlEnumerable, IAccessControl} from "@openzeppelin/access/extensions/IAccessControlEnumerable.sol";
 
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
@@ -123,10 +124,13 @@ library Utils {
     }
 
     function _accessFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](3);
+        bytes4[] memory selectors = new bytes4[](6);
         selectors[0] = AccessFacet.grantRole.selector;
         selectors[1] = AccessFacet.revokeRole.selector;
         selectors[2] = AccessFacet.checkRole.selector;
+        selectors[3] = IAccessControlEnumerable.getRoleMember.selector;
+        selectors[4] = IAccessControlEnumerable.getRoleMemberCount.selector;
+        selectors[5] = IAccessControl.hasRole.selector;
         return selectors;
     }
 
