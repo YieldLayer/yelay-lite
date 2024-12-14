@@ -5,7 +5,7 @@ import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalances
 import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
 
 import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
-import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract MorphoBlueStrategy is IStrategyBase {
     IMorpho immutable morpho;

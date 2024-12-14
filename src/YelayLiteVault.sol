@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Proxy} from "@openzeppelin/proxy/Proxy.sol";
-import {Multicall} from "@openzeppelin/utils/Multicall.sol";
+import {Proxy} from "@openzeppelin/contracts/proxy/Proxy.sol";
+import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 
 import {LibOwner} from "src/libraries/LibOwner.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";

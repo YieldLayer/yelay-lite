@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {ERC1967Proxy} from "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
-import {ERC1155Upgradeable} from "@openzeppelin-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import {IAccessControlEnumerable, IAccessControl} from "@openzeppelin/access/extensions/IAccessControlEnumerable.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1155Upgradeable} from "@openzeppelin-upgradeable/contracts/token/ERC1155/ERC1155Upgradeable.sol";
+import {
+    IAccessControlEnumerable,
+    IAccessControl
+} from "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
 
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";

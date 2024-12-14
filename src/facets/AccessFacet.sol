@@ -2,8 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
-import {AccessControlUpgradeable, IAccessControl} from "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
+    "@openzeppelin-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {
+    AccessControlUpgradeable,
+    IAccessControl
+} from "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 
 import {IAccessFacet} from "src/interfaces/IAccessFacet.sol";
 

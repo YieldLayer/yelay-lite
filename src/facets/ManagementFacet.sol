@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Address} from "@openzeppelin/utils/Address.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
 import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
