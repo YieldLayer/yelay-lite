@@ -13,6 +13,7 @@ package-lock.json
 typechain-types/*
 artifacts/*
 cache_hardhat/*
+deployments/local.json
 
 # Docs
 docs/

@@ -79,16 +79,14 @@ library Utils {
     }
 
     function _tokenFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](9);
+        bytes4[] memory selectors = new bytes4[](7);
         selectors[0] = ERC1155Upgradeable.uri.selector;
         selectors[1] = ERC1155Upgradeable.balanceOf.selector;
-        selectors[2] = ERC1155Upgradeable.safeTransferFrom.selector;
-        selectors[3] = ERC1155Upgradeable.setApprovalForAll.selector;
-        selectors[4] = TokenFacet.mint.selector;
-        selectors[5] = TokenFacet.burn.selector;
-        selectors[6] = bytes4(keccak256("totalSupply()"));
-        selectors[7] = bytes4(keccak256("totalSupply(uint256)"));
-        selectors[8] = TokenFacet.migrate.selector;
+        selectors[2] = TokenFacet.mint.selector;
+        selectors[3] = TokenFacet.burn.selector;
+        selectors[4] = bytes4(keccak256("totalSupply()"));
+        selectors[5] = bytes4(keccak256("totalSupply(uint256)"));
+        selectors[6] = TokenFacet.migrate.selector;
         return selectors;
     }
 

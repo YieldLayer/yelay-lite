@@ -36,7 +36,7 @@ contract Swapper is OwnableUpgradeable, UUPSUpgradeable, ISwapper {
     mapping(address => bool) public exchangeAllowlist;
 
     /* ========== CONSTRUCTOR ========== */
-
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
