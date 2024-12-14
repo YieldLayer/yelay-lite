@@ -1,4 +1,5 @@
 import type { BaseContract, Signer } from 'ethers';
+import { ethers as trueEthers } from 'ethers';
 import { ethers } from 'hardhat';
 import {
     AccessFacet,
@@ -180,4 +181,9 @@ export const convertToAddresses = async (
         contractAddresses[name] = await contract.getAddress();
     }
     return contractAddresses;
+};
+
+export const impersonateSigner = async (address: string) => {
+    const provider = new trueEthers.JsonRpcProvider(process.env.LOCAL_URL!);
+    return new trueEthers.JsonRpcSigner(provider, address);
 };

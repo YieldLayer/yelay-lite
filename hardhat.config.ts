@@ -27,8 +27,10 @@ const config: HardhatUserConfig = {
             url: process.env.LOCAL_URL!,
             accounts: [
                 process.env.LOCAL_DEPLOYER_PRIVATE_KEY!,
-                process.env.LOCAL_USER_PRIVATE_KEY!,
                 process.env.LOCAL_YIELD_EXTRACTOR_PRIVATE_KEY!,
+                process.env.LOCAL_USER1_PRIVATE_KEY!,
+                process.env.LOCAL_USER2_PRIVATE_KEY!,
+                process.env.LOCAL_USER3_PRIVATE_KEY!,
             ],
         },
     },

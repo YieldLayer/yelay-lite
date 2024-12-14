@@ -1,15 +1,23 @@
 import fs from 'fs';
+import { ethers as e } from 'ethers';
 import { ethers, upgrades } from 'hardhat';
-import { IYelayLiteVault__factory, Swapper } from '../typechain-types';
-import { USDC_ADDRESS } from './constants';
+
+import { ERC20__factory, IYelayLiteVault__factory, Swapper } from '../typechain-types';
+import { USDC_ADDRESS, USDC_WHALE } from './constants';
 import { Contracts } from './types';
-import { convertToAddresses, deployFacets, initYelayLiteVault, setSelectorFacets } from './utils';
+import {
+    convertToAddresses,
+    deployFacets,
+    impersonateSigner,
+    initYelayLiteVault,
+    setSelectorFacets,
+} from './utils';
 
 // launch local fork first
 // source .env && anvil --fork-url ${MAINNET_URL} --auto-impersonate --block-base-fee-per-gas 1
 
 async function main() {
-    const [deployer, _, yieldExtractor] = await ethers.getSigners();
+    const [deployer, yieldExtractor, user1, user2, user3] = await ethers.getSigners();
 
     const swapperFactory = await ethers.getContractFactory('Swapper', deployer);
     const swapper = (await upgrades.deployProxy(swapperFactory, [deployer.address], {
@@ -67,6 +75,14 @@ async function main() {
     );
 
     console.log('Successful local deployment');
+
+    const usdcWhale = await impersonateSigner(USDC_WHALE);
+    const usdc = ERC20__factory.connect(USDC_ADDRESS, usdcWhale);
+    await usdc.transfer(user1.address, ethers.parseUnits('10000', 6));
+    await usdc.transfer(user2.address, ethers.parseUnits('10000', 6));
+    await usdc.transfer(user3.address, ethers.parseUnits('10000', 6));
+
+    console.log('Provided USDC to test users');
 }
 
 main();
