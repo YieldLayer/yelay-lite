@@ -3,7 +3,9 @@
     "version": "1.0.0",
     "license": "MIT",
     "scripts": {
-        "deploy:local": "npx hardhat run scripts/deploy.local.ts --network local"
+        "local:deploy": "npx hardhat run scripts/local/deploy.ts --network local",
+        "local:deposit": "npx hardhat deposit --network local",
+        "local:redeem": "npx hardhat redeem --network local"
     },
     "devDependencies": {
         "@nomicfoundation/hardhat-foundry": "1.1.3",

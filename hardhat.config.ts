@@ -4,7 +4,8 @@ dotenv.config();
 import '@nomicfoundation/hardhat-foundry';
 import '@nomicfoundation/hardhat-toolbox';
 import '@openzeppelin/hardhat-upgrades';
-import { HardhatUserConfig } from 'hardhat/config';
+import { HardhatUserConfig, task, types } from 'hardhat/config';
+import { deposit, redeem } from './scripts/local/actions';
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -35,5 +36,17 @@ const config: HardhatUserConfig = {
         },
     },
 };
+
+task('deposit', 'Deposit into YelayLiteVault on local fork')
+    .addPositionalParam('signerIndex', 'Index of signer', undefined, types.int)
+    .addPositionalParam('amount', 'Amount in decimal format', undefined, types.int)
+    .addPositionalParam('projectId', 'Amount in decimal format', 1, types.int, true)
+    .setAction(deposit);
+
+task('redeem', 'Redeem from YelayLiteVault on local fork')
+    .addPositionalParam('signerIndex', 'Index of signer', undefined, types.int)
+    .addPositionalParam('amount', 'Amount in decimal format', undefined, types.int)
+    .addPositionalParam('projectId', 'Amount in decimal format', 1, types.int, true)
+    .setAction(redeem);
 
 export default config;

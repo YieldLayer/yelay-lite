@@ -1,20 +1,19 @@
 import fs from 'fs';
-import { ethers as e } from 'ethers';
 import { ethers, upgrades } from 'hardhat';
 
-import { ERC20__factory, IYelayLiteVault__factory, Swapper } from '../typechain-types';
-import { USDC_ADDRESS, USDC_WHALE } from './constants';
-import { Contracts } from './types';
+import { ERC20__factory, IYelayLiteVault__factory, Swapper } from '../../typechain-types';
+import { USDC_ADDRESS, USDC_WHALE } from '../constants';
+import { Contracts } from '../types';
 import {
     convertToAddresses,
     deployFacets,
     impersonateSigner,
     initYelayLiteVault,
     setSelectorFacets,
-} from './utils';
+} from '../utils';
 
 // launch local fork first
-// source .env && anvil --fork-url ${MAINNET_URL} --auto-impersonate --block-base-fee-per-gas 1
+// source .env && anvil --fork-url ${MAINNET_URL} --auto-impersonate --block-base-fee-per-gas 1 --block-time 1
 
 async function main() {
     const [deployer, yieldExtractor, user1, user2, user3] = await ethers.getSigners();
@@ -81,6 +80,10 @@ async function main() {
     await usdc.transfer(user1.address, ethers.parseUnits('10000', 6));
     await usdc.transfer(user2.address, ethers.parseUnits('10000', 6));
     await usdc.transfer(user3.address, ethers.parseUnits('10000', 6));
+
+    await usdc.connect(user1).approve(await yelayLiteVault.getAddress(), ethers.MaxUint256);
+    await usdc.connect(user2).approve(await yelayLiteVault.getAddress(), ethers.MaxUint256);
+    await usdc.connect(user3).approve(await yelayLiteVault.getAddress(), ethers.MaxUint256);
 
     console.log('Provided USDC to test users');
 }
