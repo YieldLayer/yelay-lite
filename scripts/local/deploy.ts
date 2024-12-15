@@ -1,8 +1,13 @@
 import fs from 'fs';
 import { ethers, upgrades } from 'hardhat';
 
-import { ERC20__factory, IYelayLiteVault__factory, Swapper } from '../../typechain-types';
-import { USDC_ADDRESS, USDC_WHALE } from '../constants';
+import {
+    ERC20__factory,
+    IPool__factory,
+    IYelayLiteVault__factory,
+    Swapper,
+} from '../../typechain-types';
+import { AAVE_V3_POOL, USDC_ADDRESS, USDC_WHALE } from '../constants';
 import { Contracts } from '../types';
 import {
     convertToAddresses,
@@ -33,7 +38,12 @@ async function main() {
     const yelayLiteVault = await ethers
         .getContractFactory('YelayLiteVault', deployer)
         .then((f) => f.deploy(deployer.address, ownerFacet.getAddress()))
-        .then((c) => c.getAddress())
+        .then(async (c) => {
+            const d = await c.waitForDeployment();
+            const block = await ethers.provider.getTransaction(d.deploymentTransaction()!.hash);
+            console.log(`Vault creation blocknumber: ${block?.blockNumber}`);
+            return d.getAddress();
+        })
         .then((a) => IYelayLiteVault__factory.connect(a, deployer));
 
     await setSelectorFacets({
@@ -56,6 +66,32 @@ async function main() {
 
     await yelayLiteVault.createClient(deployer.address, 1, 100, ethers.encodeBytes32String('test'));
     await yelayLiteVault.activateProject(1);
+
+    console.log('Adding strategy to vault');
+    await yelayLiteVault.grantRole(
+        '0xbf935b513649871c60054e0279e4e5798d3dfd05785c3c3c5b311fb39ec270fe',
+        deployer.address,
+    );
+    await yelayLiteVault.grantRole(
+        '0xb95e9900cc6e2c54ae5b00d8f86008697b24bf67652a40653ea0c09c6fc4a856',
+        deployer.address,
+    );
+    const aaveStrategyFactory = await ethers.getContractFactory('AaveV3Strategy', deployer);
+    const aaveStrategy = await aaveStrategyFactory.deploy(AAVE_V3_POOL);
+    await yelayLiteVault.addStrategy({
+        adapter: await aaveStrategy.getAddress(),
+        supplement: new ethers.AbiCoder().encode(
+            ['address', 'address'],
+            [
+                USDC_ADDRESS,
+                await IPool__factory.connect(AAVE_V3_POOL, deployer)
+                    .getReserveData(USDC_ADDRESS)
+                    .then((r) => r.aTokenAddress),
+            ],
+        ),
+    });
+    await yelayLiteVault.updateDepositQueue([0]);
+    await yelayLiteVault.updateWithdrawQueue([0]);
 
     const contracts: Contracts = {
         yelayLiteVault,
