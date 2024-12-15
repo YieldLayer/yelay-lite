@@ -8,7 +8,7 @@ import {
 } from '../../typechain-types';
 
 type Args = {
-    signerIndex: number;
+    userIndex: number;
     amount: number;
     projectId: number;
 };
@@ -21,7 +21,7 @@ const validateNetwork = (hre: HardhatRuntimeEnvironment) => {
 
 const getUser = async (args: Args, hre: HardhatRuntimeEnvironment) => {
     const signers = await hre.ethers.getSigners();
-    const user = signers[args.signerIndex];
+    const user = signers[args.userIndex + 1];
     return user;
 };
 

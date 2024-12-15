@@ -38,13 +38,13 @@ const config: HardhatUserConfig = {
 };
 
 task('deposit', 'Deposit into YelayLiteVault on local fork')
-    .addPositionalParam('signerIndex', 'Index of signer', undefined, types.int)
+    .addPositionalParam('userIndex', 'Index of user(1-3)', undefined, types.int)
     .addPositionalParam('amount', 'Amount in decimal format', undefined, types.int)
     .addPositionalParam('projectId', 'Amount in decimal format', 1, types.int, true)
     .setAction(deposit);
 
 task('redeem', 'Redeem from YelayLiteVault on local fork')
-    .addPositionalParam('signerIndex', 'Index of signer', undefined, types.int)
+    .addPositionalParam('userIndex', 'Index of user(1-3)', undefined, types.int)
     .addPositionalParam('amount', 'Amount in decimal format', undefined, types.int)
     .addPositionalParam('projectId', 'Amount in decimal format', 1, types.int, true)
     .setAction(redeem);

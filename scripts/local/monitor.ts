@@ -53,7 +53,7 @@ async function main() {
             user.name === 'yieldExtractor' ? 0 : 1,
         );
         const usdcBalance = await usdc.balanceOf(user.address);
-        console.log(user.name);
+        console.log(user.name + ' - ' + user.address);
         console.log(`Shares: ${ethers.formatUnits(shareBalance, 6)}`);
         console.log(`USDC: ${ethers.formatUnits(usdcBalance, 6)}`);
         console.log('============');
