@@ -60,6 +60,7 @@ export const setSelectorFacets = async ({
                 tokenFacet.interface.getFunction('burn').selector,
                 tokenFacet.interface.getFunction('totalSupply()').selector,
                 tokenFacet.interface.getFunction('totalSupply(uint256)').selector,
+                tokenFacet.interface.getFunction('migrate').selector,
             ],
         },
         {

@@ -13,13 +13,20 @@ type Args = {
     projectId: number;
 };
 
+type MigrationArgs = {
+    userIndex: number;
+    amount: number;
+    fromProjectId: number;
+    toProjectId: number;
+};
+
 const validateNetwork = (hre: HardhatRuntimeEnvironment) => {
     if (hre.network.name !== 'local') {
         throw new Error('Not local network');
     }
 };
 
-const getUser = async (args: Args, hre: HardhatRuntimeEnvironment) => {
+const getUser = async (args: { userIndex: number }, hre: HardhatRuntimeEnvironment) => {
     const signers = await hre.ethers.getSigners();
     const user = signers[args.userIndex + 1];
     return user;
@@ -87,3 +94,31 @@ export const redeem = action(
             .redeem(amount, projectId, await user.getAddress());
     },
 );
+
+export const migrate = async (args: MigrationArgs, hre: HardhatRuntimeEnvironment) => {
+    validateNetwork(hre);
+    const user = await getUser(args, hre);
+    const yelayLiteVault = await getYelayLiteVault(hre);
+    const underlyingAsset = await yelayLiteVault.underlyingAsset();
+    const decimals = await ERC20__factory.connect(underlyingAsset, hre.ethers.provider).decimals();
+    const amount = hre.ethers.parseUnits(String(args.amount), decimals);
+
+    try {
+        const tx = await yelayLiteVault
+            .connect(user)
+            .migratePosition(
+                args.fromProjectId.toString(),
+                args.toProjectId.toString(),
+                amount.toString(),
+            );
+        await checkTxSuccess(tx);
+    } catch (error: any) {
+        const parsedError = LibErrors__factory.createInterface().parseError(error.data);
+        if (parsedError) {
+            console.error(parsedError);
+        } else {
+            console.error(`Error: ${error}`);
+            throw new Error('Failed call');
+        }
+    }
+};
