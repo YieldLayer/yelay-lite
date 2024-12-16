@@ -33,6 +33,7 @@ const config: HardhatUserConfig = {
                 process.env.LOCAL_USER2_PRIVATE_KEY!,
                 process.env.LOCAL_USER3_PRIVATE_KEY!,
             ],
+            timeout: 5 * 60 * 1000,
         },
     },
 };

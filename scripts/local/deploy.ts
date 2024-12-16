@@ -66,6 +66,7 @@ async function main() {
 
     await yelayLiteVault.createClient(deployer.address, 1, 100, ethers.encodeBytes32String('test'));
     await yelayLiteVault.activateProject(1);
+    await yelayLiteVault.activateProject(2);
 
     console.log('Adding strategy to vault');
     await yelayLiteVault.grantRole(
