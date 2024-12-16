@@ -69,13 +69,11 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);
     }
 
-    function strategyRewards(uint256 index) external returns (Reward[] memory rewards) {
+    function strategyRewards(uint256 index) external view returns (Reward[] memory rewards) {
         require(tx.origin == address(0), LibErrors.OnlyView());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        bytes memory result = sM.strategies[index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(IStrategyBase.viewRewards.selector, sM.strategies[index].supplement)
-        );
-        (rewards) = abi.decode(result, (Reward[]));
+        rewards =
+            IStrategyBase(sM.strategies[index].adapter).viewRewards(address(this), sM.strategies[index].supplement);
     }
 
     function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {

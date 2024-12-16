@@ -19,6 +19,6 @@ contract MockStrategy is IStrategyBase {
     function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {}
     function onAdd(bytes calldata supplement) external {}
     function onRemove(bytes calldata supplement) external {}
-    function viewRewards(bytes calldata supplement) external view returns (Reward[] memory rewards) {}
+    function viewRewards(address, bytes calldata supplement) external view returns (Reward[] memory rewards) {}
     function claimRewards(bytes calldata supplement) external {}
 }

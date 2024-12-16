@@ -49,6 +49,6 @@ contract AaveV3Strategy is IStrategyBase {
         aToken.approve(address(pool), 0);
     }
 
-    function viewRewards(bytes calldata supplement) external view returns (Reward[] memory rewards) {}
-    function claimRewards(bytes calldata supplement) external {}
+    function viewRewards(address, bytes calldata) external view returns (Reward[] memory rewards) {}
+    function claimRewards(bytes calldata) external {}
 }

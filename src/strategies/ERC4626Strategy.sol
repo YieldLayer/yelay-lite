@@ -37,6 +37,6 @@ contract ERC4626Strategy is IStrategyBase {
 
     function onAdd(bytes calldata) external virtual {}
     function onRemove(bytes calldata) external virtual {}
-    function viewRewards(bytes calldata supplement) external view virtual returns (Reward[] memory rewards) {}
-    function claimRewards(bytes calldata supplement) external virtual {}
+    function viewRewards(address, bytes calldata) external view virtual returns (Reward[] memory rewards) {}
+    function claimRewards(bytes calldata) external virtual {}
 }

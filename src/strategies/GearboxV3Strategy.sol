@@ -41,10 +41,15 @@ contract GearboxV3Strategy is ERC4626Strategy {
         return vault.previewRedeem(sdToken.balanceOf(address(spoolLiteVault)));
     }
 
-    function viewRewards(bytes calldata supplement) external view override returns (Reward[] memory) {
+    function viewRewards(address spoolLiteVault, bytes calldata supplement)
+        external
+        view
+        override
+        returns (Reward[] memory)
+    {
         (IFarmingPool sdToken, IERC20 gearToken) = _decodeSupplement(supplement);
         Reward[] memory rewards = new Reward[](1);
-        rewards[0] = Reward({token: address(gearToken), amount: sdToken.farmed(address(this))});
+        rewards[0] = Reward({token: address(gearToken), amount: sdToken.farmed(spoolLiteVault)});
         return rewards;
     }
 
