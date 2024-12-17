@@ -40,8 +40,10 @@ async function main() {
         .then((f) => f.deploy(deployer.address, ownerFacet.getAddress()))
         .then(async (c) => {
             const d = await c.waitForDeployment();
-            const block = await ethers.provider.getTransaction(d.deploymentTransaction()!.hash);
-            console.log(`Vault creation blocknumber: ${block?.blockNumber}`);
+            const tx = await ethers.provider.getTransaction(d.deploymentTransaction()!.hash);
+            console.log(`Vault creation blocknumber: ${tx?.blockNumber}`);
+            const block = await ethers.provider.getBlock(tx!.blockNumber!);
+            console.log(`Timestamp: ${block?.timestamp}`);
             return d.getAddress();
         })
         .then((a) => IYelayLiteVault__factory.connect(a, deployer));
