@@ -5,7 +5,7 @@ import '@nomicfoundation/hardhat-foundry';
 import '@nomicfoundation/hardhat-toolbox';
 import '@openzeppelin/hardhat-upgrades';
 import { HardhatUserConfig, task, types } from 'hardhat/config';
-import { deposit, migrate, redeem } from './scripts/local/actions';
+import { accrue, deposit, migrate, redeem } from './scripts/local/actions';
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -56,5 +56,7 @@ task('migrate', 'Migrate project in YelayLiteVault on local fork')
     .addPositionalParam('fromProjectId', 'projectId to migrate from', undefined, types.int)
     .addPositionalParam('toProjectId', 'projectId to migrate to', undefined, types.int)
     .setAction(migrate);
+
+task('accrue', 'Trigger accrueFee').setAction(accrue);
 
 export default config;

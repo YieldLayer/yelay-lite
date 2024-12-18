@@ -18,7 +18,7 @@ import {
 } from '../utils';
 
 // launch local fork first
-// source .env && anvil --fork-url ${MAINNET_URL} --auto-impersonate --block-base-fee-per-gas 1 --block-time 1
+// source .env && anvil --fork-url ${MAINNET_URL} --auto-impersonate --block-base-fee-per-gas 1 --block-time 12
 
 async function main() {
     const [deployer, yieldExtractor, user1, user2, user3] = await ethers.getSigners();
@@ -79,6 +79,10 @@ async function main() {
         '0xb95e9900cc6e2c54ae5b00d8f86008697b24bf67652a40653ea0c09c6fc4a856',
         deployer.address,
     );
+    await yelayLiteVault.grantRole(
+        '0xffd2865c3eadba5ddbf1543e65a692d7001b37f737db7363a54642156548df64',
+        deployer.address,
+    );
     const aaveStrategyFactory = await ethers.getContractFactory('AaveV3Strategy', deployer);
     const aaveStrategy = await aaveStrategyFactory.deploy(AAVE_V3_POOL);
     await yelayLiteVault.addStrategy({
@@ -116,9 +120,9 @@ async function main() {
 
     const usdcWhale = await impersonateSigner(USDC_WHALE);
     const usdc = ERC20__factory.connect(USDC_ADDRESS, usdcWhale);
-    await usdc.transfer(user1.address, ethers.parseUnits('10000', 6));
-    await usdc.transfer(user2.address, ethers.parseUnits('10000', 6));
-    await usdc.transfer(user3.address, ethers.parseUnits('10000', 6));
+    await usdc.transfer(user1.address, ethers.parseUnits('10000000', 6));
+    await usdc.transfer(user2.address, ethers.parseUnits('10000000', 6));
+    await usdc.transfer(user3.address, ethers.parseUnits('10000000', 6));
 
     await usdc.connect(user1).approve(await yelayLiteVault.getAddress(), ethers.MaxUint256);
     await usdc.connect(user2).approve(await yelayLiteVault.getAddress(), ethers.MaxUint256);

@@ -7,6 +7,7 @@
         "local:deposit": "npx hardhat deposit --network local",
         "local:redeem": "npx hardhat redeem --network local",
         "local:migrate": "npx hardhat migrate --network local",
+        "local:accrue": "npx hardhat accrue --network local",
         "local:monitor": "npx hardhat run scripts/local/monitor.ts --network local"
     },
     "devDependencies": {

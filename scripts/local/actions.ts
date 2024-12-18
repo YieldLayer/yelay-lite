@@ -122,3 +122,21 @@ export const migrate = async (args: MigrationArgs, hre: HardhatRuntimeEnvironmen
         }
     }
 };
+
+export const accrue = async (args: any, hre: HardhatRuntimeEnvironment) => {
+    validateNetwork(hre);
+    const [deployer] = await hre.ethers.getSigners();
+    const yelayLiteVault = await getYelayLiteVault(hre);
+    try {
+        const tx = await yelayLiteVault.connect(deployer).accrueFee();
+        await checkTxSuccess(tx);
+    } catch (error: any) {
+        const parsedError = LibErrors__factory.createInterface().parseError(error.data);
+        if (parsedError) {
+            console.error(parsedError);
+        } else {
+            console.error(`Error: ${error}`);
+            throw new Error('Failed call');
+        }
+    }
+};
