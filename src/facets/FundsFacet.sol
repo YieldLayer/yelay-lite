@@ -133,7 +133,6 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
             sF.underlyingBalance += SafeCast.toUint192(assets);
         }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
-        // TODO: cover in test
         if (needYieldAccrual) {
             sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
         }
@@ -177,7 +176,6 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }
 
-    // TODO: currently would allow to migrate to from locked deposits
     function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external {
         require(
             LibClients.isProjectActive(fromProjectId) && LibClients.isProjectActive(toProjectId)
@@ -297,8 +295,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     }
 
     function _updateLastTotalAssets(LibFunds.FundsStorage storage sF, uint256 updatedTotalAssets) internal {
-        // TODO: safe cast?
-        sF.lastTotalAssets = uint192(updatedTotalAssets);
+        sF.lastTotalAssets = SafeCast.toUint192(updatedTotalAssets);
         emit LibEvents.UpdateLastTotalAssets(updatedTotalAssets);
     }
 

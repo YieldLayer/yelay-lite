@@ -66,7 +66,6 @@ contract ManagedOperationsTest is Test {
             Utils.deployDiamond(owner, address(underlyingAsset), yieldExtractor, "https://yelay-lite-vault/{id}.json");
         yelayLiteVault.grantRole(LibRoles.QUEUES_OPERATOR, owner);
         yelayLiteVault.grantRole(LibRoles.STRATEGY_AUTHORITY, owner);
-        yelayLiteVault.grantRole(LibRoles.STRATEGY_OPERATOR, owner);
 
         yelayLiteVault.grantRole(LibRoles.FUNDS_OPERATOR, owner);
         vm.stopPrank();

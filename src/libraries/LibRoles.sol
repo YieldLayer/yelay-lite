@@ -8,10 +8,6 @@ library LibRoles {
     // 0xffd2865c3eadba5ddbf1543e65a692d7001b37f737db7363a54642156548df64
     bytes32 constant FUNDS_OPERATOR = keccak256("FUNDS_OPERATOR");
 
-    // TODO: not needed?
-    // 0x07e1e69609602fa637ca8ad165be6c640a29b7619c15f878b21fd2c3e35337e3
-    bytes32 constant STRATEGY_OPERATOR = keccak256("STRATEGY_OPERATOR");
-
     //0xb95e9900cc6e2c54ae5b00d8f86008697b24bf67652a40653ea0c09c6fc4a856
     bytes32 constant QUEUES_OPERATOR = keccak256("QUEUES_OPERATOR");
 }
