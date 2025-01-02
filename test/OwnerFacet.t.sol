@@ -6,7 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 
-import {ClientsFacet, ClientData, ProjectInterceptor, LockConfig, UserLockData} from "src/facets/ClientsFacet.sol";
+import {ClientsFacet, ClientData} from "src/facets/ClientsFacet.sol";
 import {OwnerFacet, SelectorsToFacet} from "src/facets/OwnerFacet.sol";
 
 import {LibErrors} from "src/libraries/LibErrors.sol";

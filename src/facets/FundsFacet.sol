@@ -12,7 +12,6 @@ import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 import {SwapArgs} from "src/interfaces/ISwapper.sol";
 
-import {SelfOnly} from "src/abstract/SelfOnly.sol";
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
 
 import {LibFunds} from "src/libraries/LibFunds.sol";
@@ -24,7 +23,7 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 
 import {console} from "forge-std/console.sol";
 
-contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
+contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
@@ -101,7 +100,7 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
             IStrategyBase(sM.strategies[index].adapter).viewRewards(address(this), sM.strategies[index].supplement);
     }
 
-    function deposit(uint256 assets, uint256 projectId, address receiver) external allowSelf returns (uint256 shares) {
+    function deposit(uint256 assets, uint256 projectId, address receiver) external returns (uint256 shares) {
         require(LibClients.isProjectActive(projectId), LibErrors.ProjectInactive());
 
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -139,12 +138,10 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
             sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
         }
 
-        LibClients.onDeposit(projectId, msg.sender, receiver, assets, shares);
-
         emit LibEvents.Deposit(projectId, msg.sender, receiver, assets, shares);
     }
 
-    function redeem(uint256 shares, uint256 projectId, address receiver) external allowSelf returns (uint256 assets) {
+    function redeem(uint256 shares, uint256 projectId, address receiver) external returns (uint256 assets) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
@@ -176,8 +173,6 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
         }
         sF.underlyingAsset.safeTransfer(receiver, assets);
         _burn(msg.sender, projectId, shares);
-
-        LibClients.onRedeem(projectId, msg.sender, receiver, assets, shares);
 
         emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }

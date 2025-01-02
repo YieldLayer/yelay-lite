@@ -131,22 +131,15 @@ library Utils {
     }
 
     function _clientsFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](15);
+        bytes4[] memory selectors = new bytes4[](8);
         selectors[0] = ClientsFacet.createClient.selector;
         selectors[1] = ClientsFacet.transferClientOwnership.selector;
         selectors[2] = ClientsFacet.activateProject.selector;
-        selectors[3] = ClientsFacet.setProjectInterceptor.selector;
-        selectors[4] = ClientsFacet.setLockConfig.selector;
-        selectors[5] = ClientsFacet.depositHook.selector;
-        selectors[6] = ClientsFacet.redeemHook.selector;
-        selectors[7] = ClientsFacet.lastProjectId.selector;
-        selectors[8] = ClientsFacet.clientNameTaken.selector;
-        selectors[9] = ClientsFacet.ownerToClientData.selector;
-        selectors[10] = ClientsFacet.projectIdToClientName.selector;
-        selectors[11] = ClientsFacet.projectIdActive.selector;
-        selectors[12] = ClientsFacet.projectIdToProjectInterceptor.selector;
-        selectors[13] = ClientsFacet.projectIdToLockConfig.selector;
-        selectors[14] = ClientsFacet.userToProjectIdToUserLock.selector;
+        selectors[3] = ClientsFacet.lastProjectId.selector;
+        selectors[4] = ClientsFacet.clientNameTaken.selector;
+        selectors[5] = ClientsFacet.ownerToClientData.selector;
+        selectors[6] = ClientsFacet.projectIdToClientName.selector;
+        selectors[7] = ClientsFacet.projectIdActive.selector;
         return selectors;
     }
 

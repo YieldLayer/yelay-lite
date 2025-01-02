@@ -1,25 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {SelfOnly} from "src/abstract/SelfOnly.sol";
-
 import {IClientsFacet} from "src/interfaces/IClientsFacet.sol";
 
 import {LibOwner} from "src/libraries/LibOwner.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
-import {
-    LibClients,
-    ClientData,
-    LockConfig,
-    ProjectInterceptor,
-    UserLock,
-    UserLockData
-} from "src/libraries/LibClients.sol";
+import {LibClients, ClientData} from "src/libraries/LibClients.sol";
 
 import {console} from "forge-std/console.sol";
 
-contract ClientsFacet is SelfOnly, IClientsFacet {
+contract ClientsFacet is IClientsFacet {
     function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
         external
     {
@@ -58,75 +49,6 @@ contract ClientsFacet is SelfOnly, IClientsFacet {
         emit LibEvents.ProjectActivated(projectId);
     }
 
-    function setProjectInterceptor(uint256 projectId, ProjectInterceptor projectInterceptor) external {
-        LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
-        require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
-        require(clientData.minProjectId <= projectId, LibErrors.OutOfBoundProjectId());
-        require(clientData.maxProjectId >= projectId, LibErrors.OutOfBoundProjectId());
-        require(projectInterceptor != ProjectInterceptor.None, LibErrors.ProjectInterceptorNone());
-        require(
-            clientStorage.projectIdToProjectInterceptor[projectId] == ProjectInterceptor.None,
-            LibErrors.ProjectInterceptorSet()
-        );
-        clientStorage.projectIdToProjectInterceptor[projectId] = projectInterceptor;
-        emit LibEvents.ProjectOptionSet(projectId, uint256(projectInterceptor));
-    }
-
-    // TODO: should we split interceptors to separate facets??
-    function setLockConfig(uint256 projectId, LockConfig calldata lockConfig) external {
-        LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
-        require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
-        require(clientData.minProjectId <= projectId, LibErrors.OutOfBoundProjectId());
-        require(clientData.maxProjectId >= projectId, LibErrors.OutOfBoundProjectId());
-        require(
-            clientStorage.projectIdToProjectInterceptor[projectId] == ProjectInterceptor.Lock,
-            LibErrors.ProjectInterceptorIsNotLock()
-        );
-        clientStorage.projectIdToLockConfig[projectId] = lockConfig;
-        emit LibEvents.LockConfigSet(projectId, lockConfig.duration);
-    }
-
-    // TODO: REMOVE
-    function depositHook(uint256 projectId, address, address receiver, uint256, uint256 shares) external onlySelf {
-        LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        ProjectInterceptor projectInterceptor = clientStorage.projectIdToProjectInterceptor[projectId];
-        if (projectInterceptor == ProjectInterceptor.Lock) {
-            clientStorage.userToProjectIdToUserLock[receiver][projectId].locks.push(
-                UserLock({
-                    timestamp: uint64(block.timestamp + clientStorage.projectIdToLockConfig[projectId].duration),
-                    shares: uint192(shares)
-                })
-            );
-        }
-    }
-
-    function redeemHook(uint256 projectId, address redeemer, address, uint256, uint256 shares) external onlySelf {
-        LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        ProjectInterceptor projectInterceptor = clientStorage.projectIdToProjectInterceptor[projectId];
-        if (projectInterceptor == ProjectInterceptor.Lock) {
-            uint256 i = clientStorage.userToProjectIdToUserLock[redeemer][projectId].pointer;
-            uint256 allLocks = clientStorage.userToProjectIdToUserLock[redeemer][projectId].locks.length;
-            for (i; i < allLocks; i++) {
-                UserLock storage lock = clientStorage.userToProjectIdToUserLock[redeemer][projectId].locks[i];
-                require(lock.timestamp < block.timestamp, LibErrors.UserLocked());
-                if (shares < lock.shares) {
-                    // TODO: safe cast?
-                    lock.shares -= uint192(shares);
-                    break;
-                } else {
-                    clientStorage.userToProjectIdToUserLock[redeemer][projectId].pointer++;
-                    shares -= lock.shares;
-                    lock.shares = 0;
-                    if (shares == 0) {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     function lastProjectId() external view returns (uint256) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         return clientStorage.lastProjectId;
@@ -150,20 +72,5 @@ contract ClientsFacet is SelfOnly, IClientsFacet {
     function projectIdActive(uint256 projectId) external view returns (bool) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         return clientStorage.projectIdActive[projectId];
-    }
-
-    function projectIdToProjectInterceptor(uint256 projectId) external view returns (ProjectInterceptor) {
-        LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        return clientStorage.projectIdToProjectInterceptor[projectId];
-    }
-
-    function projectIdToLockConfig(uint256 projectId) external view returns (LockConfig memory) {
-        LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        return clientStorage.projectIdToLockConfig[projectId];
-    }
-
-    function userToProjectIdToUserLock(address user, uint256 projectId) external view returns (UserLockData memory) {
-        LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        return clientStorage.userToProjectIdToUserLock[user][projectId];
     }
 }
