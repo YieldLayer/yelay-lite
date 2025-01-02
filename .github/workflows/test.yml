@@ -29,6 +29,9 @@ jobs:
         run: |
           forge --version
 
+      - name: Set environment variables
+        run: echo "MAINNET_URL=${{ secrets.MAINNET_URL }}" >> $GITHUB_ENV
+
       - name: Run Forge fmt
         run: |
           forge fmt --check
