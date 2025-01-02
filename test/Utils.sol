@@ -16,7 +16,6 @@ import {FundsFacet} from "src/facets/FundsFacet.sol";
 import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {ClientsFacet} from "src/facets/ClientsFacet.sol";
-import {TokenFacet} from "src/facets/TokenFacet.sol";
 import {OwnerFacet} from "src/facets/OwnerFacet.sol";
 
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
@@ -37,13 +36,12 @@ library Utils {
 
         IYelayLiteVault yelayLiteVault = IYelayLiteVault(address(new YelayLiteVault(owner, address(ownerFacet))));
 
-        SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](5);
-        selectorsToFacets[0] = SelectorsToFacet({facet: address(new TokenFacet()), selectors: _tokenFacetSelectors()});
-        selectorsToFacets[1] = SelectorsToFacet({facet: address(new FundsFacet()), selectors: _fundsFacetSelectors()});
-        selectorsToFacets[2] =
+        SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](4);
+        selectorsToFacets[0] = SelectorsToFacet({facet: address(new FundsFacet()), selectors: _fundsFacetSelectors()});
+        selectorsToFacets[1] =
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: _managementFacetSelectors()});
-        selectorsToFacets[3] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
-        selectorsToFacets[4] =
+        selectorsToFacets[2] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
+        selectorsToFacets[3] =
             SelectorsToFacet({facet: address(new ClientsFacet()), selectors: _clientsFacetSelectors()});
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
@@ -78,20 +76,8 @@ library Utils {
         yelayLiteVault.multicall(data);
     }
 
-    function _tokenFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](7);
-        selectors[0] = ERC1155Upgradeable.uri.selector;
-        selectors[1] = ERC1155Upgradeable.balanceOf.selector;
-        selectors[2] = TokenFacet.mint.selector;
-        selectors[3] = TokenFacet.burn.selector;
-        selectors[4] = bytes4(keccak256("totalSupply()"));
-        selectors[5] = bytes4(keccak256("totalSupply(uint256)"));
-        selectors[6] = TokenFacet.migrate.selector;
-        return selectors;
-    }
-
     function _fundsFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](17);
+        bytes4[] memory selectors = new bytes4[](21);
         selectors[0] = FundsFacet.deposit.selector;
         selectors[1] = FundsFacet.redeem.selector;
         selectors[2] = FundsFacet.totalAssets.selector;
@@ -109,6 +95,11 @@ library Utils {
         selectors[14] = FundsFacet.swapper.selector;
         selectors[15] = FundsFacet.compound.selector;
         selectors[16] = FundsFacet.migratePosition.selector;
+
+        selectors[17] = ERC1155Upgradeable.uri.selector;
+        selectors[18] = ERC1155Upgradeable.balanceOf.selector;
+        selectors[19] = bytes4(keccak256("totalSupply()"));
+        selectors[20] = bytes4(keccak256("totalSupply(uint256)"));
         return selectors;
     }
 

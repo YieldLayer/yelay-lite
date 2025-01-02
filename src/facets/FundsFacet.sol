@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {ERC1155SupplyUpgradeable} from
+    "@openzeppelin-upgradeable/contracts/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
@@ -14,7 +16,6 @@ import {RoleCheck} from "src/abstract/RoleCheck.sol";
 
 import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibClients} from "src/libraries/LibClients.sol";
-import {LibToken} from "src/libraries/LibToken.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
@@ -22,12 +23,20 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 
 import {console} from "forge-std/console.sol";
 
-contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
+contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
     uint256 constant YIELD_PROJECT_ID = 0;
+
+    function totalSupply() public view override(ERC1155SupplyUpgradeable, IFundsFacet) returns (uint256) {
+        return super.totalSupply();
+    }
+
+    function totalSupply(uint256 id) public view override(ERC1155SupplyUpgradeable, IFundsFacet) returns (uint256) {
+        return super.totalSupply(id);
+    }
 
     function lastTotalAssets() external view returns (uint256) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -86,6 +95,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         // to save on users gas?
         // TODO: cover in test
         bool needYieldAccrual = sF.lastTotalAssetsTimestamp + 12 hours < block.timestamp;
+        // bool needYieldAccrual = true;
         if (needYieldAccrual) {
             newTotalAssets = _accrueFee(sF);
         } else {
@@ -93,10 +103,10 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         }
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
-        shares = _convertToShares(assets, LibToken.totalSupply(), newTotalAssets);
+        shares = _convertToShares(assets, totalSupply(), newTotalAssets);
 
         sF.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
-        LibToken.mint(receiver, projectId, shares);
+        _mint(receiver, projectId, shares, "");
         bool success;
         for (uint256 i; i < sM.depositQueue.length; i++) {
             (success,) = sM.strategies[sM.depositQueue[i]].adapter.delegatecall(
@@ -128,7 +138,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
 
         uint256 newTotalAssets = _accrueFee(sF);
 
-        assets = _convertToAssets(shares, LibToken.totalSupply(), newTotalAssets);
+        assets = _convertToAssets(shares, totalSupply(), newTotalAssets);
 
         _updateLastTotalAssets(sF, newTotalAssets.zeroFloorSub(assets));
 
@@ -154,14 +164,15 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
             sF.underlyingBalance -= _assets;
         }
         sF.underlyingAsset.safeTransfer(receiver, assets);
-        LibToken.burn(msg.sender, projectId, shares);
+        _burn(msg.sender, projectId, shares);
 
         LibClients.onRedeem(projectId, msg.sender, receiver, assets, shares);
 
         emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }
 
-    function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external allowSelf {
+    // TODO: currently would allow to migrate to from locked deposits
+    function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external {
         require(
             LibClients.isProjectActive(fromProjectId) && LibClients.isProjectActive(toProjectId)
                 && LibClients.sameClient(fromProjectId, toProjectId),
@@ -171,7 +182,8 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         // TODO: cover in test
         uint256 newTotalAssets = _accrueFee(sF);
         _updateLastTotalAssets(sF, newTotalAssets);
-        LibToken.migrate(msg.sender, fromProjectId, toProjectId, amount);
+        _burn(msg.sender, fromProjectId, amount);
+        _mint(msg.sender, toProjectId, amount, "");
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
     }
 
@@ -204,7 +216,6 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
     function compound(SwapArgs[] memory swapArgs)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
-        allowSelf
         returns (uint256 compounded)
     {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -224,7 +235,7 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
         emit LibEvents.Compounded(compounded);
     }
 
-    function accrueFee() public allowSelf onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function accrueFee() public onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         // TODO: cover this in test
         uint256 newTotalAssets = _accrueFee(sF);
@@ -271,9 +282,9 @@ contract FundsFacet is SelfOnly, RoleCheck, IFundsFacet {
 
         uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);
         if (totalInterest > 0) {
-            uint256 feeShares = _convertToShares(totalInterest, LibToken.totalSupply(), sF.lastTotalAssets);
+            uint256 feeShares = _convertToShares(totalInterest, totalSupply(), sF.lastTotalAssets);
             if (feeShares > 0) {
-                LibToken.mint(sF.yieldExtractor, YIELD_PROJECT_ID, feeShares);
+                _mint(sF.yieldExtractor, YIELD_PROJECT_ID, feeShares, "");
             }
             emit LibEvents.AccrueInterest(newTotalAssets, totalInterest, feeShares);
         }
