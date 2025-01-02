@@ -77,7 +77,7 @@ library Utils {
     }
 
     function _fundsFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](21);
+        bytes4[] memory selectors = new bytes4[](24);
         selectors[0] = FundsFacet.deposit.selector;
         selectors[1] = FundsFacet.redeem.selector;
         selectors[2] = FundsFacet.totalAssets.selector;
@@ -100,6 +100,10 @@ library Utils {
         selectors[18] = ERC1155Upgradeable.balanceOf.selector;
         selectors[19] = bytes4(keccak256("totalSupply()"));
         selectors[20] = bytes4(keccak256("totalSupply(uint256)"));
+
+        selectors[21] = FundsFacet.lastTotalAssetsTimestamp.selector;
+        selectors[22] = FundsFacet.lastTotalAssetsUpdateInterval.selector;
+        selectors[23] = FundsFacet.setLastTotalAssetsUpdateInterval.selector;
         return selectors;
     }
 

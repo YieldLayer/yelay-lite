@@ -30,6 +30,7 @@ contract FundsFacetTest is Test {
         yelayLiteVault.grantRole(LibRoles.QUEUES_OPERATOR, owner);
         yelayLiteVault.grantRole(LibRoles.STRATEGY_AUTHORITY, owner);
         yelayLiteVault.grantRole(LibRoles.STRATEGY_OPERATOR, owner);
+        yelayLiteVault.grantRole(LibRoles.FUNDS_OPERATOR, owner);
         vm.stopPrank();
 
         vm.startPrank(user);
@@ -89,5 +90,16 @@ contract FundsFacetTest is Test {
 
         assertEq(yelayLiteVault.balanceOf(user, projectId), 3 * toDeposit / 4);
         assertEq(yelayLiteVault.balanceOf(user, newProjectId), toDeposit / 4);
+    }
+
+    function test_setLastTotalAssetsUpdateInterval() external {
+        uint64 interval = 100;
+        assertEq(yelayLiteVault.lastTotalAssetsUpdateInterval(), 0);
+        vm.expectRevert();
+        yelayLiteVault.setLastTotalAssetsUpdateInterval(interval);
+        vm.startPrank(owner);
+        yelayLiteVault.setLastTotalAssetsUpdateInterval(interval);
+        vm.stopPrank();
+        assertEq(yelayLiteVault.lastTotalAssetsUpdateInterval(), interval);
     }
 }

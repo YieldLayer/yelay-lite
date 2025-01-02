@@ -40,16 +40,8 @@ contract MorphoBlueStrategy is IStrategyBase {
         return MorphoBalancesLib.expectedSupplyAssets(morpho, marketParams, yelayLiteVault);
     }
 
-    function onAdd(bytes calldata supplement) external {
-        (address asset,) = _decodeSupplement(supplement);
-        IERC20(asset).approve(address(morpho), type(uint256).max);
-    }
-
-    function onRemove(bytes calldata supplement) external {
-        (address asset,) = _decodeSupplement(supplement);
-        IERC20(asset).approve(address(morpho), 0);
-    }
-
+    function onAdd(bytes calldata supplement) external {}
+    function onRemove(bytes calldata supplement) external {}
     function viewRewards(address, bytes calldata) external view returns (Reward[] memory rewards) {}
     function claimRewards(bytes calldata) external {}
 }

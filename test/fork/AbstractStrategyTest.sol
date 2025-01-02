@@ -162,4 +162,42 @@ abstract contract AbstractStrategyTest is Test {
         assertEq(yelayLiteVault.totalAssets(), 0);
         assertApproxEqAbs(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0, 1);
     }
+
+    function test_deposit_optional_totalAssetsUpdate() external {
+        uint256 start = block.timestamp;
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
+
+        assertEq(yelayLiteVault.lastTotalAssetsTimestamp(), 0);
+
+        vm.startPrank(owner);
+        yelayLiteVault.setLastTotalAssetsUpdateInterval(100);
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.lastTotalAssetsTimestamp(), start);
+        assertEq(yelayLiteVault.lastTotalAssets(), toDeposit);
+
+        vm.warp(start + 50);
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.lastTotalAssetsTimestamp(), start);
+        assertEq(yelayLiteVault.lastTotalAssets(), toDeposit * 2);
+
+        vm.warp(start + 103);
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+
+        assertGt(yelayLiteVault.lastTotalAssets(), toDeposit * 3);
+        assertEq(yelayLiteVault.lastTotalAssetsTimestamp(), start + 103);
+    }
 }

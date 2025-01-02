@@ -31,4 +31,7 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
     function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external;
     function totalSupply() external view returns (uint256);
     function totalSupply(uint256 id) external view returns (uint256);
+    function lastTotalAssetsTimestamp() external view returns (uint64);
+    function lastTotalAssetsUpdateInterval() external view returns (uint64);
+    function setLastTotalAssetsUpdateInterval(uint64 interval) external;
 }

@@ -38,14 +38,12 @@ contract AaveV3Strategy is IStrategyBase {
     }
 
     function onAdd(bytes calldata supplement) external {
-        (address asset, IAToken aToken) = _decodeSupplement(supplement);
-        IERC20(asset).approve(address(pool), type(uint256).max);
+        (, IAToken aToken) = _decodeSupplement(supplement);
         aToken.approve(address(pool), type(uint256).max);
     }
 
     function onRemove(bytes calldata supplement) external {
-        (address asset, IAToken aToken) = _decodeSupplement(supplement);
-        IERC20(asset).approve(address(pool), 0);
+        (, IAToken aToken) = _decodeSupplement(supplement);
         aToken.approve(address(pool), 0);
     }
 

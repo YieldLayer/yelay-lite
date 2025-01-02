@@ -8,17 +8,16 @@ import {ISwapper} from "src/interfaces/ISwapper.sol";
 library LibFunds {
     struct StrategyData {
         address adapter;
-        // for instance Morpho requires bytes32 market id
-        // aave3 aToken address
+        // for instance Morpho requires bytes32 market id, aave3 aToken address etc.
         bytes supplement;
     }
 
     /// @custom:storage-location erc7201:yelay-vault.storage.FundsFacet
     struct FundsStorage {
+        uint192 underlyingBalance;
+        uint64 lastTotalAssetsUpdateInterval;
         uint192 lastTotalAssets;
         uint64 lastTotalAssetsTimestamp;
-        // balance of underlying asset in the vault
-        uint256 underlyingBalance;
         ERC20 underlyingAsset;
         ISwapper swapper;
         address yieldExtractor;
@@ -47,22 +46,6 @@ library LibFunds {
     function _getERC1155Storage() internal pure returns (ERC1155Storage storage $) {
         assembly {
             $.slot := ERC1155StorageLocation
-        }
-    }
-
-    /// @custom:storage-location erc7201:openzeppelin.storage.ERC1155Supply
-    struct ERC1155SupplyStorage {
-        mapping(uint256 id => uint256) _totalSupply;
-        uint256 _totalSupplyAll;
-    }
-
-    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC1155Supply")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant ERC1155SupplyStorageLocation =
-        0x4a593662ee04d27b6a00ebb31be7fe0c102c2ade82a7c5d764f2df05dc4e2800;
-
-    function _getERC1155SupplyStorage() private pure returns (ERC1155SupplyStorage storage $) {
-        assembly {
-            $.slot := ERC1155SupplyStorageLocation
         }
     }
 }

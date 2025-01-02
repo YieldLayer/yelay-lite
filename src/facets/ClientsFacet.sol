@@ -19,7 +19,6 @@ import {
 
 import {console} from "forge-std/console.sol";
 
-// TODO: cover with tests
 contract ClientsFacet is SelfOnly, IClientsFacet {
     function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
         external
@@ -89,6 +88,7 @@ contract ClientsFacet is SelfOnly, IClientsFacet {
         emit LibEvents.LockConfigSet(projectId, lockConfig.duration);
     }
 
+    // TODO: REMOVE
     function depositHook(uint256 projectId, address, address receiver, uint256, uint256 shares) external onlySelf {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ProjectInterceptor projectInterceptor = clientStorage.projectIdToProjectInterceptor[projectId];

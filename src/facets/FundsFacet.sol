@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {ERC1155SupplyUpgradeable} from
     "@openzeppelin-upgradeable/contracts/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
@@ -41,6 +42,21 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
     function lastTotalAssets() external view returns (uint256) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         return sF.lastTotalAssets;
+    }
+
+    function lastTotalAssetsTimestamp() external view returns (uint64) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return sF.lastTotalAssetsTimestamp;
+    }
+
+    function lastTotalAssetsUpdateInterval() external view returns (uint64) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        return sF.lastTotalAssetsUpdateInterval;
+    }
+
+    function setLastTotalAssetsUpdateInterval(uint64 interval) external onlyRole(LibRoles.FUNDS_OPERATOR) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        sF.lastTotalAssetsUpdateInterval = interval;
     }
 
     function underlyingBalance() external view returns (uint256) {
@@ -90,12 +106,8 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
 
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         uint256 newTotalAssets;
-        // TODO: in case there will be multiple strategies i.e. 5
-        // it could be beneficial to not accrue fee on each deposit
-        // to save on users gas?
-        // TODO: cover in test
-        bool needYieldAccrual = sF.lastTotalAssetsTimestamp + 12 hours < block.timestamp;
-        // bool needYieldAccrual = true;
+        bool needYieldAccrual = sF.lastTotalAssetsTimestamp == 0
+            || sF.lastTotalAssetsTimestamp + sF.lastTotalAssetsUpdateInterval < block.timestamp;
         if (needYieldAccrual) {
             newTotalAssets = _accrueFee(sF);
         } else {
@@ -119,12 +131,12 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
             }
         }
         if (!success) {
-            sF.underlyingBalance += assets;
+            sF.underlyingBalance += SafeCast.toUint192(assets);
         }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
         // TODO: cover in test
         if (needYieldAccrual) {
-            sF.lastTotalAssetsTimestamp = uint64(block.timestamp);
+            sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
         }
 
         LibClients.onDeposit(projectId, msg.sender, receiver, assets, shares);
@@ -145,7 +157,6 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
         uint256 _assets = assets;
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
             if (_assets == 0) break;
-            // TODO: create smarter method to get precise amount able to be withdrawn?
             uint256 assetBalance = IStrategyBase(sM.strategies[sM.withdrawQueue[i]].adapter).assetBalance(
                 address(this), sM.strategies[sM.withdrawQueue[i]].supplement
             );
@@ -161,7 +172,7 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
             }
         }
         if (_assets > 0) {
-            sF.underlyingBalance -= _assets;
+            sF.underlyingBalance -= SafeCast.toUint192(_assets);
         }
         sF.underlyingAsset.safeTransfer(receiver, assets);
         _burn(msg.sender, projectId, shares);
@@ -178,10 +189,8 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
                 && LibClients.sameClient(fromProjectId, toProjectId),
             LibErrors.PositionMigrationForbidden()
         );
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         // TODO: cover in test
-        uint256 newTotalAssets = _accrueFee(sF);
-        _updateLastTotalAssets(sF, newTotalAssets);
+        accrueFee();
         _burn(msg.sender, fromProjectId, amount);
         _mint(msg.sender, toProjectId, amount, "");
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
@@ -228,18 +237,20 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
         }
         compounded = sF.swapper.swap(swapArgs, _underlyingAsset);
         // TODO: cover this in test
-        sF.underlyingBalance += compounded;
-        uint256 newTotalAssets = _accrueFee(sF);
-        _updateLastTotalAssets(sF, newTotalAssets + compounded);
-        sF.lastTotalAssetsTimestamp = uint64(block.timestamp);
+        sF.underlyingBalance += SafeCast.toUint192(compounded);
+        // TODO: cover in test
+        accrueFee();
         emit LibEvents.Compounded(compounded);
     }
 
-    function accrueFee() public onlyRole(LibRoles.FUNDS_OPERATOR) {
+    // TODO: do we need access control here?
+    function accrueFee() public {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         // TODO: cover this in test
         uint256 newTotalAssets = _accrueFee(sF);
         _updateLastTotalAssets(sF, newTotalAssets);
+        // TODO: cover in test
+        sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
     }
 
     function claimStrategyRewards(uint256 index) external onlyRole(LibRoles.FUNDS_OPERATOR) {
@@ -259,7 +270,7 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
                 IStrategyBase.deposit.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
             )
         );
-        sF.underlyingBalance -= strategyArgs.amount;
+        sF.underlyingBalance -= SafeCast.toUint192(strategyArgs.amount);
         emit LibEvents.ManagedDeposit(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
     }
 
@@ -273,7 +284,7 @@ contract FundsFacet is SelfOnly, RoleCheck, ERC1155SupplyUpgradeable, IFundsFace
                 IStrategyBase.withdraw.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
             )
         );
-        sF.underlyingBalance += strategyArgs.amount;
+        sF.underlyingBalance += SafeCast.toUint192(strategyArgs.amount);
         emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
     }
 
