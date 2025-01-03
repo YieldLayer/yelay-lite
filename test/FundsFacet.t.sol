@@ -6,6 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 
 import {LibRoles} from "src/libraries/LibRoles.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 
 import {MockToken} from "./MockToken.sol";
 import {Utils} from "./Utils.sol";
@@ -49,6 +50,8 @@ contract FundsFacetTest is Test {
         assertEq(yelayLiteVault.balanceOf(user, projectId), 0);
 
         vm.startPrank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ProjectInactive.selector));
+        yelayLiteVault.deposit(toDeposit, 100500, user);
         yelayLiteVault.deposit(toDeposit, projectId, user);
         vm.stopPrank();
 
@@ -84,6 +87,10 @@ contract FundsFacetTest is Test {
 
         vm.startPrank(user);
         yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.PositionMigrationForbidden.selector));
+        yelayLiteVault.migratePosition(projectId, 100500, toDeposit / 4);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.PositionMigrationForbidden.selector));
+        yelayLiteVault.migratePosition(projectId, 51, toDeposit / 4);
         yelayLiteVault.migratePosition(projectId, newProjectId, toDeposit / 4);
         vm.stopPrank();
 

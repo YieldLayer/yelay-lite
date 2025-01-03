@@ -113,7 +113,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         bool needYieldAccrual = sF.lastTotalAssetsTimestamp == 0
             || sF.lastTotalAssetsTimestamp + sF.lastTotalAssetsUpdateInterval < block.timestamp;
         if (needYieldAccrual) {
-            newTotalAssets = _accrueFee(sF);
+            newTotalAssets = _mintFee(sF);
         } else {
             newTotalAssets = sF.lastTotalAssets;
         }
@@ -149,7 +149,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
-        uint256 newTotalAssets = _accrueFee(sF);
+        uint256 newTotalAssets = _mintFee(sF);
 
         assets = _convertToAssets(shares, totalSupply(), newTotalAssets);
 
@@ -187,8 +187,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
                 && LibClients.sameClient(fromProjectId, toProjectId),
             LibErrors.PositionMigrationForbidden()
         );
-        // TODO: cover in test
-        accrueFee();
+        _accrueFee();
         _burn(msg.sender, fromProjectId, amount);
         _mint(msg.sender, toProjectId, amount, "");
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
@@ -233,20 +232,19 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
             ERC20(swapArgs[i].tokenIn).safeTransfer(address(_swapper), tokenInAmount);
         }
         compounded = _swapper.swap(swapArgs, _underlyingAsset);
-        // TODO: cover this in test
         sF.underlyingBalance += SafeCast.toUint192(compounded);
-        // TODO: cover in test
-        accrueFee();
+        _accrueFee();
         emit LibEvents.Compounded(compounded);
     }
 
-    // TODO: do we need access control here?
-    function accrueFee() public {
+    function accrueFee() public onlyRole(LibRoles.FUNDS_OPERATOR) {
+        _accrueFee();
+    }
+
+    function _accrueFee() internal {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        // TODO: cover this in test
-        uint256 newTotalAssets = _accrueFee(sF);
+        uint256 newTotalAssets = _mintFee(sF);
         _updateLastTotalAssets(sF, newTotalAssets);
-        // TODO: cover in test
         sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
     }
 
@@ -285,7 +283,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
     }
 
-    function _accrueFee(LibFunds.FundsStorage storage sF) internal returns (uint256 newTotalAssets) {
+    function _mintFee(LibFunds.FundsStorage storage sF) internal returns (uint256 newTotalAssets) {
         newTotalAssets = totalAssets();
 
         uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);

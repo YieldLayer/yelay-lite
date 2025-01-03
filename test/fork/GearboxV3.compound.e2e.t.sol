@@ -15,6 +15,7 @@ import {Utils} from "../Utils.sol";
 import {
     DAI_ADDRESS, MAINNET_BLOCK_NUMBER, GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING, GEARBOX_TOKEN
 } from "../Constants.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 
 contract CompoundTest is Test {
     using Utils for address;
@@ -74,6 +75,9 @@ contract CompoundTest is Test {
         vm.startPrank(user);
         yelayLiteVault.deposit(toDeposit, projectId, user);
         vm.stopPrank();
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.OnlyView.selector));
+        yelayLiteVault.strategyRewards(0);
 
         {
             vm.startPrank(address(0), address(0));
@@ -143,7 +147,21 @@ contract CompoundTest is Test {
 
         uint256 gearBalance = IERC20(GEARBOX_TOKEN).balanceOf(address(yelayLiteVault));
 
+        uint256 underlyingAssetBefore = yelayLiteVault.underlyingBalance();
+
         vm.startPrank(owner);
+        {
+            SwapArgs[] memory s = new SwapArgs[](1);
+            s[0] = SwapArgs({
+                tokenIn: address(underlyingAsset),
+                swapTarget: address(mockExchange),
+                swapCallData: abi.encodeWithSelector(
+                    MockExchange.swap.selector, GEARBOX_TOKEN, address(underlyingAsset), gearBalance / 2
+                )
+            });
+            vm.expectRevert(abi.encodeWithSelector(LibErrors.CompoundUnderlyingForbidden.selector));
+            yelayLiteVault.compound(s);
+        }
         SwapArgs[] memory swapArgs = new SwapArgs[](1);
         swapArgs[0] = SwapArgs({
             tokenIn: GEARBOX_TOKEN,
@@ -155,7 +173,40 @@ contract CompoundTest is Test {
         uint256 compounded = yelayLiteVault.compound(swapArgs);
         vm.stopPrank();
 
+        assertEq(yelayLiteVault.underlyingBalance(), underlyingAssetBefore + compounded);
         assertEq(IERC20(GEARBOX_TOKEN).balanceOf(address(yelayLiteVault)), gearBalance / 2);
         assertEq(compounded, mockExchange.previewSwap(GEARBOX_TOKEN, address(underlyingAsset), gearBalance / 2));
+    }
+
+    function test_accrueFee() external {
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 10 weeks);
+
+        assertEq(yelayLiteVault.balanceOf(yieldExtractor, 0), 0);
+        uint256 totalSupplyBefore = yelayLiteVault.totalSupply();
+        uint256 totalSupply0Before = yelayLiteVault.totalSupply(0);
+        uint256 lastTotalAssetsBefore = yelayLiteVault.lastTotalAssets();
+        uint256 lastTotalAssetsTimestampBefore = yelayLiteVault.lastTotalAssetsTimestamp();
+        assertEq(totalSupply0Before, 0);
+
+        vm.expectRevert();
+        yelayLiteVault.accrueFee();
+
+        vm.startPrank(owner);
+        yelayLiteVault.accrueFee();
+        vm.stopPrank();
+
+        assertGt(yelayLiteVault.balanceOf(yieldExtractor, 0), 0);
+        assertGt(yelayLiteVault.totalSupply(), totalSupplyBefore);
+        assertGt(yelayLiteVault.totalSupply(0), 0);
+        assertGt(yelayLiteVault.lastTotalAssets(), lastTotalAssetsBefore);
+        assertEq(yelayLiteVault.lastTotalAssetsTimestamp(), lastTotalAssetsTimestampBefore + 10 weeks);
     }
 }

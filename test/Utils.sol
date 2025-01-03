@@ -48,7 +48,7 @@ library Utils {
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
         yelayLiteVault.createClient(owner, 1, 100, "test");
-        for (uint256 i = 1; i < 100; i++) {
+        for (uint256 i = 1; i < 50; i++) {
             yelayLiteVault.activateProject(i);
         }
         return yelayLiteVault;
