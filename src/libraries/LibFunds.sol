@@ -3,8 +3,6 @@ pragma solidity ^0.8.28;
 
 import {ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
-import {ISwapper} from "src/interfaces/ISwapper.sol";
-
 library LibFunds {
     struct StrategyData {
         address adapter;
@@ -19,7 +17,6 @@ library LibFunds {
         uint192 lastTotalAssets;
         uint64 lastTotalAssetsTimestamp;
         ERC20 underlyingAsset;
-        ISwapper swapper;
         address yieldExtractor;
     }
 

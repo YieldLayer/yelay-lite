@@ -9,7 +9,6 @@ import {
 } from "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
 
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
-import {YelayLiteVaultInit} from "src/YelayLiteVaultInit.sol";
 import {Swapper} from "src/Swapper.sol";
 
 import {FundsFacet} from "src/facets/FundsFacet.sol";
@@ -34,10 +33,13 @@ library Utils {
 
         OwnerFacet ownerFacet = new OwnerFacet();
 
-        IYelayLiteVault yelayLiteVault = IYelayLiteVault(address(new YelayLiteVault(owner, address(ownerFacet))));
+        IYelayLiteVault yelayLiteVault = IYelayLiteVault(
+            address(new YelayLiteVault(owner, address(ownerFacet), underlyingAsset, yieldExtractor, uri))
+        );
 
         SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](4);
-        selectorsToFacets[0] = SelectorsToFacet({facet: address(new FundsFacet()), selectors: _fundsFacetSelectors()});
+        selectorsToFacets[0] =
+            SelectorsToFacet({facet: address(new FundsFacet(swapper)), selectors: _fundsFacetSelectors()});
         selectorsToFacets[1] =
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: _managementFacetSelectors()});
         selectorsToFacets[2] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
@@ -49,31 +51,7 @@ library Utils {
         for (uint256 i = 1; i < 100; i++) {
             yelayLiteVault.activateProject(i);
         }
-        _initialize(yelayLiteVault, swapper, underlyingAsset, yieldExtractor, uri);
         return yelayLiteVault;
-    }
-
-    function _initialize(
-        IYelayLiteVault yelayLiteVault,
-        ISwapper swapper,
-        address underlyingAsset,
-        address yieldExtractor,
-        string memory uri
-    ) private {
-        bytes[] memory data = new bytes[](3);
-        YelayLiteVaultInit yelayLiteVaultInit = new YelayLiteVaultInit();
-        {
-            SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](5);
-            selectorsToFacets[0] = SelectorsToFacet({facet: address(yelayLiteVaultInit), selectors: _initSelectors()});
-            data[0] = abi.encodeWithSelector(yelayLiteVault.setSelectorToFacets.selector, selectorsToFacets);
-        }
-        data[1] = abi.encodeWithSelector(yelayLiteVault.init.selector, swapper, underlyingAsset, yieldExtractor, uri);
-        {
-            SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](5);
-            selectorsToFacets[0] = SelectorsToFacet({facet: address(0), selectors: _initSelectors()});
-            data[2] = abi.encodeWithSelector(yelayLiteVault.setSelectorToFacets.selector, selectorsToFacets);
-        }
-        yelayLiteVault.multicall(data);
     }
 
     function _fundsFacetSelectors() private pure returns (bytes4[] memory) {
@@ -140,12 +118,6 @@ library Utils {
         selectors[5] = ClientsFacet.ownerToClientData.selector;
         selectors[6] = ClientsFacet.projectIdToClientName.selector;
         selectors[7] = ClientsFacet.projectIdActive.selector;
-        return selectors;
-    }
-
-    function _initSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = YelayLiteVaultInit.init.selector;
         return selectors;
     }
 

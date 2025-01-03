@@ -10,7 +10,7 @@ import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
-import {SwapArgs} from "src/interfaces/ISwapper.sol";
+import {ISwapper, SwapArgs} from "src/interfaces/ISwapper.sol";
 
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
 
@@ -29,6 +29,12 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     using FixedPointMathLib for uint256;
 
     uint256 constant YIELD_PROJECT_ID = 0;
+
+    ISwapper private immutable _swapper;
+
+    constructor(ISwapper swapper_) {
+        _swapper = swapper_;
+    }
 
     function totalSupply() public view override(ERC1155SupplyUpgradeable, IFundsFacet) returns (uint256) {
         return super.totalSupply();
@@ -74,8 +80,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     }
 
     function swapper() external view returns (address) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        return address(sF.swapper);
+        return address(_swapper);
     }
 
     function totalAssets() public view returns (uint256 assets) {
@@ -222,13 +227,12 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         address _underlyingAsset = address(sF.underlyingAsset);
-        address _swapper = address(sF.swapper);
         for (uint256 i; i < swapArgs.length; i++) {
             require(swapArgs[i].tokenIn != _underlyingAsset, LibErrors.CompoundUnderlyingForbidden());
             uint256 tokenInAmount = ERC20(swapArgs[i].tokenIn).balanceOf(address(this));
-            ERC20(swapArgs[i].tokenIn).safeTransfer(_swapper, tokenInAmount);
+            ERC20(swapArgs[i].tokenIn).safeTransfer(address(_swapper), tokenInAmount);
         }
-        compounded = sF.swapper.swap(swapArgs, _underlyingAsset);
+        compounded = _swapper.swap(swapArgs, _underlyingAsset);
         // TODO: cover this in test
         sF.underlyingBalance += SafeCast.toUint192(compounded);
         // TODO: cover in test

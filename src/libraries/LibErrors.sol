@@ -41,4 +41,10 @@ library LibErrors {
     error OnlyView();
     error CompoundUnderlyingForbidden();
     error PositionMigrationForbidden();
+
+    // ===================== SwapWrapper ================================
+
+    error MonoAssetSwap();
+    error NotWeth();
+    error NoEth();
 }
