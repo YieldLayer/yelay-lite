@@ -43,18 +43,6 @@ contract VaultWrapper is OwnableUpgradeable, UUPSUpgradeable {
         return IFundsFacet(yelayLiteVault).deposit(msg.value, projectId, msg.sender);
     }
 
-    // function redeemAndUnwrapEth(address yelayLiteVault, uint256 projectId, uint256 shares)
-    //     external
-    //     returns (uint256 amount)
-    // {
-    //     require(IFundsFacet(yelayLiteVault).underlyingAsset() == address(weth), LibErrors.NotWeth());
-    //     IFundsFacet(yelayLiteVault).safeTransferFrom(msg.sender, address(this), projectId, shares, "");
-    //     // (address from, address to, uint256 id, uint256 value, bytes calldata data)
-    //     amount = IFundsFacet(yelayLiteVault).redeem(shares, projectId, address(this));
-    //     weth.withdraw(amount);
-    //     payable(msg.sender).transfer(amount);
-    // }
-
     function swapAndDeposit(address yelayLiteVault, uint256 projectId, SwapArgs[] calldata swapArgs, uint256 amount)
         external
         payable
@@ -85,33 +73,6 @@ contract VaultWrapper is OwnableUpgradeable, UUPSUpgradeable {
             }
         }
     }
-
-    // function redeemAndSwap(
-    //     address yelayLiteVault,
-    //     uint256 projectId,
-    //     SwapArgs[] calldata swapArgs,
-    //     uint256 shares,
-    //     address tokenOut,
-    //     bool unwrapWeth
-    // ) external returns (uint256 assets) {
-    //     require(swapArgs.length == 1, LibErrors.MonoAssetSwap());
-    //     require(swapArgs[0].tokenIn == IFundsFacet(yelayLiteVault).underlyingAsset());
-
-    //     uint256 amount = IFundsFacet(yelayLiteVault).redeem(shares, projectId, address(this));
-
-    //     ERC20(swapArgs[0].tokenIn).safeTransfer(address(swapper), amount);
-    //     assets = swapper.swap(swapArgs, tokenOut);
-    //     if (tokenOut == address(weth) && unwrapWeth) {
-    //         weth.withdraw(assets);
-    //         payable(msg.sender).transfer(assets);
-    //     } else {
-    //         ERC20(tokenOut).safeTransfer(msg.sender, assets);
-    //     }
-    //     uint256 returnBalance = ERC20(swapArgs[0].tokenIn).balanceOf(address(this));
-    //     if (returnBalance > 0) {
-    //         ERC20(swapArgs[0].tokenIn).safeTransfer(msg.sender, returnBalance);
-    //     }
-    // }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 

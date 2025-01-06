@@ -21,8 +21,6 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     using Address for address;
     using SafeTransferLib for ERC20;

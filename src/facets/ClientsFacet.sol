@@ -8,8 +8,6 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibClients, ClientData} from "src/libraries/LibClients.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract ClientsFacet is IClientsFacet {
     function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
         external

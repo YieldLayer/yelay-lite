@@ -14,8 +14,6 @@ import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract ManagementFacet is RoleCheck, IManagementFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
