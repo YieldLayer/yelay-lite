@@ -13,6 +13,7 @@ import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 
 contract ManagementFacet is RoleCheck, IManagementFacet {
     using Address for address;
@@ -54,6 +55,8 @@ contract ManagementFacet is RoleCheck, IManagementFacet {
     }
 
     function removeStrategy(uint256 index) external onlyRole(LibRoles.STRATEGY_AUTHORITY) {
+        // TODO: cover in tests
+        require(LibManagement._strategyAssets(index) == 0, LibErrors.StrategyNotEmpty());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         _approveStrategy(sM.strategies[index], 0);
         sM.strategies[index].adapter.functionDelegateCall(
@@ -67,6 +70,6 @@ contract ManagementFacet is RoleCheck, IManagementFacet {
     function _approveStrategy(StrategyData memory strategy, uint256 amount) internal {
         LibFunds.FundsStorage memory sF = LibFunds._getFundsStorage();
         address protocol = IStrategyBase(strategy.adapter).protocol();
-        sF.underlyingAsset.approve(protocol, amount);
+        sF.underlyingAsset.safeApprove(protocol, amount);
     }
 }

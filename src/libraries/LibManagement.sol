@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {ERC20} from "@solmate/utils/SafeTransferLib.sol";
 import {StrategyData} from "src/interfaces/IManagementFacet.sol";
+import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
 
 library LibManagement {
     /// @custom:storage-location erc7201:yelay-vault.storage.ManagementFacet
@@ -21,5 +22,10 @@ library LibManagement {
         assembly {
             $.slot := ManagementStorageLocation
         }
+    }
+
+    function _strategyAssets(uint256 index) internal view returns (uint256) {
+        LibManagement.ManagementStorage storage sM = _getManagementStorage();
+        return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);
     }
 }

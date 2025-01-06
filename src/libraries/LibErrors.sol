@@ -47,4 +47,8 @@ library LibErrors {
     error MonoAssetSwap();
     error NotWeth();
     error NoEth();
+
+    // ===================== ManagementFacet ================================
+
+    error StrategyNotEmpty();
 }

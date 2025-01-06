@@ -87,13 +87,12 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
 
         assets = sF.underlyingBalance;
         for (uint256 i; i < sM.strategies.length; ++i) {
-            assets += IStrategyBase(sM.strategies[i].adapter).assetBalance(address(this), sM.strategies[i].supplement);
+            assets += LibManagement._strategyAssets(i);
         }
     }
 
     function strategyAssets(uint256 index) external view returns (uint256) {
-        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);
+        return LibManagement._strategyAssets(index);
     }
 
     function strategyRewards(uint256 index) external view returns (Reward[] memory rewards) {
