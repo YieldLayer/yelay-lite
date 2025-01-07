@@ -24,6 +24,11 @@ library LibManagement {
         }
     }
 
+    /**
+     * @dev Returns the asset balance of a strategy at the given index.
+     * @param index The index of the strategy.
+     * @return The asset balance of the strategy.
+     */
     function _strategyAssets(uint256 index) internal view returns (uint256) {
         LibManagement.ManagementStorage storage sM = _getManagementStorage();
         return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);

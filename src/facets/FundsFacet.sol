@@ -22,6 +22,10 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
+/**
+ * @title FundsFacet
+ * @dev Contract that manages funds, including deposits, withdrawals, reallocation, compounding etc.
+ */
 contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
@@ -31,57 +35,72 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
     ISwapper private immutable _swapper;
 
+    /**
+     * @dev Initializes the contract with the given swapper.
+     * @param swapper_ The address of the swapper contract.
+     */
     constructor(ISwapper swapper_) {
         _swapper = swapper_;
     }
 
+    /// @inheritdoc IFundsFacet
     function totalSupply() public view override(ERC1155SupplyUpgradeable, IFundsFacet) returns (uint256) {
         return super.totalSupply();
     }
 
+    /// @inheritdoc IFundsFacet
     function totalSupply(uint256 id) public view override(ERC1155SupplyUpgradeable, IFundsFacet) returns (uint256) {
         return super.totalSupply(id);
     }
 
+    /// @inheritdoc IFundsFacet
     function lastTotalAssets() external view returns (uint256) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         return sF.lastTotalAssets;
     }
 
+    /// @inheritdoc IFundsFacet
     function lastTotalAssetsTimestamp() external view returns (uint64) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         return sF.lastTotalAssetsTimestamp;
     }
 
+    /// @inheritdoc IFundsFacet
     function lastTotalAssetsUpdateInterval() external view returns (uint64) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         return sF.lastTotalAssetsUpdateInterval;
     }
 
+    /// @inheritdoc IFundsFacet
     function setLastTotalAssetsUpdateInterval(uint64 interval) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         sF.lastTotalAssetsUpdateInterval = interval;
     }
 
+    /// @inheritdoc IFundsFacet
     function underlyingBalance() external view returns (uint256) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         return sF.underlyingBalance;
     }
 
+    /// @inheritdoc IFundsFacet
     function underlyingAsset() external view returns (address) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         return address(sF.underlyingAsset);
     }
 
+    /// @inheritdoc IFundsFacet
     function yieldExtractor() external view returns (address) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         return sF.yieldExtractor;
     }
 
+    /// @inheritdoc IFundsFacet
     function swapper() external view returns (address) {
         return address(_swapper);
     }
 
+    /// @inheritdoc IFundsFacet
     function totalAssets() public view returns (uint256 assets) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
@@ -92,10 +111,12 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         }
     }
 
+    /// @inheritdoc IFundsFacet
     function strategyAssets(uint256 index) external view returns (uint256) {
         return LibManagement._strategyAssets(index);
     }
 
+    /// @inheritdoc IFundsFacet
     function strategyRewards(uint256 index) external view returns (Reward[] memory rewards) {
         require(tx.origin == address(0), LibErrors.OnlyView());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
@@ -103,8 +124,9 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
             IStrategyBase(sM.strategies[index].adapter).viewRewards(address(this), sM.strategies[index].supplement);
     }
 
+    /// @inheritdoc IFundsFacet
     function deposit(uint256 assets, uint256 projectId, address receiver) external notPaused returns (uint256 shares) {
-        require(LibClients.isProjectActive(projectId), LibErrors.ProjectInactive());
+        require(LibClients._isProjectActive(projectId), LibErrors.ProjectInactive());
 
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         uint256 newTotalAssets;
@@ -143,6 +165,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         emit LibEvents.Deposit(projectId, msg.sender, receiver, assets, shares);
     }
 
+    /// @inheritdoc IFundsFacet
     function redeem(uint256 shares, uint256 projectId, address receiver) external notPaused returns (uint256 assets) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
@@ -179,10 +202,11 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }
 
+    /// @inheritdoc IFundsFacet
     function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external notPaused {
         require(
-            LibClients.isProjectActive(fromProjectId) && LibClients.isProjectActive(toProjectId)
-                && LibClients.sameClient(fromProjectId, toProjectId),
+            LibClients._isProjectActive(fromProjectId) && LibClients._isProjectActive(toProjectId)
+                && LibClients._sameClient(fromProjectId, toProjectId),
             LibErrors.PositionMigrationForbidden()
         );
         _accrueFee();
@@ -191,18 +215,21 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
     }
 
+    /// @inheritdoc IFundsFacet
     function managedDeposit(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) notPaused {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         _managedDeposit(sM, sF, strategyArgs);
     }
 
+    /// @inheritdoc IFundsFacet
     function managedWithdraw(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) notPaused {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         _managedWithdraw(sM, sF, strategyArgs);
     }
 
+    /// @inheritdoc IFundsFacet
     function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
@@ -218,6 +245,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         }
     }
 
+    /// @inheritdoc IFundsFacet
     function compound(SwapArgs[] memory swapArgs)
         external
         notPaused
@@ -237,10 +265,14 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         emit LibEvents.Compounded(compounded);
     }
 
+    /// @inheritdoc IFundsFacet
     function accrueFee() public notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         _accrueFee();
     }
 
+    /**
+     * @dev Internal function to accrue fees.
+     */
     function _accrueFee() internal {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         uint256 newTotalAssets = _mintFee(sF);
@@ -248,6 +280,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
     }
 
+    /// @inheritdoc IFundsFacet
     function claimStrategyRewards(uint256 index) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.strategies[index].adapter.functionDelegateCall(
@@ -255,6 +288,12 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         );
     }
 
+    /**
+     * @dev Internal function to deposit assets into a strategy.
+     * @param sM The management storage.
+     * @param sF The funds storage.
+     * @param strategyArgs The strategy arguments.
+     */
     function _managedDeposit(
         LibManagement.ManagementStorage storage sM,
         LibFunds.FundsStorage storage sF,
@@ -269,6 +308,12 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         emit LibEvents.ManagedDeposit(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
     }
 
+    /**
+     * @dev Internal function to withdraw assets from a strategy.
+     * @param sM The management storage.
+     * @param sF The funds storage.
+     * @param strategyArgs The strategy arguments.
+     */
     function _managedWithdraw(
         LibManagement.ManagementStorage storage sM,
         LibFunds.FundsStorage storage sF,
@@ -283,6 +328,11 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
     }
 
+    /**
+     * @dev Internal function to mint fees.
+     * @param sF The funds storage.
+     * @return newTotalAssets The new total assets value.
+     */
     function _mintFee(LibFunds.FundsStorage storage sF) internal returns (uint256 newTotalAssets) {
         newTotalAssets = totalAssets();
 
@@ -296,11 +346,23 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         }
     }
 
+    /**
+     * @dev Internal function to update the last total assets value.
+     * @param sF The funds storage.
+     * @param updatedTotalAssets The updated total assets value.
+     */
     function _updateLastTotalAssets(LibFunds.FundsStorage storage sF, uint256 updatedTotalAssets) internal {
         sF.lastTotalAssets = SafeCast.toUint192(updatedTotalAssets);
         emit LibEvents.UpdateLastTotalAssets(updatedTotalAssets);
     }
 
+    /**
+     * @dev Internal function to convert assets to shares.
+     * @param assets The amount of assets.
+     * @param newTotalSupply The new total supply.
+     * @param newTotalAssets The new total assets.
+     * @return The amount of shares.
+     */
     function _convertToShares(uint256 assets, uint256 newTotalSupply, uint256 newTotalAssets)
         internal
         pure
@@ -309,6 +371,13 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         return newTotalSupply == 0 ? assets : assets.mulDiv(newTotalSupply, newTotalAssets);
     }
 
+    /**
+     * @dev Internal function to convert shares to assets.
+     * @param shares The amount of shares.
+     * @param newTotalSupply The new total supply.
+     * @param newTotalAssets The new total assets.
+     * @return The amount of assets.
+     */
     function _convertToAssets(uint256 shares, uint256 newTotalSupply, uint256 newTotalAssets)
         internal
         pure

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-
 import {ClientsFacet} from "src/facets/ClientsFacet.sol";
 
 struct ClientData {
@@ -12,8 +10,6 @@ struct ClientData {
 }
 
 library LibClients {
-    using Address for address;
-
     /// @custom:storage-location erc7201:yelay-vault.storage.ClientsFacet
     struct ClientsStorage {
         uint256 lastProjectId;
@@ -32,12 +28,23 @@ library LibClients {
         }
     }
 
-    function isProjectActive(uint256 projectId) internal view returns (bool) {
+    /**
+     * @dev Checks if a project is active.
+     * @param projectId The ID of the project.
+     * @return True if the project is active, false otherwise.
+     */
+    function _isProjectActive(uint256 projectId) internal view returns (bool) {
         ClientsStorage storage clientStorage = _getClientsStorage();
         return clientStorage.projectIdActive[projectId];
     }
 
-    function sameClient(uint256 projectId1, uint256 projectId2) internal view returns (bool) {
+    /**
+     * @dev Checks if two project IDs belong to the same client.
+     * @param projectId1 The first project ID.
+     * @param projectId2 The second project ID.
+     * @return True if both project IDs belong to the same client, false otherwise.
+     */
+    function _sameClient(uint256 projectId1, uint256 projectId2) internal view returns (bool) {
         ClientsStorage storage clientStorage = _getClientsStorage();
         return clientStorage.projectIdToClientName[projectId1] == clientStorage.projectIdToClientName[projectId2];
     }

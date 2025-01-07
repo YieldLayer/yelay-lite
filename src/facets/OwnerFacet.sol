@@ -7,15 +7,22 @@ import {LibOwner} from "src/libraries/LibOwner.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
+/**
+ * @title OwnerFacet
+ * @dev Contract that provides ownership management functionality.
+ */
 contract OwnerFacet is IOwnerFacet {
+    /// @inheritdoc IOwnerFacet
     function owner() public view returns (address) {
         return LibOwner._getOwnerStorage().owner;
     }
 
+    /// @inheritdoc IOwnerFacet
     function pendingOwner() public view returns (address) {
         return LibOwner._getOwnerStorage().pendingOwner;
     }
 
+    /// @inheritdoc IOwnerFacet
     function setSelectorToFacets(SelectorsToFacet[] calldata arr) external {
         LibOwner.onlyOwner();
         LibOwner.OwnerStorage storage s = LibOwner._getOwnerStorage();
@@ -29,11 +36,13 @@ contract OwnerFacet is IOwnerFacet {
         }
     }
 
+    /// @inheritdoc IOwnerFacet
     function selectorToFacet(bytes4 selector) external view returns (address) {
         LibOwner.OwnerStorage storage s = LibOwner._getOwnerStorage();
         return s.selectorToFacet[selector];
     }
 
+    /// @inheritdoc IOwnerFacet
     function transferOwnership(address newOwner) external {
         LibOwner.onlyOwner();
         LibOwner.OwnerStorage storage s = LibOwner._getOwnerStorage();
@@ -41,6 +50,7 @@ contract OwnerFacet is IOwnerFacet {
         emit LibEvents.OwnershipTransferStarted(s.owner, s.pendingOwner);
     }
 
+    /// @inheritdoc IOwnerFacet
     function acceptOwnership() external {
         LibOwner.OwnerStorage storage s = LibOwner._getOwnerStorage();
         address _pendingOwner = s.pendingOwner;

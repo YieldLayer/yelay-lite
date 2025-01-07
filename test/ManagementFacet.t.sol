@@ -58,9 +58,6 @@ contract ManagementFacetTest is Test {
             assertEq(strategies.length, 1);
             assertEq(strategies[0].adapter, strategy1.adapter);
             assertEq(strategies[0].supplement, strategy1.supplement);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol()), type(uint256).max);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol()), 0);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol()), 0);
         }
         {
             yelayLiteVault.addStrategy(strategy2);
@@ -70,9 +67,6 @@ contract ManagementFacetTest is Test {
             assertEq(strategies[0].supplement, strategy1.supplement);
             assertEq(strategies[1].adapter, strategy2.adapter);
             assertEq(strategies[1].supplement, strategy2.supplement);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol()), type(uint256).max);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol()), type(uint256).max);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol()), 0);
         }
         {
             yelayLiteVault.addStrategy(strategy3);
@@ -84,9 +78,6 @@ contract ManagementFacetTest is Test {
             assertEq(strategies[1].supplement, strategy2.supplement);
             assertEq(strategies[2].adapter, strategy3.adapter);
             assertEq(strategies[2].supplement, strategy3.supplement);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol()), type(uint256).max);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol()), type(uint256).max);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol()), type(uint256).max);
         }
         {
             yelayLiteVault.removeStrategy(1);
@@ -96,18 +87,12 @@ contract ManagementFacetTest is Test {
             assertEq(strategies[0].supplement, strategy1.supplement);
             assertEq(strategies[1].adapter, strategy3.adapter);
             assertEq(strategies[1].supplement, strategy3.supplement);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol()), type(uint256).max);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol()), 0);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol()), type(uint256).max);
         }
         {
             yelayLiteVault.removeStrategy(1);
             yelayLiteVault.removeStrategy(0);
             StrategyData[] memory strategies = yelayLiteVault.getStrategies();
             assertEq(strategies.length, 0);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol()), 0);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol()), 0);
-            assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol()), 0);
         }
         vm.stopPrank();
     }

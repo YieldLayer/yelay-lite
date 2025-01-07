@@ -42,6 +42,7 @@ contract ManagedOperationsTest is Test {
                 )
             });
             yelayLiteVault.addStrategy(strategy);
+            yelayLiteVault.approveStrategy(0, type(uint256).max);
         }
         {
             StrategyData memory strategy = StrategyData({
@@ -49,6 +50,7 @@ contract ManagedOperationsTest is Test {
                 supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID)
             });
             yelayLiteVault.addStrategy(strategy);
+            yelayLiteVault.approveStrategy(1, type(uint256).max);
         }
         uint256[] memory queue = new uint256[](2);
         queue[0] = 0;

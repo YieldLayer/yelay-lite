@@ -8,51 +8,38 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 import {ISwapper, SwapArgs, ExchangeArgs} from "src/interfaces/ISwapper.sol";
 
+import {LibErrors} from "src/libraries/LibErrors.sol";
+import {LibEvents} from "src/libraries/LibEvents.sol";
+
 contract Swapper is OwnableUpgradeable, UUPSUpgradeable, ISwapper {
     using SafeTransferLib for ERC20;
     using Address for address;
-
-    /**
-     * @notice Used when trying to do a swap via an exchange that is not allowed to execute a swap.
-     * @param exchange Exchange used.
-     */
-    error ExchangeNotAllowed(address exchange);
-
-    error NothingToSwap(address tokenIn);
-    error NothingSwapped(address tokenOut);
-
-    /**
-     * @notice Emitted when the exchange allowlist is updated.
-     * @param exchange Exchange that was updated.
-     * @param isAllowed Whether the exchange is allowed to be used in a swap or not after the update.
-     */
-    event ExchangeAllowlistUpdated(address indexed exchange, bool isAllowed);
-
-    /* ========== STATE VARIABLES ========== */
 
     /**
      * @dev Exchanges that are allowed to execute a swap.
      */
     mapping(address => bool) public exchangeAllowlist;
 
-    /* ========== CONSTRUCTOR ========== */
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
+    /**
+     * @dev Initializes the contract with the given owner.
+     * @param owner The address of the owner.
+     */
     function initialize(address owner) external initializer {
         __Ownable_init(owner);
     }
 
-    /* ========== EXTERNAL MUTATIVE FUNCTIONS ========== */
-
+    // @inheritdoc ISwapper
     function swap(SwapArgs[] memory swapArgs, address tokenOut) external returns (uint256 tokenOutAmount) {
         for (uint256 i; i < swapArgs.length; i++) {
-            require(exchangeAllowlist[swapArgs[i].swapTarget], ExchangeNotAllowed(swapArgs[i].swapTarget));
+            require(exchangeAllowlist[swapArgs[i].swapTarget], LibErrors.ExchangeNotAllowed(swapArgs[i].swapTarget));
 
             uint256 tokenInAmount = ERC20(swapArgs[i].tokenIn).balanceOf(address(this));
-            require(tokenInAmount > 0, NothingToSwap(swapArgs[i].tokenIn));
+            require(tokenInAmount > 0, LibErrors.NothingToSwap(swapArgs[i].tokenIn));
 
             _approveMax(ERC20(swapArgs[i].tokenIn), swapArgs[i].swapTarget);
 
@@ -63,25 +50,35 @@ contract Swapper is OwnableUpgradeable, UUPSUpgradeable, ISwapper {
                 ERC20(swapArgs[i].tokenIn).safeTransfer(msg.sender, tokenInAmount);
             }
             uint256 newTokenOutAmount = ERC20(tokenOut).balanceOf(address(this));
-            require(newTokenOutAmount > tokenOutAmount, NothingSwapped(tokenOut));
+            require(newTokenOutAmount > tokenOutAmount, LibErrors.NothingSwapped(tokenOut));
             tokenOutAmount += newTokenOutAmount;
         }
         ERC20(tokenOut).safeTransfer(msg.sender, tokenOutAmount);
         return tokenOutAmount;
     }
 
+    // @inheritdoc ISwapper
     function updateExchangeAllowlist(ExchangeArgs[] calldata exchangeArgs) external onlyOwner {
         for (uint256 i; i < exchangeArgs.length; ++i) {
             exchangeAllowlist[exchangeArgs[i].exchange] = exchangeArgs[i].allowed;
-            emit ExchangeAllowlistUpdated(exchangeArgs[i].exchange, exchangeArgs[i].allowed);
+            emit LibEvents.ExchangeAllowlistUpdated(exchangeArgs[i].exchange, exchangeArgs[i].allowed);
         }
     }
 
+    /**
+     * @dev Approves the maximum amount of tokens for the spender.
+     * @param token The token to approve.
+     * @param spender The address of the spender.
+     */
     function _approveMax(ERC20 token, address spender) private {
         if (token.allowance(address(this), spender) == 0) {
             token.safeApprove(spender, type(uint256).max);
         }
     }
 
+    /**
+     * @dev Authorizes the upgrade of the contract.
+     * @param newImplementation The address of the new implementation.
+     */
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

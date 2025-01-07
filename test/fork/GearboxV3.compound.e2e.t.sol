@@ -38,6 +38,7 @@ contract CompoundTest is Test {
         StrategyData memory strategy =
             StrategyData({adapter: strategyAdapter, supplement: abi.encode(GEARBOX_DAI_STAKING, GEARBOX_TOKEN)});
         yelayLiteVault.addStrategy(strategy);
+        yelayLiteVault.approveStrategy(0, type(uint256).max);
         uint256[] memory queue = new uint256[](1);
         queue[0] = 0;
         yelayLiteVault.updateDepositQueue(queue);

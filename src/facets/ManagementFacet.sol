@@ -16,25 +16,33 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
+/**
+ * @title ManagementFacet
+ * @dev Contract that manages strategies and their queues.
+ */
 contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
 
+    /// @inheritdoc IManagementFacet
     function getStrategies() external view returns (StrategyData[] memory) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         return sM.strategies;
     }
 
+    /// @inheritdoc IManagementFacet
     function getDepositQueue() external view returns (uint256[] memory) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         return sM.depositQueue;
     }
 
+    /// @inheritdoc IManagementFacet
     function getWithdrawQueue() external view returns (uint256[] memory) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         return sM.withdrawQueue;
     }
 
+    /// @inheritdoc IManagementFacet
     function updateDepositQueue(uint256[] calldata depositQueue_)
         external
         notPaused
@@ -45,6 +53,7 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         emit LibEvents.UpdateDepositQueue();
     }
 
+    /// @inheritdoc IManagementFacet
     function updateWithdrawQueue(uint256[] calldata withdrawQueue_)
         external
         notPaused
@@ -55,18 +64,18 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         emit LibEvents.UpdateWithdrawQueue();
     }
 
+    /// @inheritdoc IManagementFacet
     function addStrategy(StrategyData calldata strategy) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.strategies.push(strategy);
-        _approveStrategy(strategy, type(uint256).max);
         strategy.adapter.functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onAdd.selector, strategy.supplement));
         emit LibEvents.AddStrategy(strategy.adapter, strategy.supplement);
     }
 
+    /// @inheritdoc IManagementFacet
     function removeStrategy(uint256 index) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         require(LibManagement._strategyAssets(index) == 0, LibErrors.StrategyNotEmpty());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        _approveStrategy(sM.strategies[index], 0);
         sM.strategies[index].adapter.functionDelegateCall(
             abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.strategies[index].supplement)
         );
@@ -75,9 +84,11 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         sM.strategies.pop();
     }
 
-    function _approveStrategy(StrategyData memory strategy, uint256 amount) internal {
+    /// @inheritdoc IManagementFacet
+    function approveStrategy(uint256 index, uint256 amount) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         LibFunds.FundsStorage memory sF = LibFunds._getFundsStorage();
-        address protocol = IStrategyBase(strategy.adapter).protocol();
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        address protocol = IStrategyBase(sM.strategies[index].adapter).protocol();
         sF.underlyingAsset.safeApprove(protocol, amount);
     }
 }

@@ -20,6 +20,9 @@ library LibOwner {
         }
     }
 
+    /**
+     * @dev Reverts if the caller is not the owner.
+     */
     function onlyOwner() internal view {
         OwnerStorage storage s = _getOwnerStorage();
         require(s.owner == msg.sender, LibErrors.OwnableUnauthorizedAccount(msg.sender));

@@ -2,15 +2,18 @@
 pragma solidity ^0.8.28;
 
 import {PausableCheck} from "src/abstract/PausableCheck.sol";
-
 import {IClientsFacet} from "src/interfaces/IClientsFacet.sol";
-
 import {LibOwner} from "src/libraries/LibOwner.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibClients, ClientData} from "src/libraries/LibClients.sol";
 
+/**
+ * @title ClientsFacet
+ * @dev Contract that provides functionality to manage clients and allow them to manage their projects.
+ */
 contract ClientsFacet is PausableCheck, IClientsFacet {
+    /// @inheritdoc IClientsFacet
     function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
         external
     {
@@ -28,6 +31,7 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         emit LibEvents.NewProjectIds(clientOwner, minProjectId, maxProjectId);
     }
 
+    /// @inheritdoc IClientsFacet
     function transferClientOwnership(address newClientOwner) external notPaused {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
@@ -37,6 +41,7 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         emit LibEvents.OwnershipTransferProjectIds(newClientOwner, clientData.minProjectId, clientData.maxProjectId);
     }
 
+    /// @inheritdoc IClientsFacet
     function activateProject(uint256 projectId) external notPaused {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
@@ -49,26 +54,31 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         emit LibEvents.ProjectActivated(projectId);
     }
 
+    /// @inheritdoc IClientsFacet
     function lastProjectId() external view returns (uint256) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         return clientStorage.lastProjectId;
     }
 
+    /// @inheritdoc IClientsFacet
     function clientNameTaken(bytes32 clientName) external view returns (bool) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         return clientStorage.clientNameTaken[clientName];
     }
 
+    /// @inheritdoc IClientsFacet
     function ownerToClientData(address owner) external view returns (ClientData memory) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         return clientStorage.ownerToClientData[owner];
     }
 
+    /// @inheritdoc IClientsFacet
     function projectIdToClientName(uint256 projectId) external view returns (bytes32) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         return clientStorage.projectIdToClientName[projectId];
     }
 
+    /// @inheritdoc IClientsFacet
     function projectIdActive(uint256 projectId) external view returns (bool) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         return clientStorage.projectIdActive[projectId];

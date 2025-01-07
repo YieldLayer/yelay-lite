@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 import {ERC4626Strategy, Reward} from "src/strategies/ERC4626Strategy.sol";
