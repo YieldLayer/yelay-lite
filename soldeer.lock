@@ -27,13 +27,13 @@ rev = "69c8def5f222ff96f2b5beff05dfba996368aa79"
 name = "openzeppelin-contracts-upgradeable"
 version = "5.1.0"
 git = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable.git"
-rev = "v5.1.0"
+rev = "fa525310e45f91eb20a6d3baa2644be8e0adba31"
 
 [[dependencies]]
 name = "solady"
 version = "0.0.268"
 git = "https://github.com/Vectorized/solady.git"
-rev = "v0.0.268"
+rev = "1dd8967b93b379ca6cf384640e0715e55ef08e3d"
 
 [[dependencies]]
 name = "solmate"
