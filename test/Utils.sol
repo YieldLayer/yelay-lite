@@ -98,13 +98,15 @@ library Utils {
     }
 
     function _accessFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](6);
+        bytes4[] memory selectors = new bytes4[](8);
         selectors[0] = AccessFacet.grantRole.selector;
         selectors[1] = AccessFacet.revokeRole.selector;
         selectors[2] = AccessFacet.checkRole.selector;
         selectors[3] = IAccessControlEnumerable.getRoleMember.selector;
         selectors[4] = IAccessControlEnumerable.getRoleMemberCount.selector;
         selectors[5] = IAccessControl.hasRole.selector;
+        selectors[6] = AccessFacet.setPaused.selector;
+        selectors[7] = AccessFacet.selectorToPaused.selector;
         return selectors;
     }
 

@@ -13,6 +13,7 @@ import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 import {ISwapper, SwapArgs} from "src/interfaces/ISwapper.sol";
 
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
+import {PausableCheck} from "src/abstract/PausableCheck.sol";
 
 import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibClients} from "src/libraries/LibClients.sol";
@@ -21,7 +22,7 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
-contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
+contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
@@ -57,7 +58,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         return sF.lastTotalAssetsUpdateInterval;
     }
 
-    function setLastTotalAssetsUpdateInterval(uint64 interval) external onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function setLastTotalAssetsUpdateInterval(uint64 interval) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         sF.lastTotalAssetsUpdateInterval = interval;
     }
@@ -102,7 +103,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
             IStrategyBase(sM.strategies[index].adapter).viewRewards(address(this), sM.strategies[index].supplement);
     }
 
-    function deposit(uint256 assets, uint256 projectId, address receiver) external returns (uint256 shares) {
+    function deposit(uint256 assets, uint256 projectId, address receiver) external notPaused returns (uint256 shares) {
         require(LibClients.isProjectActive(projectId), LibErrors.ProjectInactive());
 
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -142,7 +143,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         emit LibEvents.Deposit(projectId, msg.sender, receiver, assets, shares);
     }
 
-    function redeem(uint256 shares, uint256 projectId, address receiver) external returns (uint256 assets) {
+    function redeem(uint256 shares, uint256 projectId, address receiver) external notPaused returns (uint256 assets) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
@@ -178,7 +179,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
     }
 
-    function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external {
+    function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external notPaused {
         require(
             LibClients.isProjectActive(fromProjectId) && LibClients.isProjectActive(toProjectId)
                 && LibClients.sameClient(fromProjectId, toProjectId),
@@ -190,13 +191,13 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
     }
 
-    function managedDeposit(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function managedDeposit(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) notPaused {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         _managedDeposit(sM, sF, strategyArgs);
     }
 
-    function managedWithdraw(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function managedWithdraw(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) notPaused {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         _managedWithdraw(sM, sF, strategyArgs);
@@ -205,6 +206,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
     function reallocate(StrategyArgs[] calldata withdrawals, StrategyArgs[] calldata deposits)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
+        notPaused
     {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -218,6 +220,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
 
     function compound(SwapArgs[] memory swapArgs)
         external
+        notPaused
         onlyRole(LibRoles.FUNDS_OPERATOR)
         returns (uint256 compounded)
     {
@@ -234,7 +237,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         emit LibEvents.Compounded(compounded);
     }
 
-    function accrueFee() public onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function accrueFee() public notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         _accrueFee();
     }
 
@@ -245,7 +248,7 @@ contract FundsFacet is RoleCheck, ERC1155SupplyUpgradeable, IFundsFacet {
         sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
     }
 
-    function claimStrategyRewards(uint256 index) external onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function claimStrategyRewards(uint256 index) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.strategies[index].adapter.functionDelegateCall(
             abi.encodeWithSelector(IStrategyBase.claimRewards.selector, sM.strategies[index].supplement)

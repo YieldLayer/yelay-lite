@@ -5,4 +5,6 @@ import {IAccessControlEnumerable} from "@openzeppelin/contracts/access/extension
 
 interface IAccessFacet is IAccessControlEnumerable {
     function checkRole(bytes32 role) external view;
+    function setPaused(bytes4 selector, bool paused) external;
+    function selectorToPaused(bytes4 selector) external view returns (bool);
 }

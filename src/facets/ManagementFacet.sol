@@ -8,6 +8,7 @@ import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
 import {IManagementFacet, StrategyData} from "src/interfaces/IManagementFacet.sol";
 
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
+import {PausableCheck} from "src/abstract/PausableCheck.sol";
 
 import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
@@ -15,7 +16,7 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
-contract ManagementFacet is RoleCheck, IManagementFacet {
+contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
     using Address for address;
     using SafeTransferLib for ERC20;
 
@@ -34,19 +35,27 @@ contract ManagementFacet is RoleCheck, IManagementFacet {
         return sM.withdrawQueue;
     }
 
-    function updateDepositQueue(uint256[] calldata depositQueue_) external onlyRole(LibRoles.QUEUES_OPERATOR) {
+    function updateDepositQueue(uint256[] calldata depositQueue_)
+        external
+        notPaused
+        onlyRole(LibRoles.QUEUES_OPERATOR)
+    {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.depositQueue = depositQueue_;
         emit LibEvents.UpdateDepositQueue();
     }
 
-    function updateWithdrawQueue(uint256[] calldata withdrawQueue_) external onlyRole(LibRoles.QUEUES_OPERATOR) {
+    function updateWithdrawQueue(uint256[] calldata withdrawQueue_)
+        external
+        notPaused
+        onlyRole(LibRoles.QUEUES_OPERATOR)
+    {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.withdrawQueue = withdrawQueue_;
         emit LibEvents.UpdateWithdrawQueue();
     }
 
-    function addStrategy(StrategyData calldata strategy) external onlyRole(LibRoles.STRATEGY_AUTHORITY) {
+    function addStrategy(StrategyData calldata strategy) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.strategies.push(strategy);
         _approveStrategy(strategy, type(uint256).max);
@@ -54,8 +63,7 @@ contract ManagementFacet is RoleCheck, IManagementFacet {
         emit LibEvents.AddStrategy(strategy.adapter, strategy.supplement);
     }
 
-    function removeStrategy(uint256 index) external onlyRole(LibRoles.STRATEGY_AUTHORITY) {
-        // TODO: cover in tests
+    function removeStrategy(uint256 index) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         require(LibManagement._strategyAssets(index) == 0, LibErrors.StrategyNotEmpty());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         _approveStrategy(sM.strategies[index], 0);

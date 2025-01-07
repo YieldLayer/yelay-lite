@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {PausableCheck} from "src/abstract/PausableCheck.sol";
+
 import {IClientsFacet} from "src/interfaces/IClientsFacet.sol";
 
 import {LibOwner} from "src/libraries/LibOwner.sol";
@@ -8,7 +10,7 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibClients, ClientData} from "src/libraries/LibClients.sol";
 
-contract ClientsFacet is IClientsFacet {
+contract ClientsFacet is PausableCheck, IClientsFacet {
     function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
         external
     {
@@ -26,7 +28,7 @@ contract ClientsFacet is IClientsFacet {
         emit LibEvents.NewProjectIds(clientOwner, minProjectId, maxProjectId);
     }
 
-    function transferClientOwnership(address newClientOwner) external {
+    function transferClientOwnership(address newClientOwner) external notPaused {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
@@ -35,7 +37,7 @@ contract ClientsFacet is IClientsFacet {
         emit LibEvents.OwnershipTransferProjectIds(newClientOwner, clientData.minProjectId, clientData.maxProjectId);
     }
 
-    function activateProject(uint256 projectId) external {
+    function activateProject(uint256 projectId) external notPaused {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());

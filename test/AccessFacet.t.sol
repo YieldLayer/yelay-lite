@@ -11,8 +11,10 @@ import {
 } from "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 
 import {LibErrors} from "src/libraries/LibErrors.sol";
+import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
+import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 
 import {MockStrategy} from "./MockStrategy.sol";
 import {MockToken} from "./MockToken.sol";
@@ -69,6 +71,38 @@ contract AccessFacetTest is Test {
         vm.startPrank(user);
         vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, role));
         yelayLiteVault.checkRole(role);
+        vm.stopPrank();
+    }
+
+    function test_setPaused() external {
+        vm.startPrank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, LibRoles.PAUSER)
+        );
+        yelayLiteVault.setPaused(IFundsFacet.deposit.selector, true);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, LibRoles.UNPAUSER)
+        );
+        yelayLiteVault.setPaused(IFundsFacet.deposit.selector, false);
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        yelayLiteVault.grantRole(LibRoles.PAUSER, user);
+        yelayLiteVault.grantRole(LibRoles.UNPAUSER, user);
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.selectorToPaused(IFundsFacet.deposit.selector), false);
+
+        vm.startPrank(user);
+        yelayLiteVault.setPaused(IFundsFacet.deposit.selector, true);
+
+        assertEq(yelayLiteVault.selectorToPaused(IFundsFacet.deposit.selector), true);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.Paused.selector, IFundsFacet.deposit.selector));
+        yelayLiteVault.deposit(1, 1, user);
+
+        yelayLiteVault.setPaused(IFundsFacet.deposit.selector, false);
+        assertEq(yelayLiteVault.selectorToPaused(IFundsFacet.deposit.selector), false);
         vm.stopPrank();
     }
 }

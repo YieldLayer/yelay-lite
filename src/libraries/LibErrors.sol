@@ -51,4 +51,8 @@ library LibErrors {
     // ===================== ManagementFacet ================================
 
     error StrategyNotEmpty();
+
+    // ===================== PausableFacet ================================
+
+    error Paused(bytes4 selector);
 }

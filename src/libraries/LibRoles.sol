@@ -10,4 +10,10 @@ library LibRoles {
 
     //0xb95e9900cc6e2c54ae5b00d8f86008697b24bf67652a40653ea0c09c6fc4a856
     bytes32 constant QUEUES_OPERATOR = keccak256("QUEUES_OPERATOR");
+
+    //0x539440820030c4994db4e31b6b800deafd503688728f932addfe7a410515c14c
+    bytes32 constant PAUSER = keccak256("PAUSER");
+
+    //0x82b32d9ab5100db08aeb9a0e08b422d14851ec118736590462bf9c085a6e9448
+    bytes32 constant UNPAUSER = keccak256("UNPAUSER");
 }
