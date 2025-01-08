@@ -1,12 +1,12 @@
 # Initial setup
 
-- forge soldeer install
-- npm i
+- `forge soldeer install`
+- `npm i`
 
 # Test
 
-- create .env file and specify MAINNET_URL
-- forge test
+- create .env file and specify `MAINNET_URL`
+- `forge test`
 
 # Protocol Overview
 
@@ -18,10 +18,10 @@ All yield earned by the vault will be extracted to a designated smart contract (
 
 The YelayLiteVault is a managed vault where specific roles govern its operation:
 
-STRATEGY_AUTHORITY: Responsible for adding and removing strategies within the vault.
-QUEUES_OPERATOR: Configures the deposit and withdrawal queues based on the existing strategies. These queues define the ordered list of strategies with which users will interact first.
-FUNDS_OPERATOR: Handles reallocations, reward claims, and compounding operations to optimize fund management.
-PUASER/UNPAUSER: Selective pausing/unpausing of specific functions.
+- STRATEGY_AUTHORITY: Responsible for adding and removing strategies within the vault.
+- QUEUES_OPERATOR: Configures the deposit and withdrawal queues based on the existing strategies. These queues define the ordered list of strategies with which users will interact first.
+- FUNDS_OPERATOR: Handles reallocations, reward claims, and compounding operations to optimize fund management.
+- PUASER/UNPAUSER: Selective pausing/unpausing of specific functions.
 
 It is assumed that the vault operator acts in good faith, striving to achieve the highest possible yield while carefully considering the risks associated with each strategy.
 
