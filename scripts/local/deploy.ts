@@ -9,13 +9,7 @@ import {
 } from '../../typechain-types';
 import { AAVE_V3_POOL, USDC_ADDRESS, USDC_WHALE } from '../constants';
 import { Contracts } from '../types';
-import {
-    convertToAddresses,
-    deployFacets,
-    impersonateSigner,
-    initYelayLiteVault,
-    setSelectorFacets,
-} from '../utils';
+import { convertToAddresses, deployFacets, impersonateSigner, setSelectorFacets } from '../utils';
 
 // launch local fork first
 // source .env && anvil --fork-url ${MAINNET_URL} --auto-impersonate --block-base-fee-per-gas 1 --block-time 12
@@ -28,16 +22,20 @@ async function main() {
         kind: 'transparent',
     })) as unknown as Swapper;
 
-    const { ownerFacet, tokenFacet, fundsFacet, accessFacet, managementFacet, clientsFacet } =
-        await deployFacets(deployer);
-
-    const yelayLiteVaultInit = await ethers
-        .getContractFactory('YelayLiteVaultInit', deployer)
-        .then((f) => f.deploy());
+    const { ownerFacet, fundsFacet, accessFacet, managementFacet, clientsFacet } =
+        await deployFacets(deployer, swapper);
 
     const yelayLiteVault = await ethers
         .getContractFactory('YelayLiteVault', deployer)
-        .then((f) => f.deploy(deployer.address, ownerFacet.getAddress()))
+        .then((f) =>
+            f.deploy(
+                deployer.address,
+                ownerFacet.getAddress(),
+                USDC_ADDRESS,
+                yieldExtractor.address,
+                'test',
+            ),
+        )
         .then(async (c) => {
             const d = await c.waitForDeployment();
             const tx = await ethers.provider.getTransaction(d.deploymentTransaction()!.hash);
@@ -51,19 +49,9 @@ async function main() {
     await setSelectorFacets({
         yelayLiteVault,
         fundsFacet,
-        tokenFacet,
         managementFacet,
         accessFacet,
         clientsFacet,
-    });
-
-    await initYelayLiteVault({
-        yelayLiteVault,
-        yelayLiteVaultInit,
-        swapper,
-        yieldExtractorAddress: yieldExtractor.address,
-        underlyingAssetAddress: USDC_ADDRESS,
-        uri: 'test',
     });
 
     await yelayLiteVault.createClient(deployer.address, 1, 100, ethers.encodeBytes32String('test'));
@@ -97,17 +85,16 @@ async function main() {
             ],
         ),
     });
+    await yelayLiteVault.approveStrategy(0, ethers.MaxUint256);
     await yelayLiteVault.updateDepositQueue([0]);
     await yelayLiteVault.updateWithdrawQueue([0]);
 
     const contracts: Contracts = {
         yelayLiteVault,
-        tokenFacet,
         fundsFacet,
         accessFacet,
         managementFacet,
         clientsFacet,
-        yelayLiteVaultInit,
         swapper,
     };
 
