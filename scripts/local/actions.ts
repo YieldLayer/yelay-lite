@@ -7,6 +7,27 @@ import {
     LibErrors__factory,
 } from '../../typechain-types';
 
+// task('deposit', 'Deposit into YelayLiteVault on local fork')
+//     .addPositionalParam('userIndex', 'Index of user(1-3)', undefined, types.int)
+//     .addPositionalParam('amount', 'Amount in decimal format', undefined, types.int)
+//     .addPositionalParam('projectId', 'Amount in decimal format', 1, types.int, true)
+//     .setAction(deposit);
+
+// task('redeem', 'Redeem from YelayLiteVault on local fork')
+//     .addPositionalParam('userIndex', 'Index of user(1-3)', undefined, types.int)
+//     .addPositionalParam('amount', 'Amount in decimal format', undefined, types.int)
+//     .addPositionalParam('projectId', 'projectId', 1, types.int, true)
+//     .setAction(redeem);
+
+// task('migrate', 'Migrate project in YelayLiteVault on local fork')
+//     .addPositionalParam('userIndex', 'Index of user(1-3)', undefined, types.int)
+//     .addPositionalParam('amount', 'Amount in decimal format', undefined, types.int)
+//     .addPositionalParam('fromProjectId', 'projectId to migrate from', undefined, types.int)
+//     .addPositionalParam('toProjectId', 'projectId to migrate to', undefined, types.int)
+//     .setAction(migrate);
+
+// task('accrue', 'Trigger accrueFee').setAction(accrue);
+
 type Args = {
     userIndex: number;
     amount: number;
