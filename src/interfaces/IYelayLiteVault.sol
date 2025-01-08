@@ -6,7 +6,6 @@ import {IManagementFacet} from "./IManagementFacet.sol";
 import {IAccessFacet} from "./IAccessFacet.sol";
 import {IClientsFacet} from "./IClientsFacet.sol";
 import {IOwnerFacet} from "./IOwnerFacet.sol";
-import {IYelayLiteVaultInit} from "./IYelayLiteVaultInit.sol";
 import {IMulticall} from "./IMulticall.sol";
 
 interface IYelayLiteVault is
@@ -15,6 +14,5 @@ interface IYelayLiteVault is
     IAccessFacet,
     IClientsFacet,
     IOwnerFacet,
-    IYelayLiteVaultInit,
     IMulticall
 {}

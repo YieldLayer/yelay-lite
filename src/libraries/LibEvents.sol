@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+// how come events are defined in a library?
+// instead of them being defined
+// - on the facets themselves
+// - or just in a file
+
 library LibEvents {
     // FundsFacet
     event Deposit(
@@ -14,20 +19,18 @@ library LibEvents {
     event AccrueInterest(uint256 newTotalAssets, uint256 interest, uint256 feeShares);
     event UpdateLastTotalAssets(uint256 lastTotalAssets);
     event Compounded(uint256 amount);
-    event PositionMigrated(address account, uint256 fromProjectId, uint256 toProjectId, uint256 shares);
+    event PositionMigrated(address indexed account, uint256 indexed fromProjectId, uint256 indexed toProjectId, uint256 shares);
 
     // ManagementFacet
     event UpdateDepositQueue();
     event UpdateWithdrawQueue();
-    event AddStrategy(address strategy, bytes supplement);
-    event RemoveStrategy(address strategy, bytes supplement);
+    event AddStrategy(address indexed strategy, bytes supplement);
+    event RemoveStrategy(address indexed strategy, bytes supplement);
 
     // ClientsFacet
-    event NewProjectIds(address owner, uint256 minProjectId, uint256 maxProjectId);
-    event OwnershipTransferProjectIds(address owner, uint256 minProjectId, uint256 maxProjectId);
-    event ProjectActivated(uint256 project);
-    event ProjectOptionSet(uint256 projectId, uint256 option);
-    event LockConfigSet(uint256 projectId, uint256 duration);
+    event NewProjectIds(address indexed owner, uint256 minProjectId, uint256 maxProjectId);
+    event OwnershipTransferProjectIds(address indexed oldOwner, address indexed newOwner, uint256 minProjectId, uint256 maxProjectId);
+    event ProjectActivated(uint256 indexed project, bytes32 indexed clientName);
 
     // OwnerFacet
     event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);

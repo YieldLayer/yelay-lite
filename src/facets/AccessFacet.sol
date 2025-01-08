@@ -12,6 +12,7 @@ import {IAccessFacet} from "src/interfaces/IAccessFacet.sol";
 
 import {LibOwner} from "src/libraries/LibOwner.sol";
 
+// why are we using upgradeable here?
 contract AccessFacet is AccessControlEnumerableUpgradeable, IAccessFacet {
     function grantRole(bytes32 role, address account) public override(AccessControlUpgradeable, IAccessControl) {
         LibOwner.onlyOwner();

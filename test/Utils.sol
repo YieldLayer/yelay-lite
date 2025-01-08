@@ -114,7 +114,7 @@ library Utils {
         selectors[1] = ClientsFacet.transferClientOwnership.selector;
         selectors[2] = ClientsFacet.activateProject.selector;
         selectors[3] = ClientsFacet.lastProjectId.selector;
-        selectors[4] = ClientsFacet.clientNameTaken.selector;
+        selectors[4] = ClientsFacet.isClientNameTaken.selector;
         selectors[5] = ClientsFacet.ownerToClientData.selector;
         selectors[6] = ClientsFacet.projectIdToClientName.selector;
         selectors[7] = ClientsFacet.projectIdActive.selector;

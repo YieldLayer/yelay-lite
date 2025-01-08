@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-library LibErrors {
-    // ===================== SelfOnly ================================
-    error NotSelf();
+// how come errors are defined in a library?
+// instead of them being defined
+// - on the facets themselves
+// - or just in a file
 
+library LibErrors {
     // ===================== OwnerFacet ================================
     /**
      * @dev The caller account is not authorized to perform an operation.
@@ -25,26 +27,19 @@ library LibErrors {
     error MinLessThanLastProjectId();
     error NotClientOwner();
     error OutOfBoundProjectId();
-    error ProjectInterceptorNone();
-    error ProjectInterceptorSet();
-    error ProjectInterceptorIsNotLock();
     error ProjectActive();
     error ClientNameEmpty();
     error ClientNameTaken();
-    error UserLocked();
 
     // ===================== FundsFacet ================================
 
     error ProjectInactive();
-    error NotEnoughAssets();
-    error NotEnoughLiquidity();
     error OnlyView();
     error CompoundUnderlyingForbidden();
     error PositionMigrationForbidden();
 
     // ===================== SwapWrapper ================================
 
-    error MonoAssetSwap();
     error NotWeth();
     error NoEth();
 

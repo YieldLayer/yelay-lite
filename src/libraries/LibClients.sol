@@ -18,7 +18,7 @@ library LibClients {
     struct ClientsStorage {
         uint256 lastProjectId;
         mapping(address => ClientData) ownerToClientData;
-        mapping(bytes32 => bool) clientNameTaken;
+        mapping(bytes32 => bool) isClientNameTaken;
         mapping(uint256 => bytes32) projectIdToClientName;
         mapping(uint256 => bool) projectIdActive;
     }

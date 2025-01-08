@@ -119,7 +119,7 @@ export const setSelectorFacets = async ({
                 clientsFacet.interface.getFunction('depositHook').selector,
                 clientsFacet.interface.getFunction('redeemHook').selector,
                 clientsFacet.interface.getFunction('lastProjectId').selector,
-                clientsFacet.interface.getFunction('clientNameTaken').selector,
+                clientsFacet.interface.getFunction('isClientNameTaken').selector,
                 clientsFacet.interface.getFunction('ownerToClientData').selector,
                 clientsFacet.interface.getFunction('projectIdToClientName').selector,
                 clientsFacet.interface.getFunction('projectIdActive').selector,

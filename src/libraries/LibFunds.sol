@@ -4,12 +4,6 @@ pragma solidity ^0.8.28;
 import {ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
 library LibFunds {
-    struct StrategyData {
-        address adapter;
-        // for instance Morpho requires bytes32 market id, aave3 aToken address etc.
-        bytes supplement;
-    }
-
     /// @custom:storage-location erc7201:yelay-vault.storage.FundsFacet
     struct FundsStorage {
         uint192 underlyingBalance;

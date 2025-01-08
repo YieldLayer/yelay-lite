@@ -43,33 +43,33 @@ contract VaultWrapper is OwnableUpgradeable, UUPSUpgradeable {
         return IFundsFacet(yelayLiteVault).deposit(msg.value, projectId, msg.sender);
     }
 
-    function swapAndDeposit(address yelayLiteVault, uint256 projectId, SwapArgs[] calldata swapArgs, uint256 amount)
+    function swapAndDeposit(address yelayLiteVault, uint256 projectId, SwapArgs calldata swapArgs, uint256 amount)
         external
         payable
         returns (uint256 shares)
     {
-        require(swapArgs.length == 1, LibErrors.MonoAssetSwap());
-
         if (msg.value > 0) {
-            require(swapArgs[0].tokenIn == address(weth), LibErrors.NotWeth());
+            require(swapArgs.tokenIn == address(weth), LibErrors.NotWeth());
             weth.deposit{value: msg.value}();
             ERC20(address(weth)).safeTransfer(address(swapper), msg.value);
         } else {
-            ERC20(swapArgs[0].tokenIn).safeTransferFrom(msg.sender, address(swapper), amount);
+            ERC20(swapArgs.tokenIn).safeTransferFrom(msg.sender, address(swapper), amount);
         }
 
+        SwapArgs[] memory swapperArgs = new SwapArgs[](1);
+        swapperArgs[0] = swapArgs;
         address underlyingAsset = IFundsFacet(yelayLiteVault).underlyingAsset();
-        uint256 assets = swapper.swap(swapArgs, underlyingAsset);
+        uint256 assets = swapper.swap(swapperArgs, underlyingAsset);
         ERC20(underlyingAsset).safeApprove(yelayLiteVault, assets);
         shares = IFundsFacet(yelayLiteVault).deposit(assets, projectId, msg.sender);
 
-        uint256 returnBalance = ERC20(swapArgs[0].tokenIn).balanceOf(address(this));
+        uint256 returnBalance = ERC20(swapArgs.tokenIn).balanceOf(address(this));
         if (returnBalance > 0) {
             if (msg.value > 0) {
                 weth.withdraw(returnBalance);
                 payable(msg.sender).transfer(returnBalance);
             } else {
-                ERC20(swapArgs[0].tokenIn).safeTransfer(msg.sender, returnBalance);
+                ERC20(swapArgs.tokenIn).safeTransfer(msg.sender, returnBalance);
             }
         }
     }

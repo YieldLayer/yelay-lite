@@ -8,11 +8,11 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
 contract OwnerFacet is IOwnerFacet {
-    function owner() public view returns (address) {
+    function owner() external view returns (address) {
         return LibOwner._getOwnerStorage().owner;
     }
 
-    function pendingOwner() public view returns (address) {
+    function pendingOwner() external view returns (address) {
         return LibOwner._getOwnerStorage().pendingOwner;
     }
 
@@ -47,6 +47,6 @@ contract OwnerFacet is IOwnerFacet {
         require(_pendingOwner == msg.sender, LibErrors.OwnableUnauthorizedAccount(msg.sender));
         emit LibEvents.OwnershipTransferred(s.owner, _pendingOwner);
         s.owner = _pendingOwner;
-        s.pendingOwner = address(0);
+        s.pendingOwner = address(0); // we could save some gas by not resetting this
     }
 }

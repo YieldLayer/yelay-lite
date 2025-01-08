@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+// how come roles are defined in a library?
+// instead of them being defined
+// - on the facets themselves
+// - or just in a file
+
 library LibRoles {
     // 0xbf935b513649871c60054e0279e4e5798d3dfd05785c3c3c5b311fb39ec270fe
     bytes32 constant STRATEGY_AUTHORITY = keccak256("STRATEGY_AUTHORITY");

@@ -56,7 +56,7 @@ contract ClientsFacetTest is Test {
         vm.stopPrank();
 
         assertEq(yelayLiteVault.lastProjectId(), 1999);
-        assertEq(yelayLiteVault.clientNameTaken("client"), true);
+        assertEq(yelayLiteVault.isClientNameTaken("client"), true);
         ClientData memory clientData = yelayLiteVault.ownerToClientData(client);
         assertEq(clientData.minProjectId, 1000);
         assertEq(clientData.maxProjectId, 1999);

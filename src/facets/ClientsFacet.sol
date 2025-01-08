@@ -18,11 +18,11 @@ contract ClientsFacet is IClientsFacet {
         require(maxProjectId > minProjectId, LibErrors.MaxLessThanMin());
         require(minProjectId > clientStorage.lastProjectId, LibErrors.MinLessThanLastProjectId());
         require(clientName != bytes32(0), LibErrors.ClientNameEmpty());
-        require(clientStorage.clientNameTaken[clientName] == false, LibErrors.ClientNameTaken());
+        require(!clientStorage.isClientNameTaken[clientName], LibErrors.ClientNameTaken());
         clientStorage.ownerToClientData[clientOwner] =
             ClientData({minProjectId: minProjectId, maxProjectId: maxProjectId, clientName: clientName});
         clientStorage.lastProjectId = maxProjectId;
-        clientStorage.clientNameTaken[clientName] = true;
+        clientStorage.isClientNameTaken[clientName] = true;
         emit LibEvents.NewProjectIds(clientOwner, minProjectId, maxProjectId);
     }
 
@@ -32,19 +32,18 @@ contract ClientsFacet is IClientsFacet {
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
         delete clientStorage.ownerToClientData[msg.sender];
         clientStorage.ownerToClientData[newClientOwner] = clientData;
-        emit LibEvents.OwnershipTransferProjectIds(newClientOwner, clientData.minProjectId, clientData.maxProjectId);
+        emit LibEvents.OwnershipTransferProjectIds(msg.sender, newClientOwner, clientData.minProjectId, clientData.maxProjectId);
     }
 
     function activateProject(uint256 projectId) external {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
-        require(clientData.minProjectId <= projectId, LibErrors.OutOfBoundProjectId());
-        require(clientData.maxProjectId >= projectId, LibErrors.OutOfBoundProjectId());
+        require(clientData.minProjectId <= projectId && clientData.maxProjectId >= projectId, LibErrors.OutOfBoundProjectId());
         require(clientStorage.projectIdActive[projectId] == false, LibErrors.ProjectActive());
         clientStorage.projectIdActive[projectId] = true;
         clientStorage.projectIdToClientName[projectId] = clientData.clientName;
-        emit LibEvents.ProjectActivated(projectId);
+        emit LibEvents.ProjectActivated(projectId, clientData.clientName);
     }
 
     function lastProjectId() external view returns (uint256) {
@@ -52,9 +51,9 @@ contract ClientsFacet is IClientsFacet {
         return clientStorage.lastProjectId;
     }
 
-    function clientNameTaken(bytes32 clientName) external view returns (bool) {
+    function isClientNameTaken(bytes32 clientName) external view returns (bool) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        return clientStorage.clientNameTaken[clientName];
+        return clientStorage.isClientNameTaken[clientName];
     }
 
     function ownerToClientData(address owner) external view returns (ClientData memory) {

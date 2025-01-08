@@ -1,0 +1,54 @@
+# Notes
+
+- do we expect to upgrade the facets, or just replace them?
+    - i.e., will facets be deployed as implementation + proxy themselves?
+- how come `ClientData.clientName` is a `bytes32` instead of `string`?
+- `ClientsFacet.createClient` takes as input `minProjectId` and `maxProjectId`
+    - `minProjectId` has to be larger than last reserved client ID, but otherwise there are no restrictions
+        - this means that we could have some gaps in the client IDs
+    - we could instead take just `reservedProjects` and calculate `minProjectId` and `maxProjectId`
+        - this would then leave no gaps between project IDs
+        - it would simplify the logic in creation function
+        - and it would be easier to create a new project, since owner would not have to keep track of what was the last reserved ID
+- in `ClientsFacet` should transferring client ownership be a two-step process, like in `OwnerFacet`?
+- why is `event OwnershipTransferProjectIds` instead of `event ClientOwnershipTransfer(bytes32 indexed clientName, address indexed oldOwner address indexed newOwner)`?
+- how come we only deploy strategy adapters and not strategies themselves
+    - so we delegatecall into them, not call them directly
+    - this way we have to always decode the supplement
+- in `ManagementFacet.addStrategy` we do not check that the added strategy has the same underlying asset as the vault
+    - should we check?
+- in `ManagementFacet.removeStrategy` it is required that strategy has no more assets deposited
+    - what if the underlying protocol gets broken somehow and we are unable to withdraw funds
+    - in that case we cannot remove the strategy
+    - should we have another method to force remove the strategy in such cases?
+- in `ManagementFacet.removeStrategy` we just remove the strategy from the strategies list
+    - the removed strategy might still be on the deposit or withdraw queue when this call is made
+    - this now requires queue is appropriately managed before, which is done by another role
+    - should we check the queues and revert if strategy is there?
+    - should we remove from the queues?
+- it would be nice to have natspec on the storage structs, especially on the `LibFunds.FundsStorage`
+    - is `underlyingBalance` balance of underlying assets stored on the vault itself?
+    - is `lastTotalAssets` balance of underlying assets available from all protocols and vault itself at `lastTotalAssetsTimestamp`?
+- in the `FundsFacet.deposit` we mint shares in principle 1:1 with assets
+    - is there any need to pad the shares, so that we would mint like 1000:1 or something
+    - is there any need to lock a small amount of initial shares, like we do in v2-core?
+    - I was thinking of donation attack, if it is possible to pull it off currently...
+- in the `FundsFacet`, why does `deposit` check if fees need to be minted, but `redeem` is always minting fees?
+    - also `migratePosition`
+- are there some strategies that release rewards / yield on interaction?
+    - would this break the deposit flow by changing the assets when fees are not taken?
+- do I understand correctly, compounding strategies will take multiple steps
+    - first call `FundsFacet.claimStrategyRewards` one time for each strategy to claim from
+    - then call `FundsFacet.compound`, which would swap the rewards
+    - then deposit by
+        - calling `FundsFacet.managedDeposit` one time for each strategy where we would like to deposit
+        - calling `FundsFacet.reallocate` to deposit in multiple strategies at once
+    - suggestions:
+        - have a `FundsFacet.claimRewards(uint256[] indexes)` method that would claim rewards from multiple strategies at once
+        - rename `FundsFacet.compound` into `FundsFacet.swapRewards` since it more accurately describes what it does
+- when depositing into the strategy and withdrawing from it, there is an assumption, that there are no losses
+    - will we only support strategies where there is no loss on depositing and withdrawing?
+    - even then, there might be a small mismatch between what the vault is expecting and what strategy does due to rounding
+        - in `GearboxV3Strategy.withdraw`, we pass in `amount` in underlying assets that should be withdrawn. The strategy then calculates the amount of Gearbox shares to withdraw, but the value of these shares might not totally match the `amount`. But `amount` value is used in the `FundsFacet._managedWithdraw` to update the state or in `FundsFacet.redeem` as amount to transfer to the user.
+        - in `GearboxV3Strategy.deposit` we also get back shares based on the deposited `amount` of underlying assets. But the received shares might not totally match the `amount`, similar as the withdraw case above.
+- the `StrategyArgs.amount` is always in the underlying assets, both for `FundsFacet.managedDeposit` and `FundsFacet.managedWithdraw`?
