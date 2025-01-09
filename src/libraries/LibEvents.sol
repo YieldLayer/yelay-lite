@@ -29,14 +29,14 @@ library LibEvents {
 
     /**
      * @dev Emitted when assets are deposited into a strategy.
-     * @param strategy The address of the strategy.
+     * @param strategy The name of the strategy.
      * @param amount The amount of assets deposited.
      */
     event ManagedDeposit(bytes32 indexed strategy, uint256 amount);
 
     /**
      * @dev Emitted when assets are withdrawn from a strategy.
-     * @param strategy The address of the strategy.
+     * @param strategy The name of the strategy.
      * @param amount The amount of assets withdrawn.
      */
     event ManagedWithdraw(bytes32 indexed strategy, uint256 amount);
