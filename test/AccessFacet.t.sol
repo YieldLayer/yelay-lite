@@ -15,6 +15,7 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
+import {IMulticall} from "src/interfaces/IMulticall.sol";
 
 import {MockStrategy} from "./MockStrategy.sol";
 import {MockToken} from "./MockToken.sol";
@@ -100,6 +101,11 @@ contract AccessFacetTest is Test {
         assertEq(yelayLiteVault.selectorToPaused(IFundsFacet.deposit.selector), true);
         vm.expectRevert(abi.encodeWithSelector(LibErrors.Paused.selector, IFundsFacet.deposit.selector));
         yelayLiteVault.deposit(1, 1, user);
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = abi.encodeWithSelector(IFundsFacet.deposit.selector, 1, 1, user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.Paused.selector, IFundsFacet.deposit.selector));
+        yelayLiteVault.multicall(data);
 
         yelayLiteVault.setPaused(IFundsFacet.deposit.selector, false);
         assertEq(yelayLiteVault.selectorToPaused(IFundsFacet.deposit.selector), false);
