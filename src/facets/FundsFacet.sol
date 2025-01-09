@@ -32,6 +32,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     using FixedPointMathLib for uint256;
 
     uint256 constant YIELD_PROJECT_ID = 0;
+    uint256 constant WITHDRAW_MARGIN = 10;
 
     ISwapper private immutable _swapper;
 
@@ -174,28 +175,32 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
         uint256 _assets = assets;
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
-            if (_assets == 0) break;
+            if (_assets <= WITHDRAW_MARGIN) break;
             uint256 assetBalance = IStrategyBase(sM.strategies[sM.withdrawQueue[i]].adapter).assetBalance(
                 address(this), sM.strategies[sM.withdrawQueue[i]].supplement
             );
             if (assetBalance == 0) continue;
             uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
-            (bool success,) = sM.strategies[sM.withdrawQueue[i]].adapter.delegatecall(
+            (bool success, bytes memory result) = sM.strategies[sM.withdrawQueue[i]].adapter.delegatecall(
                 abi.encodeWithSelector(
                     IStrategyBase.withdraw.selector, availableToWithdraw, sM.strategies[sM.withdrawQueue[i]].supplement
                 )
             );
+            uint256 withdrawn = abi.decode(result, (uint256));
             if (success) {
-                _assets -= availableToWithdraw;
+                // in case actual withdrawn amount is greater we will take only availableToWithdraw
+                _assets -= withdrawn > availableToWithdraw ? availableToWithdraw : withdrawn;
             }
         }
-        if (_assets > 0) {
+        if (_assets > WITHDRAW_MARGIN) {
             sF.underlyingBalance -= SafeCast.toUint192(_assets);
         }
-        sF.underlyingAsset.safeTransfer(receiver, assets);
+        // assets == _assets means that no assets were withdrawn from strategies
+        uint256 toReturn = assets == _assets ? assets : assets - _assets;
+        sF.underlyingAsset.safeTransfer(receiver, toReturn);
         _burn(msg.sender, projectId, shares);
 
-        emit LibEvents.Redeem(projectId, msg.sender, receiver, assets, shares);
+        emit LibEvents.Redeem(projectId, msg.sender, receiver, toReturn, shares);
     }
 
     /// @inheritdoc IFundsFacet
@@ -315,13 +320,14 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF,
         StrategyArgs calldata strategyArgs
     ) internal {
-        sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
+        bytes memory result = sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
             abi.encodeWithSelector(
                 IStrategyBase.withdraw.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
             )
         );
-        sF.underlyingBalance += SafeCast.toUint192(strategyArgs.amount);
-        emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
+        uint256 withdrawn = abi.decode(result, (uint256));
+        sF.underlyingBalance += SafeCast.toUint192(withdrawn);
+        emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].adapter, withdrawn);
     }
 
     /**
