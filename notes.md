@@ -52,3 +52,8 @@
         - in `GearboxV3Strategy.withdraw`, we pass in `amount` in underlying assets that should be withdrawn. The strategy then calculates the amount of Gearbox shares to withdraw, but the value of these shares might not totally match the `amount`. But `amount` value is used in the `FundsFacet._managedWithdraw` to update the state or in `FundsFacet.redeem` as amount to transfer to the user.
         - in `GearboxV3Strategy.deposit` we also get back shares based on the deposited `amount` of underlying assets. But the received shares might not totally match the `amount`, similar as the withdraw case above.
 - the `StrategyArgs.amount` is always in the underlying assets, both for `FundsFacet.managedDeposit` and `FundsFacet.managedWithdraw`?
+- since a single strategy adapter can represent several actual strategies, just with a different supplement, should we introduce strategy names?
+    - it would make it more human understandable when checking the state of the vault
+        - like seeing that vault has `morpho-blue-something` and `aave-v3-something-else`, instead of just seeing bunch of addresses
+    - some events use the adapter address to describe what happened, but this is ambiguous, since it does not fully specify which strategy exactly
+        - e.g., `ManagedDeposit` or `ManagedWithdrawal`
