@@ -37,7 +37,7 @@ interface IClientsFacet {
      * @param clientName The name of the client.
      * @return True if the client name is taken, false otherwise.
      */
-    function clientNameTaken(bytes32 clientName) external view returns (bool);
+    function isClientNameTaken(bytes32 clientName) external view returns (bool);
 
     /**
      * @dev Returns the client data for a given owner.

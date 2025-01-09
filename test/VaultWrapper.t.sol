@@ -86,8 +86,7 @@ contract VaultWrapperTest is Test {
 
         vm.startPrank(user);
         usdc.approve(address(vaultWrapper), 10000e6);
-        SwapArgs[] memory swapArgs = new SwapArgs[](1);
-        swapArgs[0] = SwapArgs({
+        SwapArgs memory swapArgs = SwapArgs({
             tokenIn: address(usdc),
             swapTarget: address(mockExchange),
             swapCallData: abi.encodeWithSelector(MockExchange.swap.selector, address(usdc), address(weth), 3339e6)
@@ -111,8 +110,7 @@ contract VaultWrapperTest is Test {
         mockExchange.setQuote(address(weth), address(usdc), Quote({fromAmount: 1 ether, toAmount: 1000e6}));
 
         vm.startPrank(user);
-        SwapArgs[] memory swapArgs = new SwapArgs[](1);
-        swapArgs[0] = SwapArgs({
+        SwapArgs memory swapArgs = SwapArgs({
             tokenIn: address(weth),
             swapTarget: address(mockExchange),
             swapCallData: abi.encodeWithSelector(MockExchange.swap.selector, address(weth), address(usdc), 0.9 ether)

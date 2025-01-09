@@ -41,7 +41,8 @@ contract ManagedOperationsTest is Test {
                     address(underlyingAsset), IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress
                 )
             });
-            yelayLiteVault.addStrategy(strategy);
+            uint256[] memory queue = new uint256[](2);
+            yelayLiteVault.addStrategy(strategy, queue, queue);
             yelayLiteVault.approveStrategy(0, type(uint256).max);
         }
         {
@@ -49,14 +50,12 @@ contract ManagedOperationsTest is Test {
                 adapter: address(new MorphoBlueStrategy(MORPHO_BLUE)),
                 supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID)
             });
-            yelayLiteVault.addStrategy(strategy);
+            uint256[] memory queue = new uint256[](2);
+            queue[0] = 0;
+            queue[1] = 1;
+            yelayLiteVault.addStrategy(strategy, queue, queue);
             yelayLiteVault.approveStrategy(1, type(uint256).max);
         }
-        uint256[] memory queue = new uint256[](2);
-        queue[0] = 0;
-        queue[1] = 1;
-        yelayLiteVault.updateDepositQueue(queue);
-        yelayLiteVault.updateWithdrawQueue(queue);
         vm.stopPrank();
     }
 

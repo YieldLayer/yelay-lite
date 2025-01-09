@@ -43,13 +43,18 @@ interface IManagementFacet {
      * @dev Adds a new strategy.
      * @param strategy The strategy data.
      */
-    function addStrategy(StrategyData calldata strategy) external;
+    function addStrategy(
+        StrategyData calldata strategy,
+        uint256[] calldata depositQueue_,
+        uint256[] calldata withdrawQueue_
+    ) external;
 
     /**
      * @dev Removes a strategy.
      * @param index The index of the strategy to remove.
      */
-    function removeStrategy(uint256 index) external;
+    function removeStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external;
 
     /**
      * @dev Function to approve spending of underlying asset by the strategy.

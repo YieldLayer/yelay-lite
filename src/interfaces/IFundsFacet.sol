@@ -143,7 +143,7 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
      * @param swapArgs The swap arguments.
      * @return compounded The amount compounded.
      */
-    function compound(SwapArgs[] memory swapArgs) external returns (uint256 compounded);
+    function swapRewards(SwapArgs[] memory swapArgs) external returns (uint256 compounded);
 
     /**
      * @dev Accrues fees.

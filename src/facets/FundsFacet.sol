@@ -130,10 +130,9 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         uint256 newTotalAssets;
-        bool needYieldAccrual = sF.lastTotalAssetsTimestamp == 0
-            || sF.lastTotalAssetsTimestamp + sF.lastTotalAssetsUpdateInterval < block.timestamp;
-        if (needYieldAccrual) {
+        if (sF.lastTotalAssetsTimestamp + sF.lastTotalAssetsUpdateInterval < block.timestamp) {
             newTotalAssets = _mintFee(sF);
+            sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
         } else {
             newTotalAssets = sF.lastTotalAssets;
         }
@@ -158,9 +157,6 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
             sF.underlyingBalance += SafeCast.toUint192(assets);
         }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
-        if (needYieldAccrual) {
-            sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
-        }
 
         emit LibEvents.Deposit(projectId, msg.sender, receiver, assets, shares);
     }
@@ -246,7 +242,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /// @inheritdoc IFundsFacet
-    function compound(SwapArgs[] memory swapArgs)
+    function swapRewards(SwapArgs[] memory swapArgs)
         external
         notPaused
         onlyRole(LibRoles.FUNDS_OPERATOR)

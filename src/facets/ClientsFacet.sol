@@ -23,11 +23,11 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         require(maxProjectId > minProjectId, LibErrors.MaxLessThanMin());
         require(minProjectId > clientStorage.lastProjectId, LibErrors.MinLessThanLastProjectId());
         require(clientName != bytes32(0), LibErrors.ClientNameEmpty());
-        require(clientStorage.clientNameTaken[clientName] == false, LibErrors.ClientNameTaken());
+        require(clientStorage.isClientNameTaken[clientName] == false, LibErrors.ClientNameTaken());
         clientStorage.ownerToClientData[clientOwner] =
             ClientData({minProjectId: minProjectId, maxProjectId: maxProjectId, clientName: clientName});
         clientStorage.lastProjectId = maxProjectId;
-        clientStorage.clientNameTaken[clientName] = true;
+        clientStorage.isClientNameTaken[clientName] = true;
         emit LibEvents.NewProjectIds(clientOwner, minProjectId, maxProjectId);
     }
 
@@ -38,7 +38,7 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
         delete clientStorage.ownerToClientData[msg.sender];
         clientStorage.ownerToClientData[newClientOwner] = clientData;
-        emit LibEvents.OwnershipTransferProjectIds(newClientOwner, clientData.minProjectId, clientData.maxProjectId);
+        emit LibEvents.ClientOwnershipTransfer(clientData.clientName, msg.sender, newClientOwner);
     }
 
     /// @inheritdoc IClientsFacet
@@ -46,8 +46,10 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
-        require(clientData.minProjectId <= projectId, LibErrors.OutOfBoundProjectId());
-        require(clientData.maxProjectId >= projectId, LibErrors.OutOfBoundProjectId());
+        require(
+            clientData.minProjectId <= projectId && clientData.maxProjectId >= projectId,
+            LibErrors.OutOfBoundProjectId()
+        );
         require(clientStorage.projectIdActive[projectId] == false, LibErrors.ProjectActive());
         clientStorage.projectIdActive[projectId] = true;
         clientStorage.projectIdToClientName[projectId] = clientData.clientName;
@@ -61,9 +63,9 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
     }
 
     /// @inheritdoc IClientsFacet
-    function clientNameTaken(bytes32 clientName) external view returns (bool) {
+    function isClientNameTaken(bytes32 clientName) external view returns (bool) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        return clientStorage.clientNameTaken[clientName];
+        return clientStorage.isClientNameTaken[clientName];
     }
 
     /// @inheritdoc IClientsFacet

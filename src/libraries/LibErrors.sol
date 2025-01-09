@@ -79,11 +79,6 @@ library LibErrors {
 
     // ===================== SwapWrapper ================================
     /**
-     * @dev Only mono-asset swap is allowed.
-     */
-    error MonoAssetSwap();
-
-    /**
      * @dev The token is not WETH.
      */
     error NotWeth();
