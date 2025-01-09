@@ -14,6 +14,7 @@ contract AaveV3Test is AbstractStrategyTest {
         vm.startPrank(owner);
         address strategyAdapter = address(new AaveV3Strategy(AAVE_V3_POOL));
         StrategyData memory strategy = StrategyData({
+            name: "aave",
             adapter: strategyAdapter,
             supplement: abi.encode(
                 address(underlyingAsset), IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress

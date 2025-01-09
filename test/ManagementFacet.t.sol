@@ -47,9 +47,12 @@ contract ManagementFacetTest is Test {
         uint256[] memory queue = new uint256[](0);
         assertEq(yelayLiteVault.getStrategies().length, 0);
         vm.startPrank(owner);
-        StrategyData memory strategy1 = StrategyData({adapter: address(mockStrategy1), supplement: ""});
-        StrategyData memory strategy2 = StrategyData({adapter: address(mockStrategy2), supplement: hex"1234"});
-        StrategyData memory strategy3 = StrategyData({adapter: address(mockStrategy3), supplement: hex"5678"});
+        StrategyData memory strategy1 =
+            StrategyData({adapter: address(mockStrategy1), name: "mockStrategy1", supplement: ""});
+        StrategyData memory strategy2 =
+            StrategyData({adapter: address(mockStrategy2), name: "mockStrategy2", supplement: hex"1234"});
+        StrategyData memory strategy3 =
+            StrategyData({adapter: address(mockStrategy3), name: "mockStrategy3", supplement: hex"5678"});
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol()), 0);
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol()), 0);
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol()), 0);

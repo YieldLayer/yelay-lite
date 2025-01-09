@@ -306,7 +306,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
             )
         );
         sF.underlyingBalance -= SafeCast.toUint192(strategyArgs.amount);
-        emit LibEvents.ManagedDeposit(sM.strategies[strategyArgs.index].adapter, strategyArgs.amount);
+        emit LibEvents.ManagedDeposit(sM.strategies[strategyArgs.index].name, strategyArgs.amount);
     }
 
     /**
@@ -327,7 +327,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         );
         uint256 withdrawn = abi.decode(result, (uint256));
         sF.underlyingBalance += SafeCast.toUint192(withdrawn);
-        emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].adapter, withdrawn);
+        emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].name, withdrawn);
     }
 
     /**

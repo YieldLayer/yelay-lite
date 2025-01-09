@@ -2,7 +2,10 @@
 pragma solidity ^0.8.28;
 
 struct StrategyData {
+    // the address of the strategy adapter
     address adapter;
+    // the name of the strategy
+    bytes32 name;
     // for instance Morpho requires bytes32 market id
     // aave3 aToken address
     bytes supplement;

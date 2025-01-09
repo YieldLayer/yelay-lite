@@ -39,7 +39,8 @@ contract ManagedOperationsTest is Test {
                 adapter: address(new AaveV3Strategy(AAVE_V3_POOL)),
                 supplement: abi.encode(
                     address(underlyingAsset), IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress
-                )
+                ),
+                name: "aave"
             });
             uint256[] memory queue = new uint256[](2);
             yelayLiteVault.addStrategy(strategy, queue, queue);
@@ -48,7 +49,8 @@ contract ManagedOperationsTest is Test {
         {
             StrategyData memory strategy = StrategyData({
                 adapter: address(new MorphoBlueStrategy(MORPHO_BLUE)),
-                supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID)
+                supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID),
+                name: "morpho"
             });
             uint256[] memory queue = new uint256[](2);
             queue[0] = 0;

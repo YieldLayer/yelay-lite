@@ -12,7 +12,7 @@ contract MetamorphoTest is AbstractStrategyTest {
     function _setupStrategy() internal override {
         vm.startPrank(owner);
         address strategyAdapter = address(new ERC4626Strategy(METAMORPHO_GAUNTLET_DAI_CORE));
-        StrategyData memory strategy = StrategyData({adapter: strategyAdapter, supplement: ""});
+        StrategyData memory strategy = StrategyData({adapter: strategyAdapter, supplement: "", name: "metamorpho"});
         uint256[] memory queue = new uint256[](1);
         queue[0] = 0;
         yelayLiteVault.addStrategy(strategy, queue, queue);

@@ -14,7 +14,8 @@ contract MorphoBlueTest is AbstractStrategyTest {
         address strategyAdapter = address(new MorphoBlueStrategy(MORPHO_BLUE));
         StrategyData memory strategy = StrategyData({
             adapter: strategyAdapter,
-            supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID)
+            supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID),
+            name: "morpho"
         });
         uint256[] memory queue = new uint256[](1);
         queue[0] = 0;
