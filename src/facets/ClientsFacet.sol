@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import {PausableCheck} from "src/abstract/PausableCheck.sol";
 import {IClientsFacet} from "src/interfaces/IClientsFacet.sol";
 import {LibOwner} from "src/libraries/LibOwner.sol";
@@ -14,16 +16,14 @@ import {LibClients, ClientData} from "src/libraries/LibClients.sol";
  */
 contract ClientsFacet is PausableCheck, IClientsFacet {
     /// @inheritdoc IClientsFacet
-    function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
-        external
-    {
+    function createClient(address clientOwner, uint128 reservedProjects, bytes32 clientName) external {
         LibOwner.onlyOwner();
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        require(minProjectId > 0, LibErrors.MinIsZero());
-        require(maxProjectId > minProjectId, LibErrors.MaxLessThanMin());
-        require(minProjectId > clientStorage.lastProjectId, LibErrors.MinLessThanLastProjectId());
+        require(reservedProjects > 0, LibErrors.ReservedProjectsIsZero());
         require(clientName != bytes32(0), LibErrors.ClientNameEmpty());
         require(clientStorage.isClientNameTaken[clientName] == false, LibErrors.ClientNameTaken());
+        uint128 minProjectId = SafeCast.toUint128(clientStorage.lastProjectId + 1);
+        uint128 maxProjectId = minProjectId + reservedProjects - 1;
         clientStorage.ownerToClientData[clientOwner] =
             ClientData({minProjectId: minProjectId, maxProjectId: maxProjectId, clientName: clientName});
         clientStorage.lastProjectId = maxProjectId;

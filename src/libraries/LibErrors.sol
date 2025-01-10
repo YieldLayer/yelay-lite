@@ -17,21 +17,6 @@ library LibErrors {
 
     // ===================== ClientsFacet ================================
     /**
-     * @dev The minimum project ID is zero.
-     */
-    error MinIsZero();
-
-    /**
-     * @dev The maximum project ID is less than the minimum project ID.
-     */
-    error MaxLessThanMin();
-
-    /**
-     * @dev The minimum project ID is less than the last project ID.
-     */
-    error MinLessThanLastProjectId();
-
-    /**
      * @dev The caller is not the client owner.
      */
     error NotClientOwner();
@@ -50,6 +35,11 @@ library LibErrors {
      * @dev The client name is empty.
      */
     error ClientNameEmpty();
+
+    /**
+     * @dev The client name is empty.
+     */
+    error ReservedProjectsIsZero();
 
     /**
      * @dev The client name is already taken.

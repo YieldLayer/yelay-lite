@@ -5,30 +5,20 @@ import {ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
 library LibFunds {
     /// @custom:storage-location erc7201:yelay-vault.storage.FundsFacet
+    /**
+     * @custom:member underlyingBalance The balance of the underlying asset held by the vault excluding assets in strategies.
+     * @custom:member lastTotalAssetsUpdateInterval The interval for updating the last total assets on deposit.
+     * @custom:member lastTotalAssets The last total assets value for yield calculation.
+     * @custom:member lastTotalAssetsTimestamp The timestamp of the last total assets update.
+     * @custom:member underlyingAsset The underlying asset.
+     * @custom:member yieldExtractor The address of the yield extractor.
+     */
     struct FundsStorage {
-        /**
-         * @dev The balance of the underlying asset held by the vault excluding assets in strategies.
-         */
         uint192 underlyingBalance;
-        /**
-         * @dev The interval for updating the last total assets on deposit.
-         */
         uint64 lastTotalAssetsUpdateInterval;
-        /**
-         * @dev The last total assets value for yield calculation.
-         */
         uint192 lastTotalAssets;
-        /**
-         * @dev The timestamp of the last total assets update.
-         */
         uint64 lastTotalAssetsTimestamp;
-        /**
-         * @dev The underlying asset.
-         */
         ERC20 underlyingAsset;
-        /**
-         * @dev The address of the yield extractor.
-         */
         address yieldExtractor;
     }
 

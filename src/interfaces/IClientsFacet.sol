@@ -7,12 +7,10 @@ interface IClientsFacet {
     /**
      * @dev Creates a new client with the specified parameters.
      * @param clientOwner The address of the client owner.
-     * @param minProjectId The minimum project ID for the client.
-     * @param maxProjectId The maximum project ID for the client.
+     * @param reservedProjects The number of projects reserved for the client.
      * @param clientName The name of the client.
      */
-    function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
-        external;
+    function createClient(address clientOwner, uint128 reservedProjects, bytes32 clientName) external;
 
     /**
      * @dev Transfers the ownership of the client to a new owner.

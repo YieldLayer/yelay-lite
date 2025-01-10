@@ -47,7 +47,7 @@ library Utils {
             SelectorsToFacet({facet: address(new ClientsFacet()), selectors: _clientsFacetSelectors()});
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
-        yelayLiteVault.createClient(owner, 1, 100, "test");
+        yelayLiteVault.createClient(owner, 999, "test");
         for (uint256 i = 1; i < 50; i++) {
             yelayLiteVault.activateProject(i);
         }

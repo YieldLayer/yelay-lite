@@ -32,18 +32,21 @@ interface IManagementFacet {
 
     /**
      * @dev Updates the deposit queue.
+     * @dev Callable by QUEUES_OPERATOR.
      * @param depositQueue_ The new deposit queue.
      */
     function updateDepositQueue(uint256[] calldata depositQueue_) external;
 
     /**
      * @dev Updates the withdraw queue.
+     * @dev Callable by QUEUES_OPERATOR.
      * @param withdrawQueue_ The new withdraw queue.
      */
     function updateWithdrawQueue(uint256[] calldata withdrawQueue_) external;
 
     /**
      * @dev Adds a new strategy.
+     * @dev Callable by STRATEGY_AUTHORITY.
      * @param strategy The strategy data.
      */
     function addStrategy(
@@ -54,6 +57,7 @@ interface IManagementFacet {
 
     /**
      * @dev Removes a strategy.
+     * @dev Callable by STRATEGY_AUTHORITY.
      * @param index The index of the strategy to remove.
      */
     function removeStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
@@ -61,6 +65,7 @@ interface IManagementFacet {
 
     /**
      * @dev Function to approve spending of underlying asset by the strategy.
+     * @dev Callable by STRATEGY_AUTHORITY.
      * @param index The index of the strategy.
      * @param amount The amount to approve.
      */

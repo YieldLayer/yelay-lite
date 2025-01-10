@@ -5,6 +5,11 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 
 library LibOwner {
     /// @custom:storage-location erc7201:yelay-vault.storage.OwnerFacet
+    /**
+     * @custom:member owner The owner of the contract.
+     * @custom:member pendingOwner The address pending to become the owner.
+     * @custom:member selectorToFacet Mapping from selector to facet address.
+     */
     struct OwnerStorage {
         address owner;
         address pendingOwner;
