@@ -10,8 +10,8 @@ struct ClientData {
 }
 
 library LibClients {
-    /// @custom:storage-location erc7201:yelay-vault.storage.ClientsFacet
     /**
+     * @custom:storage-location erc7201:yelay-vault.storage.ClientsFacet
      * @custom:member lastProjectId The last project ID.
      * @custom:member ownerToClientData Mapping from owner address to client data.
      * @custom:member isClientNameTaken Mapping from client name to a boolean indicating if the name is taken.

@@ -4,8 +4,8 @@ pragma solidity ^0.8.28;
 import {ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
 library LibFunds {
-    /// @custom:storage-location erc7201:yelay-vault.storage.FundsFacet
     /**
+     * @custom:storage-location erc7201:yelay-vault.storage.FundsFacet
      * @custom:member underlyingBalance The balance of the underlying asset held by the vault excluding assets in strategies.
      * @custom:member lastTotalAssetsUpdateInterval The interval for updating the last total assets on deposit.
      * @custom:member lastTotalAssets The last total assets value for yield calculation.
