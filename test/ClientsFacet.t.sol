@@ -38,25 +38,19 @@ contract ClientsFacetTest is Test {
     function test_createClient() external {
         vm.startPrank(client);
         vm.expectRevert(abi.encodeWithSelector(LibErrors.OwnableUnauthorizedAccount.selector, client));
-        yelayLiteVault.createClient(client, 0, 1, "");
+        yelayLiteVault.createClient(client, 1000, "");
         vm.stopPrank();
 
         vm.startPrank(owner);
-        vm.expectRevert(abi.encodeWithSelector(LibErrors.MinIsZero.selector));
-        yelayLiteVault.createClient(client, 0, 1, "");
-        vm.expectRevert(abi.encodeWithSelector(LibErrors.MaxLessThanMin.selector));
-        yelayLiteVault.createClient(client, 1, 1, "");
-        vm.expectRevert(abi.encodeWithSelector(LibErrors.MinLessThanLastProjectId.selector));
-        yelayLiteVault.createClient(client, 1, 2, "");
         vm.expectRevert(abi.encodeWithSelector(LibErrors.ClientNameEmpty.selector));
-        yelayLiteVault.createClient(client, 1000, 1999, "");
-        yelayLiteVault.createClient(client, 1000, 1999, "client");
+        yelayLiteVault.createClient(client, 1000, "");
+        yelayLiteVault.createClient(client, 1000, "client");
         vm.expectRevert(abi.encodeWithSelector(LibErrors.ClientNameTaken.selector));
-        yelayLiteVault.createClient(client, 2000, 2999, "client");
+        yelayLiteVault.createClient(client, 2000, "client");
         vm.stopPrank();
 
         assertEq(yelayLiteVault.lastProjectId(), 1999);
-        assertEq(yelayLiteVault.clientNameTaken("client"), true);
+        assertEq(yelayLiteVault.isClientNameTaken("client"), true);
         ClientData memory clientData = yelayLiteVault.ownerToClientData(client);
         assertEq(clientData.minProjectId, 1000);
         assertEq(clientData.maxProjectId, 1999);
@@ -65,7 +59,7 @@ contract ClientsFacetTest is Test {
 
     function test_transferClientOwnership() external {
         vm.startPrank(owner);
-        yelayLiteVault.createClient(client, 1000, 1999, "client");
+        yelayLiteVault.createClient(client, 1000, "client");
         vm.stopPrank();
 
         vm.startPrank(user);
@@ -94,7 +88,7 @@ contract ClientsFacetTest is Test {
 
     function test_activateProject() external {
         vm.startPrank(owner);
-        yelayLiteVault.createClient(client, 1000, 1999, "client");
+        yelayLiteVault.createClient(client, 1000, "client");
         vm.stopPrank();
 
         vm.startPrank(user);

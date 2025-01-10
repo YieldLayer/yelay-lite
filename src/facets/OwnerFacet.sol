@@ -13,12 +13,12 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
  */
 contract OwnerFacet is IOwnerFacet {
     /// @inheritdoc IOwnerFacet
-    function owner() public view returns (address) {
+    function owner() external view returns (address) {
         return LibOwner._getOwnerStorage().owner;
     }
 
     /// @inheritdoc IOwnerFacet
-    function pendingOwner() public view returns (address) {
+    function pendingOwner() external view returns (address) {
         return LibOwner._getOwnerStorage().pendingOwner;
     }
 

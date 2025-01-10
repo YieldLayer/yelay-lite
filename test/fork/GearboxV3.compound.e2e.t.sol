@@ -35,14 +35,15 @@ contract CompoundTest is Test {
     function _setupStrategy() internal {
         vm.startPrank(owner);
         address strategyAdapter = address(new GearboxV3Strategy(GEARBOX_DAI_POOL));
-        StrategyData memory strategy =
-            StrategyData({adapter: strategyAdapter, supplement: abi.encode(GEARBOX_DAI_STAKING, GEARBOX_TOKEN)});
-        yelayLiteVault.addStrategy(strategy);
-        yelayLiteVault.approveStrategy(0, type(uint256).max);
+        StrategyData memory strategy = StrategyData({
+            adapter: strategyAdapter,
+            name: "gearbox",
+            supplement: abi.encode(GEARBOX_DAI_STAKING, GEARBOX_TOKEN)
+        });
         uint256[] memory queue = new uint256[](1);
         queue[0] = 0;
-        yelayLiteVault.updateDepositQueue(queue);
-        yelayLiteVault.updateWithdrawQueue(queue);
+        yelayLiteVault.addStrategy(strategy, queue, queue);
+        yelayLiteVault.approveStrategy(0, type(uint256).max);
         vm.stopPrank();
     }
 
@@ -161,7 +162,7 @@ contract CompoundTest is Test {
                 )
             });
             vm.expectRevert(abi.encodeWithSelector(LibErrors.CompoundUnderlyingForbidden.selector));
-            yelayLiteVault.compound(s);
+            yelayLiteVault.swapRewards(s);
         }
         SwapArgs[] memory swapArgs = new SwapArgs[](1);
         swapArgs[0] = SwapArgs({
@@ -171,7 +172,7 @@ contract CompoundTest is Test {
                 MockExchange.swap.selector, GEARBOX_TOKEN, address(underlyingAsset), gearBalance / 2
             )
         });
-        uint256 compounded = yelayLiteVault.compound(swapArgs);
+        uint256 compounded = yelayLiteVault.swapRewards(swapArgs);
         vm.stopPrank();
 
         assertEq(yelayLiteVault.underlyingBalance(), underlyingAssetBefore + compounded);

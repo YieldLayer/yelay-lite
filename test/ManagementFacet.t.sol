@@ -44,23 +44,27 @@ contract ManagementFacetTest is Test {
     }
 
     function test_managing_strategies() external {
+        uint256[] memory queue = new uint256[](0);
         assertEq(yelayLiteVault.getStrategies().length, 0);
         vm.startPrank(owner);
-        StrategyData memory strategy1 = StrategyData({adapter: address(mockStrategy1), supplement: ""});
-        StrategyData memory strategy2 = StrategyData({adapter: address(mockStrategy2), supplement: hex"1234"});
-        StrategyData memory strategy3 = StrategyData({adapter: address(mockStrategy3), supplement: hex"5678"});
+        StrategyData memory strategy1 =
+            StrategyData({adapter: address(mockStrategy1), name: "mockStrategy1", supplement: ""});
+        StrategyData memory strategy2 =
+            StrategyData({adapter: address(mockStrategy2), name: "mockStrategy2", supplement: hex"1234"});
+        StrategyData memory strategy3 =
+            StrategyData({adapter: address(mockStrategy3), name: "mockStrategy3", supplement: hex"5678"});
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol()), 0);
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol()), 0);
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol()), 0);
         {
-            yelayLiteVault.addStrategy(strategy1);
+            yelayLiteVault.addStrategy(strategy1, queue, queue);
             StrategyData[] memory strategies = yelayLiteVault.getStrategies();
             assertEq(strategies.length, 1);
             assertEq(strategies[0].adapter, strategy1.adapter);
             assertEq(strategies[0].supplement, strategy1.supplement);
         }
         {
-            yelayLiteVault.addStrategy(strategy2);
+            yelayLiteVault.addStrategy(strategy2, queue, queue);
             StrategyData[] memory strategies = yelayLiteVault.getStrategies();
             assertEq(strategies.length, 2);
             assertEq(strategies[0].adapter, strategy1.adapter);
@@ -69,7 +73,7 @@ contract ManagementFacetTest is Test {
             assertEq(strategies[1].supplement, strategy2.supplement);
         }
         {
-            yelayLiteVault.addStrategy(strategy3);
+            yelayLiteVault.addStrategy(strategy3, queue, queue);
             StrategyData[] memory strategies = yelayLiteVault.getStrategies();
             assertEq(strategies.length, 3);
             assertEq(strategies[0].adapter, strategy1.adapter);
@@ -80,7 +84,7 @@ contract ManagementFacetTest is Test {
             assertEq(strategies[2].supplement, strategy3.supplement);
         }
         {
-            yelayLiteVault.removeStrategy(1);
+            yelayLiteVault.removeStrategy(1, queue, queue);
             StrategyData[] memory strategies = yelayLiteVault.getStrategies();
             assertEq(strategies.length, 2);
             assertEq(strategies[0].adapter, strategy1.adapter);
@@ -89,8 +93,8 @@ contract ManagementFacetTest is Test {
             assertEq(strategies[1].supplement, strategy3.supplement);
         }
         {
-            yelayLiteVault.removeStrategy(1);
-            yelayLiteVault.removeStrategy(0);
+            yelayLiteVault.removeStrategy(1, queue, queue);
+            yelayLiteVault.removeStrategy(0, queue, queue);
             StrategyData[] memory strategies = yelayLiteVault.getStrategies();
             assertEq(strategies.length, 0);
         }

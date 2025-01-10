@@ -28,10 +28,10 @@ contract MorphoBlueStrategy is IStrategyBase {
         morpho.supply(marketParams, amount, 0, address(this), "");
     }
 
-    function withdraw(uint256 amount, bytes calldata supplement) external {
+    function withdraw(uint256 amount, bytes calldata supplement) external returns (uint256 withdrawn) {
         (, Id id) = _decodeSupplement(supplement);
         MarketParams memory marketParams = morpho.idToMarketParams(id);
-        morpho.withdraw(marketParams, amount, 0, address(this), address(this));
+        (withdrawn,) = morpho.withdraw(marketParams, amount, 0, address(this), address(this));
     }
 
     function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {

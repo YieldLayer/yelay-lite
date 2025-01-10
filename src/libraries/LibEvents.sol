@@ -29,17 +29,17 @@ library LibEvents {
 
     /**
      * @dev Emitted when assets are deposited into a strategy.
-     * @param strategy The address of the strategy.
+     * @param strategy The name of the strategy.
      * @param amount The amount of assets deposited.
      */
-    event ManagedDeposit(address indexed strategy, uint256 amount);
+    event ManagedDeposit(bytes32 indexed strategy, uint256 amount);
 
     /**
      * @dev Emitted when assets are withdrawn from a strategy.
-     * @param strategy The address of the strategy.
+     * @param strategy The name of the strategy.
      * @param amount The amount of assets withdrawn.
      */
-    event ManagedWithdraw(address indexed strategy, uint256 amount);
+    event ManagedWithdraw(bytes32 indexed strategy, uint256 amount);
 
     /**
      * @dev Emitted when interest is accrued.
@@ -68,7 +68,9 @@ library LibEvents {
      * @param toProjectId The ID of the project to which the position is migrated.
      * @param shares The amount of shares migrated.
      */
-    event PositionMigrated(address account, uint256 fromProjectId, uint256 toProjectId, uint256 shares);
+    event PositionMigrated(
+        address indexed account, uint256 indexed fromProjectId, uint256 indexed toProjectId, uint256 shares
+    );
 
     // ManagementFacet
     /**
@@ -86,14 +88,14 @@ library LibEvents {
      * @param strategy The address of the strategy.
      * @param supplement Additional data for the strategy.
      */
-    event AddStrategy(address strategy, bytes supplement);
+    event AddStrategy(address indexed strategy, bytes supplement);
 
     /**
      * @dev Emitted when a strategy is removed.
      * @param strategy The address of the strategy.
      * @param supplement Additional data for the strategy.
      */
-    event RemoveStrategy(address strategy, bytes supplement);
+    event RemoveStrategy(address indexed strategy, bytes supplement);
 
     // ClientsFacet
     /**
@@ -102,21 +104,21 @@ library LibEvents {
      * @param minProjectId The minimum project ID.
      * @param maxProjectId The maximum project ID.
      */
-    event NewProjectIds(address owner, uint256 minProjectId, uint256 maxProjectId);
+    event NewProjectIds(address indexed owner, uint256 minProjectId, uint256 maxProjectId);
 
     /**
      * @dev Emitted when project ownership is transferred.
-     * @param owner The address of the new owner.
-     * @param minProjectId The minimum project ID.
-     * @param maxProjectId The maximum project ID.
+     * @param clientName The name of the client.
+     * @param oldOwner The address of the old owner.
+     * @param newOwner The address of the new owner.
      */
-    event OwnershipTransferProjectIds(address owner, uint256 minProjectId, uint256 maxProjectId);
+    event ClientOwnershipTransfer(bytes32 indexed clientName, address indexed oldOwner, address indexed newOwner);
 
     /**
      * @dev Emitted when a project is activated.
      * @param project The ID of the activated project.
      */
-    event ProjectActivated(uint256 project);
+    event ProjectActivated(uint256 indexed project);
 
     // OwnerFacet
     /**

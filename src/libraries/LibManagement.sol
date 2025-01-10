@@ -6,7 +6,12 @@ import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
 
 library LibManagement {
-    /// @custom:storage-location erc7201:yelay-vault.storage.ManagementFacet
+    /**
+     * @custom:storage-location erc7201:yelay-vault.storage.ManagementFacet
+     * @custom:member strategies The list of strategies.
+     * @custom:member depositQueue The indexes of strategies for deposit queue.
+     * @custom:member withdrawQueue The indexes of strategies for withdraw queue.
+     */
     struct ManagementStorage {
         StrategyData[] strategies;
         // indexes of strategies list - not obligatory containing all indexes

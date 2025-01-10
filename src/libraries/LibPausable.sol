@@ -4,7 +4,10 @@ pragma solidity ^0.8.28;
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
 library LibPausable {
-    /// @custom:storage-location erc7201:yelay-vault.storage.Pausable
+    /**
+     * @custom:storage-location erc7201:yelay-vault.storage.Pausable
+     * @custom:member selectorToPaused Mapping from selector to a boolean indicating if the method is paused.
+     */
     struct PausableStorage {
         mapping(bytes4 => bool) selectorToPaused;
     }

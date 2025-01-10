@@ -49,6 +49,12 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         onlyRole(LibRoles.QUEUES_OPERATOR)
     {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        _updateDepositQueue(sM, depositQueue_);
+    }
+
+    function _updateDepositQueue(LibManagement.ManagementStorage storage sM, uint256[] calldata depositQueue_)
+        internal
+    {
         sM.depositQueue = depositQueue_;
         emit LibEvents.UpdateDepositQueue();
     }
@@ -60,20 +66,36 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         onlyRole(LibRoles.QUEUES_OPERATOR)
     {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        _updateWithdrawQueue(sM, withdrawQueue_);
+    }
+
+    function _updateWithdrawQueue(LibManagement.ManagementStorage storage sM, uint256[] calldata withdrawQueue_)
+        internal
+    {
         sM.withdrawQueue = withdrawQueue_;
         emit LibEvents.UpdateWithdrawQueue();
     }
 
     /// @inheritdoc IManagementFacet
-    function addStrategy(StrategyData calldata strategy) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
+    function addStrategy(
+        StrategyData calldata strategy,
+        uint256[] calldata depositQueue_,
+        uint256[] calldata withdrawQueue_
+    ) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.strategies.push(strategy);
         strategy.adapter.functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onAdd.selector, strategy.supplement));
         emit LibEvents.AddStrategy(strategy.adapter, strategy.supplement);
+        _updateDepositQueue(sM, depositQueue_);
+        _updateWithdrawQueue(sM, withdrawQueue_);
     }
 
     /// @inheritdoc IManagementFacet
-    function removeStrategy(uint256 index) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
+    function removeStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external
+        notPaused
+        onlyRole(LibRoles.STRATEGY_AUTHORITY)
+    {
         require(LibManagement._strategyAssets(index) == 0, LibErrors.StrategyNotEmpty());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         sM.strategies[index].adapter.functionDelegateCall(
@@ -82,6 +104,8 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         emit LibEvents.RemoveStrategy(sM.strategies[index].adapter, sM.strategies[index].supplement);
         sM.strategies[index] = sM.strategies[sM.strategies.length - 1];
         sM.strategies.pop();
+        _updateDepositQueue(sM, depositQueue_);
+        _updateWithdrawQueue(sM, withdrawQueue_);
     }
 
     /// @inheritdoc IManagementFacet

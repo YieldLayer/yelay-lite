@@ -2,7 +2,10 @@
 pragma solidity ^0.8.28;
 
 struct StrategyData {
+    // the address of the strategy adapter
     address adapter;
+    // the name of the strategy
+    bytes32 name;
     // for instance Morpho requires bytes32 market id
     // aave3 aToken address
     bytes supplement;
@@ -29,30 +32,40 @@ interface IManagementFacet {
 
     /**
      * @dev Updates the deposit queue.
+     * @dev Callable by QUEUES_OPERATOR.
      * @param depositQueue_ The new deposit queue.
      */
     function updateDepositQueue(uint256[] calldata depositQueue_) external;
 
     /**
      * @dev Updates the withdraw queue.
+     * @dev Callable by QUEUES_OPERATOR.
      * @param withdrawQueue_ The new withdraw queue.
      */
     function updateWithdrawQueue(uint256[] calldata withdrawQueue_) external;
 
     /**
      * @dev Adds a new strategy.
+     * @dev Callable by STRATEGY_AUTHORITY.
      * @param strategy The strategy data.
      */
-    function addStrategy(StrategyData calldata strategy) external;
+    function addStrategy(
+        StrategyData calldata strategy,
+        uint256[] calldata depositQueue_,
+        uint256[] calldata withdrawQueue_
+    ) external;
 
     /**
      * @dev Removes a strategy.
+     * @dev Callable by STRATEGY_AUTHORITY.
      * @param index The index of the strategy to remove.
      */
-    function removeStrategy(uint256 index) external;
+    function removeStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external;
 
     /**
      * @dev Function to approve spending of underlying asset by the strategy.
+     * @dev Callable by STRATEGY_AUTHORITY.
      * @param index The index of the strategy.
      * @param amount The amount to approve.
      */

@@ -23,12 +23,13 @@ contract ERC4626Strategy is IStrategyBase {
         return vault.deposit(amount, address(this));
     }
 
-    function withdraw(uint256 amount, bytes calldata) external virtual {
-        _withdraw(amount);
+    function withdraw(uint256 amount, bytes calldata) external virtual returns (uint256 withdrawn) {
+        withdrawn = _withdraw(amount);
     }
 
-    function _withdraw(uint256 amount) internal returns (uint256 shares) {
-        return vault.withdraw(amount, address(this), address(this));
+    function _withdraw(uint256 amount) internal returns (uint256) {
+        uint256 shares = vault.previewWithdraw(amount);
+        return vault.redeem(shares, address(this), address(this));
     }
 
     function assetBalance(address spoolLiteVault, bytes calldata) external view virtual returns (uint256) {

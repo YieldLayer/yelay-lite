@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import {PausableCheck} from "src/abstract/PausableCheck.sol";
 import {IClientsFacet} from "src/interfaces/IClientsFacet.sol";
 import {LibOwner} from "src/libraries/LibOwner.sol";
@@ -14,20 +16,18 @@ import {LibClients, ClientData} from "src/libraries/LibClients.sol";
  */
 contract ClientsFacet is PausableCheck, IClientsFacet {
     /// @inheritdoc IClientsFacet
-    function createClient(address clientOwner, uint128 minProjectId, uint128 maxProjectId, bytes32 clientName)
-        external
-    {
+    function createClient(address clientOwner, uint128 reservedProjects, bytes32 clientName) external {
         LibOwner.onlyOwner();
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        require(minProjectId > 0, LibErrors.MinIsZero());
-        require(maxProjectId > minProjectId, LibErrors.MaxLessThanMin());
-        require(minProjectId > clientStorage.lastProjectId, LibErrors.MinLessThanLastProjectId());
+        require(reservedProjects > 0, LibErrors.ReservedProjectsIsZero());
         require(clientName != bytes32(0), LibErrors.ClientNameEmpty());
-        require(clientStorage.clientNameTaken[clientName] == false, LibErrors.ClientNameTaken());
+        require(clientStorage.isClientNameTaken[clientName] == false, LibErrors.ClientNameTaken());
+        uint128 minProjectId = SafeCast.toUint128(clientStorage.lastProjectId + 1);
+        uint128 maxProjectId = minProjectId + reservedProjects - 1;
         clientStorage.ownerToClientData[clientOwner] =
             ClientData({minProjectId: minProjectId, maxProjectId: maxProjectId, clientName: clientName});
         clientStorage.lastProjectId = maxProjectId;
-        clientStorage.clientNameTaken[clientName] = true;
+        clientStorage.isClientNameTaken[clientName] = true;
         emit LibEvents.NewProjectIds(clientOwner, minProjectId, maxProjectId);
     }
 
@@ -38,7 +38,7 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
         delete clientStorage.ownerToClientData[msg.sender];
         clientStorage.ownerToClientData[newClientOwner] = clientData;
-        emit LibEvents.OwnershipTransferProjectIds(newClientOwner, clientData.minProjectId, clientData.maxProjectId);
+        emit LibEvents.ClientOwnershipTransfer(clientData.clientName, msg.sender, newClientOwner);
     }
 
     /// @inheritdoc IClientsFacet
@@ -46,8 +46,10 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
-        require(clientData.minProjectId <= projectId, LibErrors.OutOfBoundProjectId());
-        require(clientData.maxProjectId >= projectId, LibErrors.OutOfBoundProjectId());
+        require(
+            clientData.minProjectId <= projectId && clientData.maxProjectId >= projectId,
+            LibErrors.OutOfBoundProjectId()
+        );
         require(clientStorage.projectIdActive[projectId] == false, LibErrors.ProjectActive());
         clientStorage.projectIdActive[projectId] = true;
         clientStorage.projectIdToClientName[projectId] = clientData.clientName;
@@ -61,9 +63,9 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
     }
 
     /// @inheritdoc IClientsFacet
-    function clientNameTaken(bytes32 clientName) external view returns (bool) {
+    function isClientNameTaken(bytes32 clientName) external view returns (bool) {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        return clientStorage.clientNameTaken[clientName];
+        return clientStorage.isClientNameTaken[clientName];
     }
 
     /// @inheritdoc IClientsFacet

@@ -45,6 +45,7 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
 
     /**
      * @dev Sets the interval for updating the last total assets.
+     * @dev Callable by FUNDS_OPERATOR.
      * @param interval The new interval.
      */
     function setLastTotalAssetsUpdateInterval(uint64 interval) external;
@@ -121,18 +122,21 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
 
     /**
      * @dev Deposits assets into a strategy.
+     * @dev Callable by FUNDS_OPERATOR.
      * @param strategyArgs The strategy arguments.
      */
     function managedDeposit(StrategyArgs calldata strategyArgs) external;
 
     /**
      * @dev Withdraws assets from a strategy.
+     * @dev Callable by FUNDS_OPERATOR.
      * @param strategyArgs The strategy arguments.
      */
     function managedWithdraw(StrategyArgs calldata strategyArgs) external;
 
     /**
      * @dev Reallocates assets between strategies.
+     * @dev Callable by FUNDS_OPERATOR.
      * @param withdrawals The strategy arguments for withdrawals.
      * @param deposits The strategy arguments for deposits.
      */
@@ -140,18 +144,21 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
 
     /**
      * @dev Compounds rewards by swapping them for the underlying asset.
+     * @dev Callable by FUNDS_OPERATOR.
      * @param swapArgs The swap arguments.
      * @return compounded The amount compounded.
      */
-    function compound(SwapArgs[] memory swapArgs) external returns (uint256 compounded);
+    function swapRewards(SwapArgs[] memory swapArgs) external returns (uint256 compounded);
 
     /**
      * @dev Accrues fees.
+     * @dev Callable by FUNDS_OPERATOR.
      */
     function accrueFee() external;
 
     /**
      * @dev Claims rewards from a strategy.
+     * @dev Callable by FUNDS_OPERATOR.
      * @param index The index of the strategy.
      */
     function claimStrategyRewards(uint256 index) external;

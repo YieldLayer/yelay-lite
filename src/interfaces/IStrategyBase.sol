@@ -24,8 +24,9 @@ interface IStrategyBase {
      * @dev Withdraws the specified amount from the strategy.
      * @param amount The amount to withdraw.
      * @param supplement Additional data required for the withdrawal.
+     * @return withdrawn The actual amount withdrawn.
      */
-    function withdraw(uint256 amount, bytes calldata supplement) external;
+    function withdraw(uint256 amount, bytes calldata supplement) external returns (uint256 withdrawn);
 
     /**
      * @dev Returns the asset balance of the strategy for the specified vault.

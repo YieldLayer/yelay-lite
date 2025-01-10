@@ -47,7 +47,7 @@ library Utils {
             SelectorsToFacet({facet: address(new ClientsFacet()), selectors: _clientsFacetSelectors()});
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
-        yelayLiteVault.createClient(owner, 1, 100, "test");
+        yelayLiteVault.createClient(owner, 999, "test");
         for (uint256 i = 1; i < 50; i++) {
             yelayLiteVault.activateProject(i);
         }
@@ -71,7 +71,7 @@ library Utils {
         selectors[12] = FundsFacet.strategyRewards.selector;
         selectors[13] = FundsFacet.claimStrategyRewards.selector;
         selectors[14] = FundsFacet.swapper.selector;
-        selectors[15] = FundsFacet.compound.selector;
+        selectors[15] = FundsFacet.swapRewards.selector;
         selectors[16] = FundsFacet.migratePosition.selector;
 
         selectors[17] = ERC1155Upgradeable.uri.selector;
@@ -117,7 +117,7 @@ library Utils {
         selectors[1] = ClientsFacet.transferClientOwnership.selector;
         selectors[2] = ClientsFacet.activateProject.selector;
         selectors[3] = ClientsFacet.lastProjectId.selector;
-        selectors[4] = ClientsFacet.clientNameTaken.selector;
+        selectors[4] = ClientsFacet.isClientNameTaken.selector;
         selectors[5] = ClientsFacet.ownerToClientData.selector;
         selectors[6] = ClientsFacet.projectIdToClientName.selector;
         selectors[7] = ClientsFacet.projectIdActive.selector;
