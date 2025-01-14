@@ -1,4 +1,46 @@
-async function main() {}
+import { ethers } from 'hardhat';
+import contracts from '../../deployments/local.json';
+import {
+    ERC20__factory,
+    IYelayLiteVault__factory,
+    LibErrors__factory,
+} from '../../typechain-types';
+
+const USER_INDEX = 1;
+const FROM_PROJECT_ID = 1;
+const TO_PROJECT_ID = 2;
+const AMOUNT = 10;
+
+async function main() {
+    const signers = await ethers.getSigners();
+    const user = signers[USER_INDEX + 1];
+    const yelayLiteVault = IYelayLiteVault__factory.connect(
+        contracts.yelayLiteVault,
+        ethers.provider,
+    );
+    const underlyingAsset = await yelayLiteVault.underlyingAsset();
+    const decimals = await ERC20__factory.connect(underlyingAsset, ethers.provider).decimals();
+    const amount = ethers.parseUnits(String(AMOUNT), decimals);
+    try {
+        const tx = await yelayLiteVault
+            .connect(user)
+            .migratePosition(FROM_PROJECT_ID, TO_PROJECT_ID, amount);
+        const receipt = await tx.wait(1);
+        if (receipt?.status === 1) {
+            console.log('Tx successful');
+        } else {
+            console.log('Tx failed');
+        }
+    } catch (error: any) {
+        const parsedError = LibErrors__factory.createInterface().parseError(error.data);
+        if (parsedError) {
+            console.error(`Error: ${parsedError.name}`);
+        } else {
+            console.error(`Error: ${error}`);
+            throw new Error('Failed call');
+        }
+    }
+}
 
 main()
     .then(() => {

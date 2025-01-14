@@ -4,10 +4,10 @@
     "license": "MIT",
     "scripts": {
         "local:deploy": "npx hardhat run scripts/local/deploy.ts --network local",
-        "local:deposit": "npx hardhat deposit --network local",
-        "local:redeem": "npx hardhat redeem --network local",
-        "local:migrate": "npx hardhat migrate --network local",
-        "local:accrue": "npx hardhat accrue --network local",
+        "local:deposit": "npx hardhat run scripts/local/deposit.ts --network local",
+        "local:redeem": "npx hardhat run scripts/local/redeem.ts --network local",
+        "local:migrate": "npx hardhat run scripts/local/migrate.ts --network local",
+        "local:accrue": "npx hardhat run scripts/local/accrue.ts --network local",
         "local:monitor": "npx hardhat run scripts/local/monitor.ts --network local"
     },
     "devDependencies": {

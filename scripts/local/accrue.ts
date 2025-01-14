@@ -1,27 +1,12 @@
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/local.json';
-import {
-    ERC20__factory,
-    IYelayLiteVault__factory,
-    LibErrors__factory,
-} from '../../typechain-types';
-
-const USER_INDEX = 1;
-const PROJECT_ID = 1;
-const AMOUNT = 100;
+import { IYelayLiteVault__factory, LibErrors__factory } from '../../typechain-types';
 
 async function main() {
-    const signers = await ethers.getSigners();
-    const user = signers[USER_INDEX + 1];
-    const yelayLiteVault = IYelayLiteVault__factory.connect(
-        contracts.yelayLiteVault,
-        ethers.provider,
-    );
-    const underlyingAsset = await yelayLiteVault.underlyingAsset();
-    const decimals = await ERC20__factory.connect(underlyingAsset, ethers.provider).decimals();
-    const amount = ethers.parseUnits(String(AMOUNT), decimals);
+    const [deployer] = await ethers.getSigners();
+    const yelayLiteVault = IYelayLiteVault__factory.connect(contracts.yelayLiteVault, deployer);
     try {
-        const tx = await yelayLiteVault.connect(user).deposit(amount, PROJECT_ID, user.address);
+        const tx = await yelayLiteVault.accrueFee();
         const receipt = await tx.wait(1);
         if (receipt?.status === 1) {
             console.log('Tx successful');

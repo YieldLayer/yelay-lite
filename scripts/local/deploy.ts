@@ -54,7 +54,7 @@ async function main() {
         clientsFacet,
     });
 
-    await yelayLiteVault.createClient(deployer.address, 1, 100, ethers.encodeBytes32String('test'));
+    await yelayLiteVault.createClient(deployer.address, 100, ethers.encodeBytes32String('test'));
     await yelayLiteVault.activateProject(1);
     await yelayLiteVault.activateProject(2);
 
@@ -73,21 +73,24 @@ async function main() {
     );
     const aaveStrategyFactory = await ethers.getContractFactory('AaveV3Strategy', deployer);
     const aaveStrategy = await aaveStrategyFactory.deploy(AAVE_V3_POOL);
-    await yelayLiteVault.addStrategy({
-        adapter: await aaveStrategy.getAddress(),
-        supplement: new ethers.AbiCoder().encode(
-            ['address', 'address'],
-            [
-                USDC_ADDRESS,
-                await IPool__factory.connect(AAVE_V3_POOL, deployer)
-                    .getReserveData(USDC_ADDRESS)
-                    .then((r) => r.aTokenAddress),
-            ],
-        ),
-    });
+    await yelayLiteVault.addStrategy(
+        {
+            adapter: await aaveStrategy.getAddress(),
+            supplement: new ethers.AbiCoder().encode(
+                ['address', 'address'],
+                [
+                    USDC_ADDRESS,
+                    await IPool__factory.connect(AAVE_V3_POOL, deployer)
+                        .getReserveData(USDC_ADDRESS)
+                        .then((r) => r.aTokenAddress),
+                ],
+            ),
+            name: ethers.encodeBytes32String('AaveV3'),
+        },
+        [0],
+        [0],
+    );
     await yelayLiteVault.approveStrategy(0, ethers.MaxUint256);
-    await yelayLiteVault.updateDepositQueue([0]);
-    await yelayLiteVault.updateWithdrawQueue([0]);
 
     const contracts: Contracts = {
         yelayLiteVault,
