@@ -14,6 +14,7 @@ contract MorphoBlueStrategy is IStrategyBase {
         morpho = IMorpho(morpho_);
     }
 
+    // TODO: address is not needed, remove!
     function _decodeSupplement(bytes calldata supplement) internal pure returns (address asset, Id id) {
         return abi.decode(supplement, (address, Id));
     }

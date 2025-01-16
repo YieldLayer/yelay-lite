@@ -4,8 +4,7 @@ import { ethers, upgrades } from 'hardhat';
 import { IYelayLiteVault__factory, Swapper } from '../../typechain-types';
 import { Contracts } from '../types';
 import { convertToAddresses, deployFacets, setSelectorFacets } from '../utils';
-
-const USDC_ADDRESS_BASE = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+import { USDC_ADDRESS_BASE } from './constants';
 
 async function main() {
     const [deployer] = await ethers.getSigners();
