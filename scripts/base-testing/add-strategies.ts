@@ -37,7 +37,7 @@ async function main() {
                     ['address', 'bytes32'],
                     [
                         USDC_ADDRESS_BASE,
-                        '0xdbd8f3e55e5005a3922e3df4b1ba636ff9998b94588597420281e3641a05bf59',
+                        '0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836',
                     ],
                 ),
                 name: ethers.encodeBytes32String('MORPHO-cbBTC-USDC'),
