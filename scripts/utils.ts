@@ -64,6 +64,7 @@ export const setSelectorFacets = async ({
                 fundsFacet.interface.getFunction('swapper').selector,
                 fundsFacet.interface.getFunction('swapRewards').selector,
                 fundsFacet.interface.getFunction('migratePosition').selector,
+                fundsFacet.interface.getFunction('balanceOf').selector,
             ],
         },
         {
