@@ -24,3 +24,6 @@ docs/
 
 # Soldeer
 /dependencies
+
+
+*/**/debug.ts

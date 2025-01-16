@@ -25,7 +25,11 @@ const config: HardhatUserConfig = {
         base: {
             chainId: 8453,
             url: process.env.BASE_URL!,
-            accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
+            accounts: [
+                process.env.DEPLOYER_PRIVATE_KEY!,
+                process.env.USER1_PRIVATE_KEY!,
+                process.env.USER2_PRIVATE_KEY!,
+            ],
         },
         local: {
             chainId: 1,
