@@ -5,7 +5,7 @@ import { IYelayLiteVault__factory } from '../../typechain-types';
 async function main() {
     const [deployer] = await ethers.getSigners();
     const yelayLiteVault = IYelayLiteVault__factory.connect(contracts.yelayLiteVault, deployer);
-    await yelayLiteVault.lastProjectId().then(console.log);
+    await yelayLiteVault.accrueFee();
 }
 
 main();
