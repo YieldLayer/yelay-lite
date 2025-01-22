@@ -46,9 +46,7 @@ async function main() {
         clientsFacet,
     });
 
-    await yelayLiteVault.createClient(deployer.address, 2, ethers.encodeBytes32String('test'));
-    await yelayLiteVault.activateProject(1);
-    await yelayLiteVault.activateProject(2);
+    await yelayLiteVault.createClient(deployer.address, 1000, ethers.encodeBytes32String('test'));
 
     await yelayLiteVault.grantRole(
         '0xbf935b513649871c60054e0279e4e5798d3dfd05785c3c3c5b311fb39ec270fe',
