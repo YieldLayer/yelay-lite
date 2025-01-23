@@ -11,7 +11,7 @@ async function main() {
 
     const swapperFactory = await ethers.getContractFactory('Swapper', deployer);
     const swapper = (await upgrades.deployProxy(swapperFactory, [deployer.address], {
-        kind: 'transparent',
+        kind: 'uups',
     })) as unknown as Swapper;
 
     const { ownerFacet, fundsFacet, accessFacet, managementFacet, clientsFacet } =

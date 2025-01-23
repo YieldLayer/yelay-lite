@@ -21,7 +21,9 @@ contract VaultWrapper is OwnableUpgradeable, UUPSUpgradeable {
 
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IWETH public immutable weth;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ISwapper public immutable swapper;
 
     /// @custom:oz-upgrades-unsafe-allow constructor

@@ -9,5 +9,6 @@
     "vaults": {
         "weth": "0x98feDdFdf4cB0b1813a7969fdBac5AECDa8c6992",
         "usdc": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B"
-    }
+    },
+    "vaultWrapper": "0x977E50cc0D9fbEFDac05B4842D1795Dfa4cA1afd"
 }
