@@ -67,6 +67,7 @@ async function main() {
         accessFacet,
         managementFacet,
         clientsFacet,
+        ownerFacet,
         swapper,
     };
 

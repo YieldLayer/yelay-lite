@@ -4,5 +4,10 @@
     "accessFacet": "0xd9763d350B06039cc80bE38c2078ba6588133666",
     "managementFacet": "0x2c78978a7D7eFc8b47AA1CEE2e577600bE29B956",
     "clientsFacet": "0x5ad91B2f07a5fb7BA13C39940fa16826e9bBd5b9",
-    "swapper": "0xf9A42821bC7B13C47A6c934704645111eaD836A9"
+    "swapper": "0xf9A42821bC7B13C47A6c934704645111eaD836A9",
+    "ownerFacet": "0x2a9129038130146872dAFc2B413644e59a266af4",
+    "vaults": {
+        "weth": "0x98feDdFdf4cB0b1813a7969fdBac5AECDa8c6992",
+        "usdc": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B"
+    }
 }

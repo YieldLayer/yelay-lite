@@ -3,6 +3,7 @@ import {
     ClientsFacet,
     FundsFacet,
     ManagementFacet,
+    OwnerFacet,
     Swapper,
     YelayLiteVault,
 } from '../typechain-types';
@@ -14,4 +15,5 @@ export type Contracts = {
     managementFacet: ManagementFacet;
     clientsFacet: ClientsFacet;
     swapper: Swapper;
+    ownerFacet: OwnerFacet;
 };
