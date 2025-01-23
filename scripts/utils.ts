@@ -65,6 +65,7 @@ export const setSelectorFacets = async ({
                 fundsFacet.interface.getFunction('swapRewards').selector,
                 fundsFacet.interface.getFunction('migratePosition').selector,
                 fundsFacet.interface.getFunction('balanceOf').selector,
+                fundsFacet.interface.getFunction('setLastTotalAssetsUpdateInterval').selector,
             ],
         },
         {
