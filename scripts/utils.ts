@@ -50,6 +50,8 @@ export const setSelectorFacets = async ({
                 fundsFacet.interface.getFunction('deposit').selector,
                 fundsFacet.interface.getFunction('redeem').selector,
                 fundsFacet.interface.getFunction('totalAssets').selector,
+                fundsFacet.interface.getFunction('totalSupply()').selector,
+                fundsFacet.interface.getFunction('totalSupply(uint256)').selector,
                 fundsFacet.interface.getFunction('managedDeposit').selector,
                 fundsFacet.interface.getFunction('managedWithdraw').selector,
                 fundsFacet.interface.getFunction('reallocate').selector,
