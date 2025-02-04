@@ -19,6 +19,12 @@ interface IManagementFacet {
     function getStrategies() external view returns (StrategyData[] memory);
 
     /**
+     * @dev Returns the list of active strategies used for investment.
+     * @return The list of active strategies.
+     */
+    function getActiveStrategies() external view returns (StrategyData[] memory);
+
+    /**
      * @dev Returns the deposit queue.
      * @return The deposit queue.
      */
@@ -49,18 +55,33 @@ interface IManagementFacet {
      * @dev Callable by STRATEGY_AUTHORITY.
      * @param strategy The strategy data.
      */
-    function addStrategy(
-        StrategyData calldata strategy,
-        uint256[] calldata depositQueue_,
-        uint256[] calldata withdrawQueue_
-    ) external;
+    function addStrategy(StrategyData calldata strategy) external;
 
     /**
      * @dev Removes a strategy.
      * @dev Callable by STRATEGY_AUTHORITY.
      * @param index The index of the strategy to remove.
      */
-    function removeStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+    function removeStrategy(uint256 index) external;
+
+    /**
+     * @dev Activate strategy for active investing.
+     * @dev Callable by QUEUES_OPERATOR.
+     * @param index The index of registered strategy.
+     * @param depositQueue_ The new deposit queue.
+     * @param withdrawQueue_ The new withdraw queue.
+     */
+    function activateStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external;
+
+    /**
+     * @dev Deactivate strategy, stop investing in it.
+     * @dev Callable by QUEUES_OPERATOR.
+     * @param index The index of active strategy.
+     * @param depositQueue_ The new deposit queue.
+     * @param withdrawQueue_ The new withdraw queue.
+     */
+    function deactivateStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
         external;
 
     /**

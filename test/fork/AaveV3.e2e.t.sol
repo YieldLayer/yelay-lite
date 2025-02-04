@@ -20,10 +20,15 @@ contract AaveV3Test is AbstractStrategyTest {
                 address(underlyingAsset), IPool(AAVE_V3_POOL).getReserveData(address(underlyingAsset)).aTokenAddress
             )
         });
-        uint256[] memory queue = new uint256[](1);
-        queue[0] = 0;
-        yelayLiteVault.addStrategy(strategy, queue, queue);
+
+        yelayLiteVault.addStrategy(strategy);
         yelayLiteVault.approveStrategy(0, type(uint256).max);
+
+        {
+            uint256[] memory queue = new uint256[](1);
+            queue[0] = 0;
+            yelayLiteVault.activateStrategy(0, queue, queue);
+        }
         vm.stopPrank();
     }
 }

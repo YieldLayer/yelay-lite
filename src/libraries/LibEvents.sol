@@ -103,6 +103,20 @@ library LibEvents {
      */
     event RemoveStrategy(address indexed strategy, bytes supplement);
 
+    /**
+     * @dev Emitted when a strategy is activate.
+     * @param strategy The address of the strategy.
+     * @param supplement Additional data for the strategy.
+     */
+    event ActivateStrategy(address indexed strategy, bytes supplement);
+
+    /**
+     * @dev Emitted when a strategy is deactivated.
+     * @param strategy The address of the strategy.
+     * @param supplement Additional data for the strategy.
+     */
+    event DeactivateStrategy(address indexed strategy, bytes supplement);
+
     // ClientsFacet
     /**
      * @dev Emitted when new project IDs are assigned to a client.

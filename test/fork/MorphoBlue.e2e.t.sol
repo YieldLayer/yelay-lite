@@ -14,10 +14,13 @@ contract MorphoBlueTest is AbstractStrategyTest {
         address strategyAdapter = address(new MorphoBlueStrategy(MORPHO_BLUE));
         StrategyData memory strategy =
             StrategyData({adapter: strategyAdapter, supplement: abi.encode(MORPHO_BLUE_DAI_ID), name: "morpho"});
-        uint256[] memory queue = new uint256[](1);
-        queue[0] = 0;
-        yelayLiteVault.addStrategy(strategy, queue, queue);
+        yelayLiteVault.addStrategy(strategy);
         yelayLiteVault.approveStrategy(0, type(uint256).max);
+        {
+            uint256[] memory queue = new uint256[](1);
+            queue[0] = 0;
+            yelayLiteVault.activateStrategy(0, queue, queue);
+        }
         vm.stopPrank();
     }
 }

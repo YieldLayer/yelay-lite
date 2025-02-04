@@ -43,8 +43,7 @@ contract TwoStrategiesTest is Test {
                 ),
                 name: "aave"
             });
-            uint256[] memory queue = new uint256[](2);
-            yelayLiteVault.addStrategy(strategy, queue, queue);
+            yelayLiteVault.addStrategy(strategy);
             yelayLiteVault.approveStrategy(0, type(uint256).max);
         }
         {
@@ -53,11 +52,16 @@ contract TwoStrategiesTest is Test {
                 supplement: abi.encode(MORPHO_BLUE_DAI_ID),
                 name: "morpho"
             });
+
+            yelayLiteVault.addStrategy(strategy);
+            yelayLiteVault.approveStrategy(1, type(uint256).max);
+        }
+        {
             uint256[] memory queue = new uint256[](2);
             queue[0] = 0;
             queue[1] = 1;
-            yelayLiteVault.addStrategy(strategy, queue, queue);
-            yelayLiteVault.approveStrategy(1, type(uint256).max);
+            yelayLiteVault.activateStrategy(0, queue, queue);
+            yelayLiteVault.activateStrategy(1, queue, queue);
         }
         vm.stopPrank();
     }

@@ -94,6 +94,16 @@ library LibErrors {
      */
     error StrategyNotEmpty();
 
+    /**
+     * @dev The strategy is already registered.
+     */
+    error StrategyRegistered();
+
+    /**
+     * @dev The strategy is already active.
+     */
+    error StrategyActive();
+
     // ===================== LibPausable ================================
     /**
      * @dev The function is paused.

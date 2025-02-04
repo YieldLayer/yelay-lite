@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 
 import {LibRoles} from "src/libraries/LibRoles.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 
 import {Utils} from "../Utils.sol";
 import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER} from "../Constants.sol";
@@ -71,6 +72,20 @@ abstract contract AbstractStrategyTest is Test {
         assertEq(yelayLiteVault.totalSupply(), toDeposit);
         assertEq(yelayLiteVault.balanceOf(user, projectId), toDeposit);
         assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit, 1);
+    }
+
+    function test_deactivate_strategy() external {
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.StrategyNotEmpty.selector));
+        yelayLiteVault.deactivateStrategy(0, new uint256[](0), new uint256[](0));
+        vm.stopPrank();
     }
 
     function test_withdraw_with_strategy() external {
