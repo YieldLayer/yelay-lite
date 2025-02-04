@@ -37,16 +37,8 @@ contract AaveV3Strategy is IStrategyBase {
         return aToken.balanceOf(address(yelayLiteVault));
     }
 
-    function onAdd(bytes calldata supplement) external {
-        (, IAToken aToken) = _decodeSupplement(supplement);
-        aToken.approve(address(pool), type(uint256).max);
-    }
-
-    function onRemove(bytes calldata supplement) external {
-        (, IAToken aToken) = _decodeSupplement(supplement);
-        aToken.approve(address(pool), 0);
-    }
-
+    function onAdd(bytes calldata supplement) external {}
+    function onRemove(bytes calldata supplement) external {}
     function viewRewards(address, bytes calldata) external view returns (Reward[] memory rewards) {}
     function claimRewards(bytes calldata) external {}
 }
