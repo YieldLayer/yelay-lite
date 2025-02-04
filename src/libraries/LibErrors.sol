@@ -17,6 +17,11 @@ library LibErrors {
 
     // ===================== ClientsFacet ================================
     /**
+     * @dev The owner address is already used by some client.
+     */
+    error ClientOwnerReserved();
+
+    /**
      * @dev The caller is not the client owner.
      */
     error NotClientOwner();

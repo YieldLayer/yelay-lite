@@ -34,6 +34,7 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
     /// @inheritdoc IClientsFacet
     function transferClientOwnership(address newClientOwner) external notPaused {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
+        require(clientStorage.ownerToClientData[newClientOwner].minProjectId == 0, LibErrors.ClientOwnerReserved());
         ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
         delete clientStorage.ownerToClientData[msg.sender];
