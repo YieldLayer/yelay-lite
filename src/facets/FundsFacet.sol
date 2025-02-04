@@ -76,6 +76,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     function setLastTotalAssetsUpdateInterval(uint64 interval) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         sF.lastTotalAssetsUpdateInterval = interval;
+        emit LibEvents.UpdateLastTotalAssetsUpdateInterval(interval);
     }
 
     /// @inheritdoc IFundsFacet

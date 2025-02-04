@@ -72,6 +72,12 @@ library LibEvents {
         address indexed account, uint256 indexed fromProjectId, uint256 indexed toProjectId, uint256 shares
     );
 
+    /**
+     * @dev Emitted when lastTotalAssetsUpdateInterval is updated.
+     * @param newInterval The new interval for updating lastTotalAssets.
+     */
+    event UpdateLastTotalAssetsUpdateInterval(uint256 newInterval);
+
     // ManagementFacet
     /**
      * @dev Emitted when the deposit queue is updated.
