@@ -173,30 +173,35 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
         _updateLastTotalAssets(sF, newTotalAssets.zeroFloorSub(assets));
 
-        uint256 _assets = assets;
+        uint256 withdrawn;
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
-            if (_assets <= WITHDRAW_MARGIN) break;
+            uint256 toWithdraw = assets - withdrawn;
+            if (toWithdraw <= WITHDRAW_MARGIN) break;
             uint256 assetBalance = IStrategyBase(sM.strategies[sM.withdrawQueue[i]].adapter).assetBalance(
                 address(this), sM.strategies[sM.withdrawQueue[i]].supplement
             );
             if (assetBalance == 0) continue;
-            uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
+            uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, toWithdraw);
             (bool success, bytes memory result) = sM.strategies[sM.withdrawQueue[i]].adapter.delegatecall(
                 abi.encodeWithSelector(
                     IStrategyBase.withdraw.selector, availableToWithdraw, sM.strategies[sM.withdrawQueue[i]].supplement
                 )
             );
-            uint256 withdrawn = abi.decode(result, (uint256));
             if (success) {
-                // in case actual withdrawn amount is greater we will take only availableToWithdraw
-                _assets -= withdrawn > availableToWithdraw ? availableToWithdraw : withdrawn;
+                uint256 withdrawResult = abi.decode(result, (uint256));
+                // in case actual withdrawResult amount is greater we will take only availableToWithdraw
+                withdrawn += withdrawResult > availableToWithdraw ? availableToWithdraw : withdrawResult;
             }
         }
-        if (_assets > WITHDRAW_MARGIN) {
-            sF.underlyingBalance -= SafeCast.toUint192(_assets);
+        uint256 toReturn;
+        uint256 remainingToWithdraw = assets.zeroFloorSub(withdrawn);
+        if (remainingToWithdraw > WITHDRAW_MARGIN) {
+            require(sF.underlyingBalance >= remainingToWithdraw, LibErrors.NotEnoughInternalFunds());
+            sF.underlyingBalance -= SafeCast.toUint192(remainingToWithdraw);
+            toReturn = remainingToWithdraw + withdrawn;
+        } else {
+            toReturn = withdrawn > assets ? withdrawn : assets;
         }
-        // assets == _assets means that no assets were withdrawn from strategies
-        uint256 toReturn = assets == _assets ? assets : assets - _assets;
         sF.underlyingAsset.safeTransfer(receiver, toReturn);
         _burn(msg.sender, projectId, shares);
 

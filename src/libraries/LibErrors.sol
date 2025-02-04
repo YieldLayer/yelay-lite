@@ -72,6 +72,11 @@ library LibErrors {
      */
     error PositionMigrationForbidden();
 
+    /**
+     * @dev There is not enough underlying assets in YelayLiteVault to cover redeem.
+     */
+    error NotEnoughInternalFunds();
+
     // ===================== SwapWrapper ================================
     /**
      * @dev The token is not WETH.
