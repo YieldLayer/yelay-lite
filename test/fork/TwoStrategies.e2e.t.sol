@@ -50,7 +50,7 @@ contract TwoStrategiesTest is Test {
         {
             StrategyData memory strategy = StrategyData({
                 adapter: address(new MorphoBlueStrategy(MORPHO_BLUE)),
-                supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID),
+                supplement: abi.encode(MORPHO_BLUE_DAI_ID),
                 name: "morpho"
             });
             uint256[] memory queue = new uint256[](2);
