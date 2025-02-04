@@ -83,7 +83,6 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
 
     /// @inheritdoc IClientsFacet
     function projectIdActive(uint256 projectId) external view returns (bool) {
-        LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        return clientStorage.projectIdActive[projectId];
+        return LibClients._isProjectActive(projectId);
     }
 }
