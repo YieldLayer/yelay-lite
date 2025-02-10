@@ -76,6 +76,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     function setLastTotalAssetsUpdateInterval(uint64 interval) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         sF.lastTotalAssetsUpdateInterval = interval;
+        emit LibEvents.UpdateLastTotalAssetsUpdateInterval(interval);
     }
 
     /// @inheritdoc IFundsFacet
@@ -107,7 +108,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
         assets = sF.underlyingBalance;
-        for (uint256 i; i < sM.strategies.length; ++i) {
+        for (uint256 i; i < sM.activeStrategies.length; ++i) {
             assets += LibManagement._strategyAssets(i);
         }
     }
@@ -121,8 +122,9 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     function strategyRewards(uint256 index) external view returns (Reward[] memory rewards) {
         require(tx.origin == address(0), LibErrors.OnlyView());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        rewards =
-            IStrategyBase(sM.strategies[index].adapter).viewRewards(address(this), sM.strategies[index].supplement);
+        rewards = IStrategyBase(sM.activeStrategies[index].adapter).viewRewards(
+            address(this), sM.activeStrategies[index].supplement
+        );
     }
 
     /// @inheritdoc IFundsFacet
@@ -145,9 +147,9 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         _mint(receiver, projectId, shares, "");
         bool success;
         for (uint256 i; i < sM.depositQueue.length; i++) {
-            (success,) = sM.strategies[sM.depositQueue[i]].adapter.delegatecall(
+            (success,) = sM.activeStrategies[sM.depositQueue[i]].adapter.delegatecall(
                 abi.encodeWithSelector(
-                    IStrategyBase.deposit.selector, assets, sM.strategies[sM.depositQueue[i]].supplement
+                    IStrategyBase.deposit.selector, assets, sM.activeStrategies[sM.depositQueue[i]].supplement
                 )
             );
             if (success) {
@@ -173,30 +175,37 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
         _updateLastTotalAssets(sF, newTotalAssets.zeroFloorSub(assets));
 
-        uint256 _assets = assets;
+        uint256 withdrawn;
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
-            if (_assets <= WITHDRAW_MARGIN) break;
-            uint256 assetBalance = IStrategyBase(sM.strategies[sM.withdrawQueue[i]].adapter).assetBalance(
-                address(this), sM.strategies[sM.withdrawQueue[i]].supplement
+            uint256 toWithdraw = assets - withdrawn;
+            if (toWithdraw <= WITHDRAW_MARGIN) break;
+            uint256 assetBalance = IStrategyBase(sM.activeStrategies[sM.withdrawQueue[i]].adapter).assetBalance(
+                address(this), sM.activeStrategies[sM.withdrawQueue[i]].supplement
             );
             if (assetBalance == 0) continue;
-            uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, _assets);
-            (bool success, bytes memory result) = sM.strategies[sM.withdrawQueue[i]].adapter.delegatecall(
+            uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, toWithdraw);
+            (bool success, bytes memory result) = sM.activeStrategies[sM.withdrawQueue[i]].adapter.delegatecall(
                 abi.encodeWithSelector(
-                    IStrategyBase.withdraw.selector, availableToWithdraw, sM.strategies[sM.withdrawQueue[i]].supplement
+                    IStrategyBase.withdraw.selector,
+                    availableToWithdraw,
+                    sM.activeStrategies[sM.withdrawQueue[i]].supplement
                 )
             );
-            uint256 withdrawn = abi.decode(result, (uint256));
             if (success) {
-                // in case actual withdrawn amount is greater we will take only availableToWithdraw
-                _assets -= withdrawn > availableToWithdraw ? availableToWithdraw : withdrawn;
+                uint256 withdrawResult = abi.decode(result, (uint256));
+                // in case actual withdrawResult amount is greater we will take only availableToWithdraw
+                withdrawn += withdrawResult > availableToWithdraw ? availableToWithdraw : withdrawResult;
             }
         }
-        if (_assets > WITHDRAW_MARGIN) {
-            sF.underlyingBalance -= SafeCast.toUint192(_assets);
+        uint256 toReturn;
+        uint256 remainingToWithdraw = assets.zeroFloorSub(withdrawn);
+        if (remainingToWithdraw > WITHDRAW_MARGIN) {
+            require(sF.underlyingBalance >= remainingToWithdraw, LibErrors.NotEnoughInternalFunds());
+            sF.underlyingBalance -= SafeCast.toUint192(remainingToWithdraw);
+            toReturn = remainingToWithdraw + withdrawn;
+        } else {
+            toReturn = withdrawn > assets ? withdrawn : assets;
         }
-        // assets == _assets means that no assets were withdrawn from strategies
-        uint256 toReturn = assets == _assets ? assets : assets - _assets;
         sF.underlyingAsset.safeTransfer(receiver, toReturn);
         _burn(msg.sender, projectId, shares);
 
@@ -284,8 +293,8 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     /// @inheritdoc IFundsFacet
     function claimStrategyRewards(uint256 index) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        sM.strategies[index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(IStrategyBase.claimRewards.selector, sM.strategies[index].supplement)
+        sM.activeStrategies[index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(IStrategyBase.claimRewards.selector, sM.activeStrategies[index].supplement)
         );
     }
 
@@ -300,13 +309,13 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF,
         StrategyArgs calldata strategyArgs
     ) internal {
-        sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
+        sM.activeStrategies[strategyArgs.index].adapter.functionDelegateCall(
             abi.encodeWithSelector(
-                IStrategyBase.deposit.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
+                IStrategyBase.deposit.selector, strategyArgs.amount, sM.activeStrategies[strategyArgs.index].supplement
             )
         );
         sF.underlyingBalance -= SafeCast.toUint192(strategyArgs.amount);
-        emit LibEvents.ManagedDeposit(sM.strategies[strategyArgs.index].name, strategyArgs.amount);
+        emit LibEvents.ManagedDeposit(sM.activeStrategies[strategyArgs.index].name, strategyArgs.amount);
     }
 
     /**
@@ -320,14 +329,14 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF,
         StrategyArgs calldata strategyArgs
     ) internal {
-        bytes memory result = sM.strategies[strategyArgs.index].adapter.functionDelegateCall(
+        bytes memory result = sM.activeStrategies[strategyArgs.index].adapter.functionDelegateCall(
             abi.encodeWithSelector(
-                IStrategyBase.withdraw.selector, strategyArgs.amount, sM.strategies[strategyArgs.index].supplement
+                IStrategyBase.withdraw.selector, strategyArgs.amount, sM.activeStrategies[strategyArgs.index].supplement
             )
         );
         uint256 withdrawn = abi.decode(result, (uint256));
         sF.underlyingBalance += SafeCast.toUint192(withdrawn);
-        emit LibEvents.ManagedWithdraw(sM.strategies[strategyArgs.index].name, withdrawn);
+        emit LibEvents.ManagedWithdraw(sM.activeStrategies[strategyArgs.index].name, withdrawn);
     }
 
     /**

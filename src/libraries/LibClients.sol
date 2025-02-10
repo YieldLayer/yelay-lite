@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {ClientsFacet} from "src/facets/ClientsFacet.sol";
-
 struct ClientData {
     uint128 minProjectId;
     uint128 maxProjectId;

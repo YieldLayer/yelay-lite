@@ -31,6 +31,12 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
     }
 
     /// @inheritdoc IManagementFacet
+    function getActiveStrategies() external view returns (StrategyData[] memory) {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        return sM.activeStrategies;
+    }
+
+    /// @inheritdoc IManagementFacet
     function getDepositQueue() external view returns (uint256[] memory) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         return sM.depositQueue;
@@ -76,34 +82,66 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         emit LibEvents.UpdateWithdrawQueue();
     }
 
-    /// @inheritdoc IManagementFacet
-    function addStrategy(
-        StrategyData calldata strategy,
-        uint256[] calldata depositQueue_,
-        uint256[] calldata withdrawQueue_
-    ) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
-        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        sM.strategies.push(strategy);
-        strategy.adapter.functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onAdd.selector, strategy.supplement));
-        emit LibEvents.AddStrategy(strategy.adapter, strategy.supplement);
-        _updateDepositQueue(sM, depositQueue_);
-        _updateWithdrawQueue(sM, withdrawQueue_);
+    function _getStrategyId(StrategyData memory strategy) internal pure returns (bytes32) {
+        return keccak256((abi.encodePacked(strategy.adapter, strategy.supplement)));
     }
 
     /// @inheritdoc IManagementFacet
-    function removeStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
-        external
-        notPaused
-        onlyRole(LibRoles.STRATEGY_AUTHORITY)
-    {
-        require(LibManagement._strategyAssets(index) == 0, LibErrors.StrategyNotEmpty());
+    function addStrategy(StrategyData calldata strategy) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        sM.strategies[index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.strategies[index].supplement)
-        );
+        bytes32 strategyId = _getStrategyId(strategy);
+        require(sM.strategyRegistered[strategyId] == false, LibErrors.StrategyRegistered());
+        sM.strategyRegistered[strategyId] = true;
+        sM.strategies.push(strategy);
+        emit LibEvents.AddStrategy(strategy.adapter, strategy.supplement);
+    }
+
+    /// @inheritdoc IManagementFacet
+    function removeStrategy(uint256 index) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        bytes32 strategyId = _getStrategyId(sM.strategies[index]);
+        require(sM.strategyIsActive[strategyId] == false, LibErrors.StrategyActive());
         emit LibEvents.RemoveStrategy(sM.strategies[index].adapter, sM.strategies[index].supplement);
+        sM.strategyRegistered[strategyId] = false;
         sM.strategies[index] = sM.strategies[sM.strategies.length - 1];
         sM.strategies.pop();
+    }
+
+    /// @inheritdoc IManagementFacet
+    function activateStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external
+        notPaused
+        onlyRole(LibRoles.QUEUES_OPERATOR)
+    {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        StrategyData memory strategy = sM.strategies[index];
+        bytes32 strategyId = _getStrategyId(strategy);
+        require(sM.strategyIsActive[strategyId] == false, LibErrors.StrategyActive());
+        sM.strategyIsActive[strategyId] = true;
+        sM.activeStrategies.push(strategy);
+        strategy.adapter.functionDelegateCall(abi.encodeWithSelector(IStrategyBase.onAdd.selector, strategy.supplement));
+        _updateDepositQueue(sM, depositQueue_);
+        _updateWithdrawQueue(sM, withdrawQueue_);
+        emit LibEvents.ActivateStrategy(strategy.adapter, strategy.supplement);
+    }
+
+    /// @inheritdoc IManagementFacet
+    function deactivateStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external
+        notPaused
+        onlyRole(LibRoles.QUEUES_OPERATOR)
+    {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        StrategyData memory strategy = sM.activeStrategies[index];
+        bytes32 strategyId = _getStrategyId(strategy);
+        require(LibManagement._strategyAssets(index) == 0, LibErrors.StrategyNotEmpty());
+        emit LibEvents.DeactivateStrategy(strategy.adapter, strategy.supplement);
+        sM.strategyIsActive[strategyId] = false;
+        sM.activeStrategies[index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.activeStrategies[index].supplement)
+        );
+        sM.activeStrategies[index] = sM.activeStrategies[sM.activeStrategies.length - 1];
+        sM.activeStrategies.pop();
         _updateDepositQueue(sM, depositQueue_);
         _updateWithdrawQueue(sM, withdrawQueue_);
     }

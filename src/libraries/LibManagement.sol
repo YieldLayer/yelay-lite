@@ -13,8 +13,13 @@ library LibManagement {
      * @custom:member withdrawQueue The indexes of strategies for withdraw queue.
      */
     struct ManagementStorage {
+        // list of all strategies which can be used by the vault => defined by STRATEGY_AUTHORITY
         StrategyData[] strategies;
-        // indexes of strategies list - not obligatory containing all indexes
+        mapping(bytes32 => bool) strategyRegistered;
+        // list of strategies which currently used for investments => defined by QUEUES_OPERATOR
+        StrategyData[] activeStrategies;
+        mapping(bytes32 => bool) strategyIsActive;
+        // indexes of strategies form activeStrategies list - not obligatory containing all indexes
         uint256[] depositQueue;
         uint256[] withdrawQueue;
     }
@@ -36,6 +41,8 @@ library LibManagement {
      */
     function _strategyAssets(uint256 index) internal view returns (uint256) {
         LibManagement.ManagementStorage storage sM = _getManagementStorage();
-        return IStrategyBase(sM.strategies[index].adapter).assetBalance(address(this), sM.strategies[index].supplement);
+        return IStrategyBase(sM.activeStrategies[index].adapter).assetBalance(
+            address(this), sM.activeStrategies[index].supplement
+        );
     }
 }

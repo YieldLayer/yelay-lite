@@ -14,8 +14,8 @@ contract MorphoBlueStrategy is IStrategyBase {
         morpho = IMorpho(morpho_);
     }
 
-    function _decodeSupplement(bytes calldata supplement) internal pure returns (address asset, Id id) {
-        return abi.decode(supplement, (address, Id));
+    function _decodeSupplement(bytes calldata supplement) internal pure returns (Id id) {
+        return abi.decode(supplement, (Id));
     }
 
     function protocol() external view returns (address) {
@@ -23,19 +23,19 @@ contract MorphoBlueStrategy is IStrategyBase {
     }
 
     function deposit(uint256 amount, bytes calldata supplement) external {
-        (, Id id) = _decodeSupplement(supplement);
+        Id id = _decodeSupplement(supplement);
         MarketParams memory marketParams = morpho.idToMarketParams(id);
         morpho.supply(marketParams, amount, 0, address(this), "");
     }
 
     function withdraw(uint256 amount, bytes calldata supplement) external returns (uint256 withdrawn) {
-        (, Id id) = _decodeSupplement(supplement);
+        Id id = _decodeSupplement(supplement);
         MarketParams memory marketParams = morpho.idToMarketParams(id);
         (withdrawn,) = morpho.withdraw(marketParams, amount, 0, address(this), address(this));
     }
 
     function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {
-        (, Id id) = _decodeSupplement(supplement);
+        Id id = _decodeSupplement(supplement);
         MarketParams memory marketParams = morpho.idToMarketParams(id);
         return MorphoBalancesLib.expectedSupplyAssets(morpho, marketParams, yelayLiteVault);
     }

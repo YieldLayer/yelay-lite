@@ -72,6 +72,12 @@ library LibEvents {
         address indexed account, uint256 indexed fromProjectId, uint256 indexed toProjectId, uint256 shares
     );
 
+    /**
+     * @dev Emitted when lastTotalAssetsUpdateInterval is updated.
+     * @param newInterval The new interval for updating lastTotalAssets.
+     */
+    event UpdateLastTotalAssetsUpdateInterval(uint256 newInterval);
+
     // ManagementFacet
     /**
      * @dev Emitted when the deposit queue is updated.
@@ -96,6 +102,20 @@ library LibEvents {
      * @param supplement Additional data for the strategy.
      */
     event RemoveStrategy(address indexed strategy, bytes supplement);
+
+    /**
+     * @dev Emitted when a strategy is activate.
+     * @param strategy The address of the strategy.
+     * @param supplement Additional data for the strategy.
+     */
+    event ActivateStrategy(address indexed strategy, bytes supplement);
+
+    /**
+     * @dev Emitted when a strategy is deactivated.
+     * @param strategy The address of the strategy.
+     * @param supplement Additional data for the strategy.
+     */
+    event DeactivateStrategy(address indexed strategy, bytes supplement);
 
     // ClientsFacet
     /**

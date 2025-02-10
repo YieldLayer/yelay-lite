@@ -17,6 +17,11 @@ library LibErrors {
 
     // ===================== ClientsFacet ================================
     /**
+     * @dev The owner address is already used by some client.
+     */
+    error ClientOwnerReserved();
+
+    /**
      * @dev The caller is not the client owner.
      */
     error NotClientOwner();
@@ -67,6 +72,11 @@ library LibErrors {
      */
     error PositionMigrationForbidden();
 
+    /**
+     * @dev There is not enough underlying assets in YelayLiteVault to cover redeem.
+     */
+    error NotEnoughInternalFunds();
+
     // ===================== SwapWrapper ================================
     /**
      * @dev The token is not WETH.
@@ -83,6 +93,16 @@ library LibErrors {
      * @dev The assets were not withdrawn from strategy.
      */
     error StrategyNotEmpty();
+
+    /**
+     * @dev The strategy is already registered.
+     */
+    error StrategyRegistered();
+
+    /**
+     * @dev The strategy is already active.
+     */
+    error StrategyActive();
 
     // ===================== LibPausable ================================
     /**

@@ -21,6 +21,7 @@ contract ClientsFacetTest is Test {
     address constant yieldExtractor = address(0x02);
     address constant user = address(0x03);
     address constant client = address(0x04);
+    address constant client2 = address(0x05);
 
     IYelayLiteVault yelayLiteVault;
 
@@ -60,6 +61,7 @@ contract ClientsFacetTest is Test {
     function test_transferClientOwnership() external {
         vm.startPrank(owner);
         yelayLiteVault.createClient(client, 1000, "client");
+        yelayLiteVault.createClient(client2, 1000, "client2");
         vm.stopPrank();
 
         vm.startPrank(user);
@@ -68,6 +70,9 @@ contract ClientsFacetTest is Test {
         vm.stopPrank();
 
         vm.startPrank(client);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ClientOwnerReserved.selector));
+        yelayLiteVault.transferClientOwnership(client2);
+
         yelayLiteVault.transferClientOwnership(user);
         vm.stopPrank();
 

@@ -10,6 +10,7 @@ import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 
 import {LibRoles} from "src/libraries/LibRoles.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 
 import {Utils} from "../Utils.sol";
 
@@ -18,7 +19,7 @@ import {AaveV3Strategy} from "src/strategies/AaveV3Strategy.sol";
 import {IPool} from "@aave-v3-core/interfaces/IPool.sol";
 import {DAI_ADDRESS, MAINNET_BLOCK_NUMBER, MORPHO_BLUE, MORPHO_BLUE_DAI_ID, AAVE_V3_POOL} from "../Constants.sol";
 
-contract ManagedOperationsTest is Test {
+contract TwoStrategiesTest is Test {
     using Utils for address;
 
     address constant owner = address(0x01);
@@ -42,21 +43,25 @@ contract ManagedOperationsTest is Test {
                 ),
                 name: "aave"
             });
-            uint256[] memory queue = new uint256[](2);
-            yelayLiteVault.addStrategy(strategy, queue, queue);
+            yelayLiteVault.addStrategy(strategy);
             yelayLiteVault.approveStrategy(0, type(uint256).max);
         }
         {
             StrategyData memory strategy = StrategyData({
                 adapter: address(new MorphoBlueStrategy(MORPHO_BLUE)),
-                supplement: abi.encode(address(underlyingAsset), MORPHO_BLUE_DAI_ID),
+                supplement: abi.encode(MORPHO_BLUE_DAI_ID),
                 name: "morpho"
             });
+
+            yelayLiteVault.addStrategy(strategy);
+            yelayLiteVault.approveStrategy(1, type(uint256).max);
+        }
+        {
             uint256[] memory queue = new uint256[](2);
             queue[0] = 0;
             queue[1] = 1;
-            yelayLiteVault.addStrategy(strategy, queue, queue);
-            yelayLiteVault.approveStrategy(1, type(uint256).max);
+            yelayLiteVault.activateStrategy(0, queue, queue);
+            yelayLiteVault.activateStrategy(1, queue, queue);
         }
         vm.stopPrank();
     }
@@ -224,5 +229,72 @@ contract ManagedOperationsTest is Test {
         vm.stopPrank();
 
         assertGt(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0);
+    }
+
+    function test_partial_withdrawal_success() external {
+        _setupStrategy();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        deal(address(underlyingAsset), user2, toDeposit);
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+        vm.startPrank(user2);
+        yelayLiteVault.deposit(toDeposit, projectId, user2);
+        vm.stopPrank();
+
+        {
+            vm.startPrank(owner);
+            StrategyArgs[] memory withdrawals = new StrategyArgs[](1);
+            StrategyArgs[] memory deposits = new StrategyArgs[](1);
+            withdrawals[0] = StrategyArgs({index: 0, amount: toDeposit * 6 / 4});
+            deposits[0] = StrategyArgs({index: 1, amount: toDeposit / 4});
+            yelayLiteVault.reallocate(withdrawals, deposits);
+            uint256[] memory queue = new uint256[](1);
+            queue[0] = 1;
+            yelayLiteVault.updateWithdrawQueue(queue);
+            vm.stopPrank();
+        }
+
+        vm.startPrank(user);
+        yelayLiteVault.redeem(toDeposit, projectId, user);
+        vm.stopPrank();
+
+        assertApproxEqAbs(underlyingAsset.balanceOf(user), toDeposit, 1);
+    }
+
+    function test_partial_withdrawal_failure() external {
+        _setupStrategy();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        deal(address(underlyingAsset), user2, toDeposit);
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+        vm.startPrank(user2);
+        yelayLiteVault.deposit(toDeposit, projectId, user2);
+        vm.stopPrank();
+
+        {
+            vm.startPrank(owner);
+            StrategyArgs[] memory withdrawals = new StrategyArgs[](1);
+            StrategyArgs[] memory deposits = new StrategyArgs[](1);
+            withdrawals[0] = StrategyArgs({index: 0, amount: toDeposit * 6 / 4});
+            deposits[0] = StrategyArgs({index: 1, amount: toDeposit * 6 / 4});
+            yelayLiteVault.reallocate(withdrawals, deposits);
+            uint256[] memory queue = new uint256[](1);
+            queue[0] = 0;
+            yelayLiteVault.updateWithdrawQueue(queue);
+            vm.stopPrank();
+        }
+
+        vm.startPrank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.NotEnoughInternalFunds.selector));
+        yelayLiteVault.redeem(toDeposit, projectId, user);
+        vm.stopPrank();
     }
 }

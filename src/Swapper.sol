@@ -51,7 +51,7 @@ contract Swapper is OwnableUpgradeable, UUPSUpgradeable, ISwapper {
             }
             uint256 newTokenOutAmount = ERC20(tokenOut).balanceOf(address(this));
             require(newTokenOutAmount > tokenOutAmount, LibErrors.NothingSwapped(tokenOut));
-            tokenOutAmount += newTokenOutAmount;
+            tokenOutAmount = newTokenOutAmount;
         }
         ERC20(tokenOut).safeTransfer(msg.sender, tokenOutAmount);
         return tokenOutAmount;
