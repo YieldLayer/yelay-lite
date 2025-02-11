@@ -11,8 +11,8 @@ contract DepositLockPluginTest is Test {
     DepositLockPlugin depositLock;
     IYelayLiteVault mockVault;
     MockToken underlying;
-    // Use arbitrary addresses for vault owner and user.
-    address vaultOwner = address(0x1111);
+    // Use arbitrary addresses for the project owner and user.
+    address projectOwner = address(0x1111);
     address user = address(0x2222);
     // Use an arbitrary project ID.
     uint256 projectId = 123;
@@ -23,14 +23,12 @@ contract DepositLockPluginTest is Test {
     function setUp() public {
         // Deploy the underlying asset (a mock ERC20) and fund the user.
         underlying = new MockToken("Underlying", "UND", 18);
-        // Use forge-std's deal to set the underlying token balance;
-        // (forge-std supports ERC20 balance manipulation for testing).
         deal(address(underlying), user, 10000 ether);
 
-        // Deploy our IYelayLiteVault with vaultOwner as the owner and the mock underlying asset.
-        vm.startPrank(vaultOwner);
-        mockVault = Utils.deployDiamond(vaultOwner, address(underlying), yieldExtractor, uri);
-        mockVault.activateProject(123);
+        // Deploy the vault (diamond) with projectOwner as the project/client owner.
+        vm.startPrank(projectOwner);
+        mockVault = Utils.deployDiamond(projectOwner, address(underlying), yieldExtractor, uri);
+        mockVault.activateProject(projectId);
         vm.stopPrank();
 
         // Deploy the DepositLockPlugin.
@@ -40,22 +38,22 @@ contract DepositLockPluginTest is Test {
     function test_updateLockPeriod_nonOwnerReverts() public {
         uint256 newLockPeriod = 1 days;
         vm.prank(user);
-        vm.expectRevert(abi.encodeWithSelector(NotVaultOwner.selector, address(mockVault), user));
-        depositLock.updateLockPeriod(address(mockVault), newLockPeriod);
+        vm.expectRevert(abi.encodeWithSelector(NotProjectOwner.selector, projectId, user));
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
     }
 
     function test_updateLockPeriod_exceedsMaximum() public {
         uint256 excessiveLock = depositLock.MAX_LOCK_PERIOD() + 1;
-        vm.prank(vaultOwner);
+        vm.prank(projectOwner);
         vm.expectRevert(abi.encodeWithSelector(LockPeriodExceedsMaximum.selector, excessiveLock));
-        depositLock.updateLockPeriod(address(mockVault), excessiveLock);
+        depositLock.updateLockPeriod(address(mockVault), projectId, excessiveLock);
     }
 
     function test_updateLockPeriod_success() public {
         uint256 newLockPeriod = 1 days;
-        vm.prank(vaultOwner);
-        depositLock.updateLockPeriod(address(mockVault), newLockPeriod);
-        uint256 storedLock = depositLock.vaultLockPeriods(address(mockVault));
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
+        uint256 storedLock = depositLock.projectLockPeriods(address(mockVault), projectId);
         assertEq(storedLock, newLockPeriod);
     }
 
@@ -64,15 +62,15 @@ contract DepositLockPluginTest is Test {
 
         vm.startPrank(user);
         underlying.approve(address(depositLock), depositAmount);
-        vm.expectRevert(abi.encodeWithSelector(DepositLockNotSetForVault.selector, address(mockVault)));
+        vm.expectRevert(abi.encodeWithSelector(DepositLockNotSetForProject.selector, projectId));
         depositLock.depositLocked(address(mockVault), depositAmount, projectId);
         vm.stopPrank();
     }
 
     function test_depositLocked_success() public {
         uint256 newLockPeriod = 2 days;
-        vm.prank(vaultOwner);
-        depositLock.updateLockPeriod(address(mockVault), newLockPeriod);
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
 
         uint256 depositAmount = 1000 ether;
         vm.startPrank(user);
@@ -80,19 +78,19 @@ contract DepositLockPluginTest is Test {
         uint256 shares = depositLock.depositLocked(address(mockVault), depositAmount, projectId);
         vm.stopPrank();
 
-        // The shares returned from depositLocked equal the depositAmount (IYelayLiteVault returns assets as shares).
+        // The shares returned from depositLocked equal the depositAmount.
         assertEq(shares, depositAmount);
 
         // Since the deposit was recorded with the current block timestamp and the lock period has not elapsed,
-        // the available redeemable (matured) shares should be 0.
+        // the available (matured) shares should be 0.
         uint256 matured = depositLock.getMaturedShares(address(mockVault), projectId, user);
         assertEq(matured, 0);
     }
 
     function test_getMaturedShares_afterMaturity() public {
         uint256 newLockPeriod = 1 days;
-        vm.prank(vaultOwner);
-        depositLock.updateLockPeriod(address(mockVault), newLockPeriod);
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
 
         uint256 depositAmount = 500 ether;
         vm.startPrank(user);
@@ -109,8 +107,8 @@ contract DepositLockPluginTest is Test {
 
     function test_redeemLocked_success_partialAndFull() public {
         uint256 newLockPeriod = 1 days;
-        vm.prank(vaultOwner);
-        depositLock.updateLockPeriod(address(mockVault), newLockPeriod);
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
 
         uint256 depositAmount = 1000 ether;
         // Make two deposits from the same user.
@@ -118,13 +116,13 @@ contract DepositLockPluginTest is Test {
         underlying.approve(address(depositLock), depositAmount * 2);
         // First deposit.
         depositLock.depositLocked(address(mockVault), depositAmount, projectId);
-        // Advance a little bit so that the second deposit has a slightly later timestamp.
+        // Advance a little to differentiate timestamps.
         vm.warp(block.timestamp + 10);
         // Second deposit.
         depositLock.depositLocked(address(mockVault), depositAmount, projectId);
         vm.stopPrank();
 
-        // Warp time far enough so that both deposits are matured.
+        // Warp time such that both deposits are matured.
         vm.warp(block.timestamp + 1 days);
 
         uint256 available = depositLock.getMaturedShares(address(mockVault), projectId, user);
@@ -153,8 +151,8 @@ contract DepositLockPluginTest is Test {
 
     function test_redeemLocked_insufficientMatured() public {
         uint256 newLockPeriod = 1 days;
-        vm.prank(vaultOwner);
-        depositLock.updateLockPeriod(address(mockVault), newLockPeriod);
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
 
         uint256 depositAmount = 1000 ether;
         vm.startPrank(user);
@@ -162,7 +160,7 @@ contract DepositLockPluginTest is Test {
         depositLock.depositLocked(address(mockVault), depositAmount, projectId);
         vm.stopPrank();
 
-        // Without warping forward, the deposit is not matured.
+        // Without advancing time, the deposit is not matured.
         vm.startPrank(user);
         vm.expectRevert(abi.encodeWithSelector(NotEnoughMaturedShares.selector, 1000 ether, 0));
         depositLock.redeemLocked(address(mockVault), 1000 ether, projectId);
@@ -170,27 +168,27 @@ contract DepositLockPluginTest is Test {
     }
 
     function test_checkLocks() public {
-        // Use a small lock period for clarity.
+        // Use a short lock period for clarity.
         uint256 newLockPeriod = 120; // 120 seconds
-        vm.prank(vaultOwner);
-        depositLock.updateLockPeriod(address(mockVault), newLockPeriod);
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
 
-        // Deposit a first record.
+        // Deposit a record.
         vm.startPrank(user);
         underlying.approve(address(depositLock), 1000 ether);
         depositLock.depositLocked(address(mockVault), 1000 ether, projectId);
         vm.stopPrank();
 
-        // Warp time such that the first deposit is matured.
+        // Warp time so that the first deposit is matured.
         vm.warp(block.timestamp + 130);
 
-        // Now make a second deposit which should not be matured.
+        // Make a second deposit that is not matured.
         vm.startPrank(user);
         underlying.approve(address(depositLock), 500 ether);
         depositLock.depositLocked(address(mockVault), 500 ether, projectId);
         vm.stopPrank();
 
-        // Check the lock statuses of deposit indices 0 and 1.
+        // Check the maturity status for deposit indices 0 and 1.
         uint256[] memory indices = new uint256[](2);
         indices[0] = 0;
         indices[1] = 1;
