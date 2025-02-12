@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Initializable} from "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {ERC1155HolderUpgradeable} from
     "@openzeppelin-upgradeable/contracts/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
@@ -24,7 +23,6 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
     uint256 public constant MAX_LOCK_PERIOD = 365 days;
 
     /**
-     * @custom:storage-location DepositLockPlugin.storage.lockedDeposits
      * @custom:member shares The amount of shares locked.
      * @custom:member lockTime The timestamp when the deposit was made.
      */

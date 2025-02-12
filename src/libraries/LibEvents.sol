@@ -187,7 +187,9 @@ library LibEvents {
      * @param shares The amount of shares locked.
      * @param assets The amount of underlying assets deposited.
      */
-    event DepositLocked(address indexed user, address indexed vault, uint256 projectId, uint256 shares, uint256 assets);
+    event DepositLocked(
+        address indexed user, address indexed vault, uint256 indexed projectId, uint256 shares, uint256 assets
+    );
 
     /**
      * @notice Event emitted when a user redeems locked shares in a vault.
@@ -197,7 +199,9 @@ library LibEvents {
      * @param shares The amount of shares redeemed.
      * @param assets The amount of underlying assets redeemed.
      */
-    event RedeemLocked(address indexed user, address indexed vault, uint256 projectId, uint256 shares, uint256 assets);
+    event RedeemLocked(
+        address indexed user, address indexed vault, uint256 indexed projectId, uint256 shares, uint256 assets
+    );
 
     /**
      * @notice Event emitted when a user's shares are migrated from one project to another.
