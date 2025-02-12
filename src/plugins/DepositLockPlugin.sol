@@ -9,8 +9,8 @@ import {UUPSUpgradeable} from "@openzeppelin-upgradeable/contracts/proxy/utils/U
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {ClientData, IClientsFacet} from "src/interfaces/IClientsFacet.sol";
-import {LibErrors} from "./libraries/LibErrors.sol";
-import {LibEvents} from "./libraries/LibEvents.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
+import {LibEvents} from "src/libraries/LibEvents.sol";
 
 /**
  * @title DepositLockPlugin
@@ -83,11 +83,11 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
     /**
      * @notice Deposits assets into the vault via this plugin and locks the resulting vault shares.
      * @param vault The vault address.
-     * @param assets The amount of underlying assets to deposit.
      * @param projectId The project identifier.
+     * @param assets The amount of underlying assets to deposit.
      * @return shares The amount of vault shares received.
      */
-    function depositLocked(address vault, uint256 assets, uint256 projectId) external returns (uint256 shares) {
+    function depositLocked(address vault, uint256 projectId, uint256 assets) external returns (uint256 shares) {
         address underlyingAsset = IYelayLiteVault(vault).underlyingAsset();
         IERC20(underlyingAsset).transferFrom(msg.sender, address(this), assets);
         IERC20(underlyingAsset).approve(vault, assets);
@@ -95,23 +95,23 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
 
         _addLockedDeposit(vault, projectId, shares);
 
-        emit LibEvents.DepositLocked(vault, projectId, msg.sender, shares);
+        emit LibEvents.DepositLocked(msg.sender, vault, projectId, shares, assets);
     }
 
     /**
      * @notice Redeems vault shares that have matured (i.e. whose lock period has expired) for the user.
      * Uses pointer-style logic so that deposits remain in the original order.
      * @param vault The vault address.
-     * @param sharesToRedeem The amount of shares the user wishes to redeem.
      * @param projectId The project identifier.
+     * @param shares The amount of shares the user wishes to redeem.
      * @return assets The amount of underlying assets redeemed.
      */
-    function redeemLocked(address vault, uint256 sharesToRedeem, uint256 projectId) external returns (uint256 assets) {
-        _removeShares(vault, projectId, sharesToRedeem, true);
+    function redeemLocked(address vault, uint256 projectId, uint256 shares) external returns (uint256 assets) {
+        _removeShares(vault, projectId, shares);
 
-        assets = IYelayLiteVault(vault).redeem(sharesToRedeem, projectId, msg.sender);
+        assets = IYelayLiteVault(vault).redeem(shares, projectId, msg.sender);
 
-        emit LibEvents.RedeemLocked(vault, projectId, msg.sender, sharesToRedeem, assets);
+        emit LibEvents.RedeemLocked(msg.sender, vault, projectId, shares, assets);
     }
 
     /**
@@ -121,7 +121,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      *
      * Requirements:
      * - The destination project must have a lock period set.
-     * - The user must have at least `shares` locked in the source project.
+     * - The user must have at least `shares` matured.
      *
      * @param vault The vault address.
      * @param fromProjectId The source project ID.
@@ -129,11 +129,12 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @param shares The amount of locked shares to migrate.
      */
     function migrateLocked(address vault, uint256 fromProjectId, uint256 toProjectId, uint256 shares) external {
-        _removeShares(vault, fromProjectId, shares, false);
-
+        _removeShares(vault, fromProjectId, shares);
         _addLockedDeposit(vault, toProjectId, shares);
 
-        emit LibEvents.MigrateLocked(msg.sender, fromProjectId, toProjectId, shares);
+        IYelayLiteVault(vault).migratePosition(fromProjectId, toProjectId, shares);
+
+        emit LibEvents.MigrateLocked(msg.sender, vault, fromProjectId, toProjectId, shares);
     }
 
     /**
@@ -195,22 +196,18 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @dev Internal helper function to remove a shares from a user's locked deposits.
      * @param vault The vault address.
      * @param projectId The project identifier.
-     * @param shares The amount of shares to remove.
-     * @param isRedeem Whether the shares are being redeemed. In this case, we check for maturity
-     *                 of the deposit containing the shares, and stop if it is not matured.
+     * @param shares The amount of shares to remove. user must have this much shares matured.
      */
-    function _removeShares(address vault, uint256 projectId, uint256 shares, bool isRedeem) internal {
+    function _removeShares(address vault, uint256 projectId, uint256 shares) internal {
         uint256 pointer = depositPointers[vault][projectId][msg.sender];
         Deposit[] storage deposits = lockedDeposits[vault][projectId][msg.sender];
-        uint256 lockPeriod;
-        if (isRedeem) lockPeriod = projectLockPeriods[vault][projectId];
+        uint256 lockPeriod = projectLockPeriods[vault][projectId];
         uint256 remaining = shares;
 
         while (pointer < deposits.length && remaining > 0) {
             Deposit storage deposit = deposits[pointer];
 
-            // When redeeming, once we encounter a deposit that is not matured, we stop.
-            if (isRedeem && (!isMatured(deposit.lockTime, lockPeriod))) {
+            if (!isMatured(deposit.lockTime, lockPeriod)) {
                 break;
             }
 

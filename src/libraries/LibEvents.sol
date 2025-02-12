@@ -177,4 +177,45 @@ library LibEvents {
      * @param isAllowed Whether the exchange is allowed to be used in a swap or not after the update.
      */
     event ExchangeAllowlistUpdated(address indexed exchange, bool isAllowed);
+
+    // DepositLockPlugin
+    /**
+     * @notice Event emitted when a deposit is locked in a vault.
+     * @param vault The address of the vault.
+     * @param projectId The project identifier.
+     * @param user The address of the user.
+     * @param shares The amount of shares locked.
+     * @param assets The amount of underlying assets deposited.
+     */
+    event DepositLocked(address indexed user, address indexed vault, uint256 projectId, uint256 shares, uint256 assets);
+
+    /**
+     * @notice Event emitted when a user redeems locked shares in a vault.
+     * @param user The address of the user.
+     * @param vault The address of the vault.
+     * @param projectId The project identifier.
+     * @param shares The amount of shares redeemed.
+     * @param assets The amount of underlying assets redeemed.
+     */
+    event RedeemLocked(address indexed user, address indexed vault, uint256 projectId, uint256 shares, uint256 assets);
+
+    /**
+     * @notice Event emitted when a user's shares are migrated from one project to another.
+     * @param user The address of the user.
+     * @param vault The address of the vault.
+     * @param fromProjectId The project identifier from which the position is migrated.
+     * @param toProjectId The project identifier to which the position is migrated.
+     * @param shares The amount of shares migrated.
+     */
+    event MigrateLocked(
+        address indexed user, address indexed vault, uint256 fromProjectId, uint256 toProjectId, uint256 shares
+    );
+
+    /**
+     * @notice Event emitted when the lock period for a project in a vault is updated.
+     * @param vault The address of the vault.
+     * @param projectId The project identifier.
+     * @param lockPeriod The new lock period.
+     */
+    event LockPeriodUpdated(address indexed vault, uint256 indexed projectId, uint256 lockPeriod);
 }
