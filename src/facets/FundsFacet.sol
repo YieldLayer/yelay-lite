@@ -172,6 +172,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         uint256 newTotalAssets = _mintFee(sF);
 
         assets = _convertToAssets(shares, totalSupply(), newTotalAssets);
+        require(assets > WITHDRAW_MARGIN, LibErrors.MinRedeem());
 
         _updateLastTotalAssets(sF, newTotalAssets.zeroFloorSub(assets));
 

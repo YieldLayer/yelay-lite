@@ -77,6 +77,11 @@ library LibErrors {
      */
     error NotEnoughInternalFunds();
 
+    /**
+     * @dev Redeem doesn't pass minimum asset amount
+     */
+    error MinRedeem();
+
     // ===================== SwapWrapper ================================
     /**
      * @dev The token is not WETH.
