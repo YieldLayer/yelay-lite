@@ -199,7 +199,8 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         sF.underlyingBalance += SafeCast.toUint192(withdrawn);
         uint256 lack = assets.zeroFloorSub(withdrawn);
         uint256 toReturn = lack > WITHDRAW_MARGIN ? assets : assets - lack;
-        require(sF.underlyingBalance >= toReturn, LibErrors.NotEnoughInternalFunds());
+        require(sF.underlyingBalance + WITHDRAW_MARGIN >= toReturn, LibErrors.NotEnoughInternalFunds());
+        toReturn = toReturn > sF.underlyingBalance ? sF.underlyingBalance : toReturn;
         sF.underlyingBalance -= SafeCast.toUint192(toReturn);
         sF.underlyingAsset.safeTransfer(receiver, toReturn);
         _burn(msg.sender, projectId, shares);
