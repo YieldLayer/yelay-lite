@@ -171,9 +171,8 @@ abstract contract AbstractStrategyTest is Test {
 
             assertApproxEqAbs(assetsAfter - assetsBefore, sharesBefore, 10);
         }
-
         assertApproxEqAbs(yelayLiteVault.totalSupply(), 0, 1);
-        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), 0, 2);
         assertApproxEqAbs(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0, 1);
     }
 

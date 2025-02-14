@@ -192,20 +192,14 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
                 )
             );
             if (success) {
-                uint256 withdrawResult = abi.decode(result, (uint256));
-                // in case actual withdrawResult amount is greater we will take only availableToWithdraw
-                withdrawn += withdrawResult > availableToWithdraw ? availableToWithdraw : withdrawResult;
+                withdrawn += SafeCast.toUint192(abi.decode(result, (uint256)));
             }
         }
-        uint256 toReturn;
-        uint256 remainingToWithdraw = assets.zeroFloorSub(withdrawn);
-        if (remainingToWithdraw > WITHDRAW_MARGIN) {
-            require(sF.underlyingBalance >= remainingToWithdraw, LibErrors.NotEnoughInternalFunds());
-            sF.underlyingBalance -= SafeCast.toUint192(remainingToWithdraw);
-            toReturn = remainingToWithdraw + withdrawn;
-        } else {
-            toReturn = withdrawn > assets ? withdrawn : assets;
-        }
+        sF.underlyingBalance += SafeCast.toUint192(withdrawn);
+        uint256 lack = assets.zeroFloorSub(withdrawn);
+        uint256 toReturn = lack > WITHDRAW_MARGIN ? assets : assets - lack;
+        require(sF.underlyingBalance >= toReturn, LibErrors.NotEnoughInternalFunds());
+        sF.underlyingBalance -= SafeCast.toUint192(toReturn);
         sF.underlyingAsset.safeTransfer(receiver, toReturn);
         _burn(msg.sender, projectId, shares);
 
