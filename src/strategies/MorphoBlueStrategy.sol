@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {MorphoBalancesLib} from "@morpho-blue/libraries/periphery/MorphoBalancesLib.sol";
-import {Id, IMorpho, MarketParams} from "@morpho-blue/interfaces/IMorpho.sol";
+import {Id, IMorpho, MarketParams, Position} from "@morpho-blue/interfaces/IMorpho.sol";
 
 import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -36,8 +36,19 @@ contract MorphoBlueStrategy is IStrategyBase {
 
     function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {
         Id id = _decodeSupplement(supplement);
+        return _assetBalance(id, yelayLiteVault);
+    }
+
+    function _assetBalance(Id id, address yelayLiteVault) internal view returns (uint256) {
         MarketParams memory marketParams = morpho.idToMarketParams(id);
         return MorphoBalancesLib.expectedSupplyAssets(morpho, marketParams, yelayLiteVault);
+    }
+
+    function withdrawAll(bytes calldata supplement) external returns (uint256 withdrawn) {
+        Id id = _decodeSupplement(supplement);
+        Position memory position = morpho.position(id, address(this));
+        (withdrawn,) =
+            morpho.withdraw(morpho.idToMarketParams(id), 0, position.supplyShares, address(this), address(this));
     }
 
     function onAdd(bytes calldata supplement) external {}

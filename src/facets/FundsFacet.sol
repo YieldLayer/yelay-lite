@@ -323,11 +323,12 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF,
         StrategyArgs calldata strategyArgs
     ) internal {
-        bytes memory result = sM.activeStrategies[strategyArgs.index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(
+        bytes memory payload = strategyArgs.amount == type(uint256).max
+            ? abi.encodeWithSelector(IStrategyBase.withdrawAll.selector, sM.activeStrategies[strategyArgs.index].supplement)
+            : abi.encodeWithSelector(
                 IStrategyBase.withdraw.selector, strategyArgs.amount, sM.activeStrategies[strategyArgs.index].supplement
-            )
-        );
+            );
+        bytes memory result = sM.activeStrategies[strategyArgs.index].adapter.functionDelegateCall(payload);
         uint256 withdrawn = abi.decode(result, (uint256));
         sF.underlyingBalance += SafeCast.toUint192(withdrawn);
         emit LibEvents.ManagedWithdraw(sM.activeStrategies[strategyArgs.index].name, withdrawn);

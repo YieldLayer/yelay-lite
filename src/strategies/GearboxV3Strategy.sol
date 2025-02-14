@@ -37,6 +37,12 @@ contract GearboxV3Strategy is ERC4626Strategy {
         return vault.previewRedeem(sdToken.balanceOf(address(spoolLiteVault)));
     }
 
+    function withdrawAll(bytes calldata supplement) external override returns (uint256 withdrawn) {
+        (IFarmingPool sdToken,) = _decodeSupplement(supplement);
+        sdToken.withdraw(sdToken.balanceOf(address(this)));
+        withdrawn = _withdrawAll();
+    }
+
     function viewRewards(address spoolLiteVault, bytes calldata supplement)
         external
         view
