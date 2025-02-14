@@ -69,6 +69,10 @@ contract FundsFacetTest is Test {
 
         vm.startPrank(user);
         yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.redeem(10, projectId, user);
+
         yelayLiteVault.redeem(toDeposit, projectId, user);
         vm.stopPrank();
 

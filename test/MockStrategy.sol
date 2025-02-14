@@ -16,6 +16,7 @@ contract MockStrategy is IStrategyBase {
 
     function deposit(uint256 amount, bytes calldata supplement) external {}
     function withdraw(uint256 amount, bytes calldata supplement) external returns (uint256) {}
+    function withdrawAll(bytes calldata supplement) external returns (uint256) {}
     function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {}
     function onAdd(bytes calldata supplement) external {}
     function onRemove(bytes calldata supplement) external {}

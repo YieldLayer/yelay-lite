@@ -29,6 +29,13 @@ interface IStrategyBase {
     function withdraw(uint256 amount, bytes calldata supplement) external returns (uint256 withdrawn);
 
     /**
+     * @dev Withdraws all funds from strategy.
+     * @param supplement Additional data required for the withdrawal.
+     * @return withdrawn The actual amount withdrawn.
+     */
+    function withdrawAll(bytes calldata supplement) external returns (uint256 withdrawn);
+
+    /**
      * @dev Returns the asset balance of the strategy for the specified vault.
      * @param yelayLiteVault The address of the vault.
      * @param supplement Additional data required for the balance calculation.

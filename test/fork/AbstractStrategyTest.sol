@@ -6,6 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
+import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
@@ -78,14 +79,29 @@ abstract contract AbstractStrategyTest is Test {
         uint256 toDeposit = 1000e18;
         deal(address(underlyingAsset), user, toDeposit);
 
+        assertEq(yelayLiteVault.getActiveStrategies().length, 1);
+
+        vm.startPrank(owner);
+        uint256[] memory queue = new uint256[](1);
+        queue[0] = 0;
+        yelayLiteVault.updateDepositQueue(queue);
+        vm.stopPrank();
+
         vm.startPrank(user);
         yelayLiteVault.deposit(toDeposit, projectId, user);
         vm.stopPrank();
 
+        vm.warp(block.timestamp + 6 hours);
+
         vm.startPrank(owner);
         vm.expectRevert(abi.encodeWithSelector(LibErrors.StrategyNotEmpty.selector));
         yelayLiteVault.deactivateStrategy(0, new uint256[](0), new uint256[](0));
+
+        yelayLiteVault.managedWithdraw(StrategyArgs({index: 0, amount: type(uint256).max}));
+        yelayLiteVault.deactivateStrategy(0, new uint256[](0), new uint256[](0));
         vm.stopPrank();
+
+        assertEq(yelayLiteVault.getActiveStrategies().length, 0);
     }
 
     function test_withdraw_with_strategy() external {
@@ -102,6 +118,30 @@ abstract contract AbstractStrategyTest is Test {
         assertEq(underlyingAsset.balanceOf(address(yelayLiteVault)), 0);
         assertEq(yelayLiteVault.totalSupply(), 0);
         assertEq(yelayLiteVault.balanceOf(user, projectId), 0);
+    }
+
+    function test_managedWithdrawAll_with_strategy() external {
+        uint256 userBalance = 10_000e18;
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, userBalance);
+
+        vm.startPrank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        vm.stopPrank();
+
+        uint256 a = yelayLiteVault.strategyAssets(0);
+
+        vm.warp(block.timestamp + 6 hours);
+
+        uint256 b = yelayLiteVault.strategyAssets(0);
+
+        assertGt(b, a);
+
+        vm.startPrank(owner);
+        yelayLiteVault.managedWithdraw(StrategyArgs({index: 0, amount: type(uint256).max}));
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.strategyAssets(0), 0);
     }
 
     function test_yield_extraction() external {
@@ -171,9 +211,8 @@ abstract contract AbstractStrategyTest is Test {
 
             assertApproxEqAbs(assetsAfter - assetsBefore, sharesBefore, 10);
         }
-
         assertApproxEqAbs(yelayLiteVault.totalSupply(), 0, 1);
-        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertApproxEqAbs(yelayLiteVault.totalAssets(), 0, 2);
         assertApproxEqAbs(yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId), 0, 1);
     }
 
