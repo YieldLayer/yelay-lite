@@ -29,25 +29,17 @@ contract AaveV3Strategy is IStrategyBase {
 
     function withdraw(uint256 amount, bytes calldata supplement) external returns (uint256 withdrawn) {
         (address asset,) = _decodeSupplement(supplement);
-        withdrawn = _withdraw(asset, amount);
-    }
-
-    function _withdraw(address asset, uint256 amount) internal returns (uint256) {
-        return pool.withdraw(asset, amount, address(this));
+        withdrawn = pool.withdraw(asset, amount, address(this));
     }
 
     function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {
         (, IAToken aToken) = _decodeSupplement(supplement);
-        return _assetBalance(yelayLiteVault, aToken);
-    }
-
-    function _assetBalance(address yelayLiteVault, IAToken aToken) internal view returns (uint256) {
         return aToken.balanceOf(address(yelayLiteVault));
     }
 
     function withdrawAll(bytes calldata supplement) external returns (uint256 withdrawn) {
         (address asset, IAToken aToken) = _decodeSupplement(supplement);
-        withdrawn = _withdraw(asset, _assetBalance(address(this), aToken));
+        withdrawn = pool.withdraw(asset, aToken.balanceOf(address(this)), address(this));
     }
 
     function onAdd(bytes calldata supplement) external {}

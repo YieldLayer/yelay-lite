@@ -36,10 +36,6 @@ contract MorphoBlueStrategy is IStrategyBase {
 
     function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {
         Id id = _decodeSupplement(supplement);
-        return _assetBalance(id, yelayLiteVault);
-    }
-
-    function _assetBalance(Id id, address yelayLiteVault) internal view returns (uint256) {
         MarketParams memory marketParams = morpho.idToMarketParams(id);
         return MorphoBalancesLib.expectedSupplyAssets(morpho, marketParams, yelayLiteVault);
     }
