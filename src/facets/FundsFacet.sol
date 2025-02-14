@@ -198,9 +198,13 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         }
         sF.underlyingBalance += SafeCast.toUint192(withdrawn);
         uint256 lack = assets.zeroFloorSub(withdrawn);
+        // if withdrawal is almost covered by strategies (except WITHDRAW_MARGIN difference) - use what is withdrawn
+        // otherwise what is calculated in _convertToAssets
         uint256 toReturn = lack > WITHDRAW_MARGIN ? assets : assets - lack;
+        // ensure we have enough funds in vault
         require(sF.underlyingBalance + WITHDRAW_MARGIN >= toReturn, LibErrors.NotEnoughInternalFunds());
-        toReturn = toReturn > sF.underlyingBalance ? sF.underlyingBalance : toReturn;
+        // normalize for the last withdrawal - we already know that they are close together
+        toReturn = FixedPointMathLib.min(sF.underlyingBalance, toReturn);
         sF.underlyingBalance -= SafeCast.toUint192(toReturn);
         sF.underlyingAsset.safeTransfer(receiver, toReturn);
         _burn(msg.sender, projectId, shares);
