@@ -222,4 +222,12 @@ library LibEvents {
      * @param lockPeriod The new lock period.
      */
     event LockPeriodUpdated(address indexed vault, uint256 indexed projectId, uint256 lockPeriod);
+
+    /**
+     * @notice Event emitted when the global unlock time for a vault is updated.
+     * @param vault The address of the vault.
+     * @param projectId The project identifier.
+     * @param unlockTime The new global unlock time.
+     */
+    event GlobalUnlockTimeUpdated(address indexed vault, uint256 indexed projectId, uint256 unlockTime);
 }

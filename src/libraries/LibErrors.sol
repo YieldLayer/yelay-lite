@@ -150,7 +150,7 @@ library LibErrors {
      * @dev The lock period is not set for the project.
      * @param projectId The ID of the project.
      */
-    error DepositLockNotSetForProject(uint256 projectId);
+    error DepositLockNotSetForProject(address vault, uint256 projectId);
 
     /**
      * @dev The requested shares to remove is not available.
@@ -158,4 +158,10 @@ library LibErrors {
      * @param remaining Remaining shares from requested amount.
      */
     error NotEnoughShares(uint256 requested, uint256 remaining);
+
+    /**
+     * @dev The unlock time exceeds the current block timestamp.
+     * @param unlockTime The unlock time.
+     */
+    error GlobalUnlockTimeNotReached(uint256 unlockTime);
 }

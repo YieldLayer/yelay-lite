@@ -73,7 +73,9 @@ contract DepositLockPluginTest is Test {
         uint256 depositAmount = 1000 ether;
         vm.startPrank(user);
         underlying.approve(address(depositLock), depositAmount);
-        vm.expectRevert(abi.encodeWithSelector(LibErrors.DepositLockNotSetForProject.selector, projectId));
+        vm.expectRevert(
+            abi.encodeWithSelector(LibErrors.DepositLockNotSetForProject.selector, address(mockVault), projectId)
+        );
         depositLock.depositLocked(address(mockVault), projectId, depositAmount);
         vm.stopPrank();
     }
@@ -231,7 +233,9 @@ contract DepositLockPluginTest is Test {
         vm.warp(block.timestamp + newLockPeriod + 1);
 
         vm.prank(user);
-        vm.expectRevert(abi.encodeWithSelector(LibErrors.DepositLockNotSetForProject.selector, toProjectId));
+        vm.expectRevert(
+            abi.encodeWithSelector(LibErrors.DepositLockNotSetForProject.selector, address(mockVault), toProjectId)
+        );
         depositLock.migrateLocked(address(mockVault), projectId, toProjectId, migrateAmount);
     }
 
@@ -357,5 +361,83 @@ contract DepositLockPluginTest is Test {
         // Only the first deposit should be counted as matured.
         uint256 matured = depositLock.getMaturedShares(address(mockVault), projectId, user);
         assertEq(matured, depositAmount1);
+    }
+
+    // New tests for projectGlobalUnlockTime feature in DepositLockPlugin
+
+    function test_updateGlobalUnlockTime_nonOwnerReverts() public {
+        // Attempt to update the global unlock time from a non-project owner
+        uint256 newGlobalUnlockTime = block.timestamp + 1 days;
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.NotProjectOwner.selector, projectId, user));
+        depositLock.updateGlobalUnlockTime(address(mockVault), projectId, newGlobalUnlockTime);
+    }
+
+    function test_getMaturedShares_withGlobalUnlock() public {
+        // Set up a normal lock period and then override using global unlock time.
+        uint256 lockPeriod = 1 days;
+        uint256 globalUnlockTime = block.timestamp + 1 days;
+        uint256 depositAmount = 1000 ether;
+
+        // Set the lock period (required for depositLocked to work)
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, lockPeriod);
+
+        // Set the global unlock time as project owner.
+        vm.prank(projectOwner);
+        depositLock.updateGlobalUnlockTime(address(mockVault), projectId, globalUnlockTime);
+
+        // User makes a deposit.
+        vm.startPrank(user);
+        underlying.approve(address(depositLock), depositAmount);
+        depositLock.depositLocked(address(mockVault), projectId, depositAmount);
+        vm.stopPrank();
+
+        // Before the global unlock time is reached, no shares should be mature.
+        uint256 maturedBefore = depositLock.getMaturedShares(address(mockVault), projectId, user);
+        assertEq(maturedBefore, 0);
+
+        // Warp time past the global unlock time.
+        vm.warp(globalUnlockTime + 1);
+
+        // Now all deposited shares should be mature.
+        uint256 maturedAfter = depositLock.getMaturedShares(address(mockVault), projectId, user);
+        assertEq(maturedAfter, depositAmount);
+    }
+
+    function test_redeemLocked_withGlobalUnlock() public {
+        // Set a lock period and a global unlock time.
+        uint256 lockPeriod = 1 days;
+        uint256 globalUnlockTime = block.timestamp + 1 days;
+        uint256 depositAmount = 1000 ether;
+
+        // Set the lock period and then the global unlock time.
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, lockPeriod);
+        vm.prank(projectOwner);
+        depositLock.updateGlobalUnlockTime(address(mockVault), projectId, globalUnlockTime);
+
+        // User makes a deposit.
+        vm.startPrank(user);
+        underlying.approve(address(depositLock), depositAmount);
+        depositLock.depositLocked(address(mockVault), projectId, depositAmount);
+        vm.stopPrank();
+
+        // Attempt to redeem the shares before the global unlock time should revert.
+        vm.startPrank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.GlobalUnlockTimeNotReached.selector, globalUnlockTime));
+        depositLock.redeemLocked(address(mockVault), projectId, depositAmount);
+        vm.stopPrank();
+
+        // Warp time past the global unlock time.
+        vm.warp(globalUnlockTime + 1);
+
+        // Now, redemption should succeed.
+        vm.startPrank(user);
+        uint256 redeemedAssets = depositLock.redeemLocked(address(mockVault), projectId, depositAmount);
+        vm.stopPrank();
+
+        // Check that the redeemed assets match the deposited amount.
+        assertEq(redeemedAssets, depositAmount);
     }
 }
