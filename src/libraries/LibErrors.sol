@@ -135,10 +135,11 @@ library LibErrors {
 
     /**
      * @dev The caller is not the project owner.
+     * @param vault The address of the vault.
      * @param projectId The ID of the project.
      * @param caller The address of the caller.
      */
-    error NotProjectOwner(uint256 projectId, address caller);
+    error NotProjectOwner(address vault, uint256 projectId, address caller);
 
     /**
      * @dev The lock period exceeds the maximum allowable period.
@@ -147,10 +148,11 @@ library LibErrors {
     error LockPeriodExceedsMaximum(uint256 lockPeriod);
 
     /**
-     * @dev The lock period is not set for the project.
+     * @dev Lock Mode is unset for the project.
+     * @param vault The address of the vault.
      * @param projectId The ID of the project.
      */
-    error DepositLockNotSetForProject(address vault, uint256 projectId);
+    error LockModeNotSetForProject(address vault, uint256 projectId);
 
     /**
      * @dev The requested shares to remove is not available.
@@ -164,4 +166,12 @@ library LibErrors {
      * @param unlockTime The unlock time.
      */
     error GlobalUnlockTimeNotReached(uint256 unlockTime);
+
+    /**
+     * @dev The lock mode is already set for the project.
+     * @param vault The address of the vault.
+     * @param projectId The ID of the project.
+     * @param lockMode The lock mode.
+     */
+    error LockModeAlreadySet(address vault, uint256 projectId, uint256 lockMode);
 }

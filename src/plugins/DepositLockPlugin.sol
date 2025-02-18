@@ -14,14 +14,29 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 /**
  * @title DepositLockPlugin
  * @dev Allows locking of deposits so that funds sent to a vault via this plugin remain locked until
- * the lock period expires. The project owner (as given by the vault's ClientsFacet) may update the project's
- * lock period. Each deposit records the time at which it was made (lockTime) and the unlock time is computed
- * dynamically as lockTime + projectLockPeriods[vault][projectId], allowing adjustments if the project's lock period changes.
- * Alternatively, a global unlock time may be set for a project, in which case all deposits become mature at that time.
+ * some lock period expires. The project owner (as given by the vault's ClientsFacet) may update the project's
+ * lock period. Each deposit records the time at which it was made (lockTime).
+ * There are two available active lock modes (See LockMode). Every vault–projectId is assigned a LockMode
+ * (Unset, Variable, Global) on the first admin update. Subsequently, the owner may update the value for the
+ * chosen mode, but cannot switch between active modes.
  */
 contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPSUpgradeable {
     /// @notice Maximum allowable lock period – 365 days.
     uint256 public constant MAX_LOCK_PERIOD = 365 days;
+
+    /**
+     * @notice Enumeration for lock mode.
+     * @custom:member Unset The lock mode has not been set.
+     * @custom:member Variable The lock period is set 'per deposit' - the unlock time is computed as lockTime +
+     *                   projectLockPeriods[vault][projectId].
+     * @custom:member Global The lock period is set 'per project' - the unlock time
+     *                   (projectGlobalUnlockTime[vault][projectId]) is fixed for all deposits.
+     */
+    enum LockMode {
+        Unset,
+        Variable,
+        Global
+    }
 
     /**
      * @custom:member shares The amount of shares locked.
@@ -40,20 +55,26 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
 
     /**
      * @dev Mapping for the current lock period set for a project in a vault.
-     * Only the project owner (as returned by the vault's ClientsFacet) may update this.
+     * Used when the project is in Variable mode.
      */
     mapping(address => mapping(uint256 => uint256)) public projectLockPeriods;
+
+    /**
+     * @dev Mapping for the global unlock time set for a project in a vault.
+     * Used when the project is in Global mode.
+     */
+    mapping(address => mapping(uint256 => uint256)) public projectGlobalUnlockTime;
+
+    /**
+     * @dev Mapping for the lock mode assigned to a project in a vault.
+     * Once set, the mode cannot be changed.
+     */
+    mapping(address => mapping(uint256 => LockMode)) public projectLockModes;
 
     /**
      * @dev Mapping to track the pointer for each user's deposits so that redeemed deposits need not be shuffled.
      */
     mapping(address => mapping(uint256 => mapping(address => uint256))) private depositPointers;
-
-    /**
-     * @dev Mapping for the global unlock time set for a project in a vault.
-     * Only the project owner (as returned by the vault's ClientsFacet) may update this.
-     */
-    mapping(address => mapping(uint256 => uint256)) public projectGlobalUnlockTime;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -77,9 +98,9 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @param lockPeriod New lock period (in seconds). Must be <= MAX_LOCK_PERIOD.
      */
     function updateLockPeriod(address vault, uint256 projectId, uint256 lockPeriod) external {
-        // The vault is expected to implement the ClientsFacet so that we can verify the project owner.
-        require(_isProjectOwner(vault, projectId), LibErrors.NotProjectOwner(projectId, msg.sender));
+        require(_isProjectOwner(vault, projectId), LibErrors.NotProjectOwner(vault, projectId, msg.sender));
         require(lockPeriod <= MAX_LOCK_PERIOD, LibErrors.LockPeriodExceedsMaximum(lockPeriod));
+        _setOrValidateLockMode(vault, projectId, LockMode.Variable);
 
         projectLockPeriods[vault][projectId] = lockPeriod;
         emit LibEvents.LockPeriodUpdated(vault, projectId, lockPeriod);
@@ -88,14 +109,14 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
     /**
      * @notice Updates the global unlock time for a given project in a vault.
      * @dev - If a global unlock time is set, it takes precedence over per-deposit lock periods.
-     *         - The global unlock time may be reset to 0 to again use per-deposit lock periods.
+     *         - Once a mode is set, it cannot be changed.
      * @param vault The address of the vault.
      * @param projectId The project identifier.
-     * @param unlockTime The new global unlock time.
+     * @param unlockTime The new global unlock time. Must be non-zero.
      */
     function updateGlobalUnlockTime(address vault, uint256 projectId, uint256 unlockTime) external {
-        // The vault is expected to implement the ClientsFacet so that we can verify the project owner.
-        require(_isProjectOwner(vault, projectId), LibErrors.NotProjectOwner(projectId, msg.sender));
+        require(_isProjectOwner(vault, projectId), LibErrors.NotProjectOwner(vault, projectId, msg.sender));
+        _setOrValidateLockMode(vault, projectId, LockMode.Global);
 
         projectGlobalUnlockTime[vault][projectId] = unlockTime;
         emit LibEvents.GlobalUnlockTimeUpdated(vault, projectId, unlockTime);
@@ -141,7 +162,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * and creates a new deposit record in the "to" project with a fresh lock time.
      *
      * Requirements:
-     * - The destination project must have a lock period set.
+     * - The destination project must have a lock configuration set.
      * - The user must have at least `shares` matured.
      *
      * @param vault The vault address.
@@ -170,25 +191,13 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
         view
         returns (uint256 totalMatured)
     {
-        Deposit[] storage deposits = lockedDeposits[vault][projectId][user];
-        uint256 pointer = depositPointers[vault][projectId][user];
-        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
-        bool globalMatured;
-
-        // If a global unlock time is set, it takes precedence over per-deposit rules.
-        if (globalUnlockTime != 0) {
-            if (block.timestamp < globalUnlockTime) {
-                return 0;
-            }
-            globalMatured = true;
-        }
-
-        uint256 lockPeriod = projectLockPeriods[vault][projectId];
-        for (uint256 i = pointer; i < deposits.length; i++) {
-            if (!globalMatured && !isMatured(deposits[i].lockTime, lockPeriod)) {
-                break;
-            }
-            totalMatured += deposits[i].shares;
+        LockMode mode = projectLockModes[vault][projectId];
+        if (mode == LockMode.Global) {
+            totalMatured = _getMaturedSharesGlobal(vault, projectId, user);
+        } else if (mode == LockMode.Variable) {
+            totalMatured = _getMaturedSharesVariable(vault, projectId, user);
+        } else {
+            revert LibErrors.LockModeNotSetForProject(vault, projectId);
         }
     }
 
@@ -209,7 +218,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
         uint256 lockPeriod = projectLockPeriods[vault][projectId];
         statuses = new bool[](indices.length);
         for (uint256 i = 0; i < indices.length; i++) {
-            statuses[i] = isMatured(deposits[indices[i]].lockTime, lockPeriod);
+            statuses[i] = _isMatured(deposits[indices[i]].lockTime, lockPeriod);
         }
     }
 
@@ -225,30 +234,67 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
     }
 
     /**
-     * @dev Internal helper function to remove a shares from a user's locked deposits.
+     * @dev Internal helper function to remove locked shares from a user's deposits.
+     * Delegates to the appropriate function based on the project's lock mode.
      * @param vault The vault address.
      * @param projectId The project identifier.
-     * @param shares The amount of shares to remove. user must have this much shares matured.
+     * @param shares The amount of shares to remove.
      */
     function _removeShares(address vault, uint256 projectId, uint256 shares) internal {
+        LockMode mode = projectLockModes[vault][projectId];
+        if (mode == LockMode.Global) {
+            _removeSharesGlobal(vault, projectId, shares);
+        } else if (mode == LockMode.Variable) {
+            _removeSharesVariable(vault, projectId, shares);
+        } else {
+            revert LibErrors.LockModeNotSetForProject(vault, projectId);
+        }
+    }
+
+    /**
+     * @dev Internal helper function to remove shares in Variable mode.
+     * @param vault The vault address.
+     * @param projectId The project identifier.
+     * @param shares The amount of shares to remove.
+     */
+    function _removeSharesVariable(address vault, uint256 projectId, uint256 shares) internal {
         uint256 pointer = depositPointers[vault][projectId][msg.sender];
         Deposit[] storage deposits = lockedDeposits[vault][projectId][msg.sender];
         uint256 lockPeriod = projectLockPeriods[vault][projectId];
-        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
         uint256 remaining = shares;
-        bool globalMatured;
-
-        if (globalUnlockTime != 0) {
-            // Global unlock path: require global unlock to have been reached.
-            require(block.timestamp >= globalUnlockTime, LibErrors.GlobalUnlockTimeNotReached(globalUnlockTime));
-            globalMatured = true;
+        while (pointer < deposits.length && remaining > 0) {
+            Deposit storage deposit = deposits[pointer];
+            if (!_isMatured(deposit.lockTime, lockPeriod)) {
+                break;
+            }
+            if (remaining < deposit.shares) {
+                deposit.shares = uint192(deposit.shares - remaining);
+                remaining = 0;
+            } else {
+                remaining -= deposit.shares;
+                deposit.shares = 0;
+                pointer++;
+            }
         }
+        require(remaining == 0, LibErrors.NotEnoughShares(shares, shares - remaining));
+        depositPointers[vault][projectId][msg.sender] = pointer;
+    }
+
+    /**
+     * @dev Internal helper function to remove shares in Global mode.
+     * @param vault The vault address.
+     * @param projectId The project identifier.
+     * @param shares The amount of shares to remove.
+     */
+    function _removeSharesGlobal(address vault, uint256 projectId, uint256 shares) internal {
+        uint256 pointer = depositPointers[vault][projectId][msg.sender];
+        Deposit[] storage deposits = lockedDeposits[vault][projectId][msg.sender];
+        uint256 remaining = shares;
+        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
+        require(block.timestamp >= globalUnlockTime, LibErrors.GlobalUnlockTimeNotReached(globalUnlockTime));
 
         while (pointer < deposits.length && remaining > 0) {
             Deposit storage deposit = deposits[pointer];
-            if (!globalMatured && !isMatured(deposit.lockTime, lockPeriod)) {
-                break;
-            }
             if (remaining < deposit.shares) {
                 deposit.shares = uint192(deposit.shares - remaining);
                 remaining = 0;
@@ -269,12 +315,58 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @param shares The amount of shares to lock.
      */
     function _addLockedDeposit(address vault, uint256 projectId, uint256 shares) internal {
-        uint256 lockPeriod = projectLockPeriods[vault][projectId];
-        require(lockPeriod > 0, LibErrors.DepositLockNotSetForProject(vault, projectId));
-
+        require(
+            projectLockModes[vault][projectId] != LockMode.Unset, LibErrors.LockModeNotSetForProject(vault, projectId)
+        );
         lockedDeposits[vault][projectId][msg.sender].push(
             Deposit({shares: uint192(shares), lockTime: uint64(block.timestamp)})
         );
+    }
+
+    /**
+     * @dev Internal helper function to get matured shares in Variable mode.
+     * @param vault The vault address.
+     * @param projectId The project identifier.
+     * @param user The address of the user.
+     * @return totalMatured The total matured shares.
+     */
+    function _getMaturedSharesVariable(address vault, uint256 projectId, address user)
+        internal
+        view
+        returns (uint256 totalMatured)
+    {
+        Deposit[] storage deposits = lockedDeposits[vault][projectId][user];
+        uint256 pointer = depositPointers[vault][projectId][user];
+        uint256 lockPeriod = projectLockPeriods[vault][projectId];
+        for (uint256 i = pointer; i < deposits.length; i++) {
+            if (!_isMatured(deposits[i].lockTime, lockPeriod)) {
+                break;
+            }
+            totalMatured += deposits[i].shares;
+        }
+    }
+
+    /**
+     * @dev Internal helper function to get matured shares in Global mode.
+     * @param vault The vault address.
+     * @param projectId The project identifier.
+     * @param user The address of the user.
+     * @return totalMatured The total matured shares.
+     */
+    function _getMaturedSharesGlobal(address vault, uint256 projectId, address user)
+        internal
+        view
+        returns (uint256 totalMatured)
+    {
+        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
+        if (block.timestamp < globalUnlockTime) {
+            return 0;
+        }
+        Deposit[] storage deposits = lockedDeposits[vault][projectId][user];
+        uint256 pointer = depositPointers[vault][projectId][user];
+        for (uint256 i = pointer; i < deposits.length; i++) {
+            totalMatured += deposits[i].shares;
+        }
     }
 
     /**
@@ -283,8 +375,25 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @param lockPeriod The lock period for the project.
      * @return True if the deposit has matured, false otherwise.
      */
-    function isMatured(uint256 lockTime, uint256 lockPeriod) internal view returns (bool) {
+    function _isMatured(uint256 lockTime, uint256 lockPeriod) internal view returns (bool) {
         return block.timestamp >= lockTime + lockPeriod;
+    }
+
+    /**
+     * @dev Internal helper function to set the lock mode if not already set, or validate the already set mode otherwise.
+     * @param vault The vault address.
+     * @param projectId The project identifier.
+     * @param mode The lock mode to set/validate.
+     */
+    function _setOrValidateLockMode(address vault, uint256 projectId, LockMode mode) internal {
+        if (projectLockModes[vault][projectId] == LockMode.Unset) {
+            projectLockModes[vault][projectId] = mode;
+        } else {
+            require(
+                projectLockModes[vault][projectId] == mode,
+                LibErrors.LockModeAlreadySet(vault, projectId, uint256(mode))
+            );
+        }
     }
 
     /**
