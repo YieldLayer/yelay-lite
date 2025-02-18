@@ -15,7 +15,11 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
  * @title DepositLockPlugin
  * @dev Allows locking of deposits so that funds sent to a vault via this plugin remain locked until
  * some lock period expires. The project owner (as given by the vault's ClientsFacet) may update the project's
- * lock period. Each deposit records the time at which it was made (lockTime).
+ * lock period. In Variable mode, each deposit is recorded with a timestamp.
+ *
+ * In Global mode, all deposits share the same unlock time so we optimize by simply tracking a single
+ * aggregated shares value per (vault, project, user).
+ *
  * There are two available active lock modes (See LockMode). Every vault–projectId is assigned a LockMode
  * (Unset, Variable, Global) on the first admin update. Subsequently, the owner may update the value for the
  * chosen mode, but cannot switch between active modes.
@@ -29,8 +33,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @custom:member Unset The lock mode has not been set.
      * @custom:member Variable The lock period is set 'per deposit' - the unlock time is computed as lockTime +
      *                   projectLockPeriods[vault][projectId].
-     * @custom:member Global The lock period is set 'per project' - the unlock time
-     *                   (projectGlobalUnlockTime[vault][projectId]) is fixed for all deposits.
+     * @custom:member Global The lock period is set 'per project' - a single aggregated shares value is maintained.
      */
     enum LockMode {
         Unset,
@@ -48,10 +51,15 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
     }
 
     /**
-     * @dev Mapping: vault address => projectId => user address => array of deposits.
+     * @dev Mapping for Variable mode: vault => projectId => user => array of deposits.
      * Each deposit record includes the locked share amount and the timestamp when it was recorded.
      */
     mapping(address => mapping(uint256 => mapping(address => Deposit[]))) public lockedDeposits;
+
+    /**
+     * @dev Mapping for Global mode: vault => projectId => user => total locked shares.
+     */
+    mapping(address => mapping(uint256 => mapping(address => uint256))) public globalLockedShares;
 
     /**
      * @dev Mapping for the current lock period set for a project in a vault.
@@ -72,7 +80,8 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
     mapping(address => mapping(uint256 => LockMode)) public projectLockModes;
 
     /**
-     * @dev Mapping to track the pointer for each user's deposits so that redeemed deposits need not be shuffled.
+     * @dev Mapping to track the pointer for each user's deposits (for Variable mode)
+     * so that redeemed deposits need not be shuffled.
      */
     mapping(address => mapping(uint256 => mapping(address => uint256))) private depositPointers;
 
@@ -142,7 +151,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
 
     /**
      * @notice Redeems vault shares that have matured (i.e. whose lock period has expired) for the user.
-     * Uses pointer-style logic so that deposits remain in the original order.
+     * Uses pointer-style logic for Variable mode, and direct subtraction for Global mode.
      * @param vault The vault address.
      * @param projectId The project identifier.
      * @param shares The amount of shares the user wishes to redeem.
@@ -203,6 +212,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
 
     /**
      * @notice Checks specific deposit record indices for whether the lock has expired.
+     * Applicable for Variable mode.
      * @param vault The vault address.
      * @param projectId The project identifier.
      * @param user The address of the user.
@@ -282,45 +292,39 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
 
     /**
      * @dev Internal helper function to remove shares in Global mode.
+     * For Global mode, we simply subtract from the aggregated locked shares.
      * @param vault The vault address.
      * @param projectId The project identifier.
      * @param shares The amount of shares to remove.
      */
     function _removeSharesGlobal(address vault, uint256 projectId, uint256 shares) internal {
-        uint256 pointer = depositPointers[vault][projectId][msg.sender];
-        Deposit[] storage deposits = lockedDeposits[vault][projectId][msg.sender];
-        uint256 remaining = shares;
-        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
-        require(block.timestamp >= globalUnlockTime, LibErrors.GlobalUnlockTimeNotReached(globalUnlockTime));
-
-        while (pointer < deposits.length && remaining > 0) {
-            Deposit storage deposit = deposits[pointer];
-            if (remaining < deposit.shares) {
-                deposit.shares = uint192(deposit.shares - remaining);
-                remaining = 0;
-            } else {
-                remaining -= deposit.shares;
-                deposit.shares = 0;
-                pointer++;
-            }
-        }
-        require(remaining == 0, LibErrors.NotEnoughShares(shares, shares - remaining));
-        depositPointers[vault][projectId][msg.sender] = pointer;
+        require(
+            block.timestamp >= projectGlobalUnlockTime[vault][projectId],
+            LibErrors.GlobalUnlockTimeNotReached(projectGlobalUnlockTime[vault][projectId])
+        );
+        uint256 current = globalLockedShares[vault][projectId][msg.sender];
+        require(current >= shares, LibErrors.NotEnoughShares(shares, current));
+        globalLockedShares[vault][projectId][msg.sender] = current - shares;
     }
 
     /**
      * @dev Internal helper function to add a locked deposit record for a user.
+     * For Global mode, this increments the stored locked shares.
+     * For Variable mode, it pushes a new deposit record.
      * @param vault The vault address.
      * @param projectId The project identifier.
      * @param shares The amount of shares to lock.
      */
     function _addLockedDeposit(address vault, uint256 projectId, uint256 shares) internal {
-        require(
-            projectLockModes[vault][projectId] != LockMode.Unset, LibErrors.LockModeNotSetForProject(vault, projectId)
-        );
-        lockedDeposits[vault][projectId][msg.sender].push(
-            Deposit({shares: uint192(shares), lockTime: uint64(block.timestamp)})
-        );
+        if (projectLockModes[vault][projectId] == LockMode.Global) {
+            globalLockedShares[vault][projectId][msg.sender] += shares;
+        } else if (projectLockModes[vault][projectId] == LockMode.Variable) {
+            lockedDeposits[vault][projectId][msg.sender].push(
+                Deposit({shares: uint192(shares), lockTime: uint64(block.timestamp)})
+            );
+        } else {
+            revert LibErrors.LockModeNotSetForProject(vault, projectId);
+        }
     }
 
     /**
@@ -348,6 +352,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
 
     /**
      * @dev Internal helper function to get matured shares in Global mode.
+     * In Global mode, if the global unlock time is reached, all locked shares are matured.
      * @param vault The vault address.
      * @param projectId The project identifier.
      * @param user The address of the user.
@@ -358,15 +363,10 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
         view
         returns (uint256 totalMatured)
     {
-        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
-        if (block.timestamp < globalUnlockTime) {
+        if (block.timestamp < projectGlobalUnlockTime[vault][projectId]) {
             return 0;
         }
-        Deposit[] storage deposits = lockedDeposits[vault][projectId][user];
-        uint256 pointer = depositPointers[vault][projectId][user];
-        for (uint256 i = pointer; i < deposits.length; i++) {
-            totalMatured += deposits[i].shares;
-        }
+        return globalLockedShares[vault][projectId][user];
     }
 
     /**
