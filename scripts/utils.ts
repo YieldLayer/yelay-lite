@@ -52,7 +52,7 @@ export const prepareSetSelectorFacets = async ({
     accessFacet: AccessFacet;
     clientsFacet: ClientsFacet;
 }) => {
-    return await yelayLiteVault.setSelectorToFacets.populateTransaction([
+    return yelayLiteVault.setSelectorToFacets.populateTransaction([
         {
             facet: await fundsFacet.getAddress(),
             selectors: [

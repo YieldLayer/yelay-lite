@@ -1,3 +1,5 @@
+import { ethers } from 'hardhat';
+
 export const ADDRESSES = {
     BASE: {
         WETH: '0x4200000000000000000000000000000000000006',
@@ -20,3 +22,11 @@ export const ADDRESSES = {
 
 export const IMPLEMENTATION_STORAGE_SLOT =
     '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc';
+
+export const ROLES = {
+    STRATEGY_AUTHORITY: ethers.id('STRATEGY_AUTHORITY'),
+    FUNDS_OPERATOR: ethers.id('FUNDS_OPERATOR'),
+    QUEUES_OPERATOR: ethers.id('QUEUES_OPERATOR'),
+    PAUSER: ethers.id('PAUSER'),
+    UNPAUSER: ethers.id('UNPAUSER'),
+};
