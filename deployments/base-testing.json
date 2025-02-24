@@ -13,5 +13,19 @@
     "managementFacet": "0xc19ECBd4a12E3fe0842Dc922d07Bcd44b9f1C91A",
     "clientsFacet": "0xa101751e18a091181E322d6fAa7fBD71d5aa634d",
     "vaults": {},
-    "strategies": {}
+    "strategies": {
+        "aaveV3": "0x1c2a5ca1232052F56BD193d99AD238830e362c08",
+        "morpho": "0x51fb496AA1143AA6dC8AF3913cC16aA74417d228",
+        "morphoVaults": {
+            "USDC": {
+                "steakhouse-usdc": "0xa5C64A3C63CF642AD0AF033c8C0934A348810445",
+                "gauntlet-usdc-prime": "0x70B9cfD343b264f5016261c39e00d63087CcEEB2",
+                "gauntlet-usdc-core": "0xB6C91074095949138cA81FD4c7d9242E764998eC"
+            },
+            "WETH": {
+                "ionic-ecosystem-weth": "0x06a3e406D03D3ee5f6E375B05e12623183d7D5Fc",
+                "moonwell-flagship-eth": "0xBaF88bd991e135A877B01178dc6b0ee5F1a9ed60"
+            }
+        }
+    }
 }

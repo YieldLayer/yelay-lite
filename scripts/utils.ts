@@ -189,3 +189,27 @@ export const deployInfra = async (
         ) + '\n',
     );
 };
+
+export const deployAaveV3Strategy = async (deployer: Signer, aaveV3Pool: string) => {
+    return ethers
+        .getContractFactory('AaveV3Strategy', deployer)
+        .then((f) => f.deploy(aaveV3Pool))
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+};
+
+export const deployMorphoBlueStrategy = async (deployer: Signer, morpho: string) => {
+    return ethers
+        .getContractFactory('MorphoBlueStrategy', deployer)
+        .then((f) => f.deploy(morpho))
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+};
+
+export const deployMorphoVaultStrategy = async (deployer: Signer, morphoVault: string) => {
+    return ethers
+        .getContractFactory('ERC4626Strategy', deployer)
+        .then((f) => f.deploy(morphoVault))
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+};
