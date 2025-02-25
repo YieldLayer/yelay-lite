@@ -6,6 +6,7 @@ export const ADDRESSES = {
         USDC: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
         AAVE_V3_POOL: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
         MORPHO: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+        ONE_INCH_ROUTER_V6: '0x111111125421cA6dc452d289314280a0f8842A65',
         MORHO_VAULTS: {
             USDC: {
                 'steakhouse-usdc': '0xbeef010f9cb27031ad51e3333f9af9c6b1228183',
