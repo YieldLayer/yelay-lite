@@ -19,6 +19,10 @@ export const ADDRESSES = {
             },
         },
     },
+    SONIC: {
+        WS: '0x039e2fb66102314ce7b64ce5ce3e5183bc94ad38',
+        USDCe: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+    },
 };
 
 export const IMPLEMENTATION_STORAGE_SLOT =

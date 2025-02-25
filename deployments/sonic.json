@@ -1,0 +1,19 @@
+{
+    "swapper": {
+        "proxy": "0xeac44dC9bB6E6CEf3F832FF5ee32455e5E9082BB",
+        "implementation": "0x7e08653158182a402b3a788e75a125c876c5ece5"
+    },
+    "vaultWrapper": {
+        "proxy": "0x81fD020bBf55934e1E2A045789b24465c90385B7",
+        "implementation": "0x5163531a1bba8e5616d20a313f9ecfac350c38a0"
+    },
+    "ownerFacet": "0x47f9f04DB109D25aEBA42b0d45E6f0Aee852B916",
+    "fundsFacet": "0xf042AbbA98A3c5ABC3B30bdDdea29d95d778A318",
+    "accessFacet": "0x73c644b290644B232E52aB828F4475AA03feA62f",
+    "managementFacet": "0x1D060A1B17a7FF1929133B202a7Ec1D9B90A1965",
+    "clientsFacet": "0x35E72AF2E0245077785472eD4A166C56649Ff0B2",
+    "vaults": {
+        "USDCe": "0x24ae0218D9e33B27bBB8Ad7C55b2bE5A1083F14d"
+    },
+    "strategies": {}
+}
