@@ -259,11 +259,12 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     function swapRewards(SwapArgs[] memory swapArgs)
         external
         notPaused
-        onlyRole(LibRoles.FUNDS_OPERATOR)
+        onlyRole(LibRoles.SWAP_REWARDS_OPERATOR)
         returns (uint256 compounded)
     {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         address _underlyingAsset = address(sF.underlyingAsset);
+        uint256 totalAssetsBefore = totalAssets();
         for (uint256 i; i < swapArgs.length; i++) {
             require(swapArgs[i].tokenIn != _underlyingAsset, LibErrors.CompoundUnderlyingForbidden());
             uint256 tokenInAmount = ERC20(swapArgs[i].tokenIn).balanceOf(address(this));
@@ -271,6 +272,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         }
         compounded = _swapper.swap(swapArgs, _underlyingAsset);
         sF.underlyingBalance += SafeCast.toUint192(compounded);
+        require(totalAssets() > totalAssetsBefore, LibErrors.TotalAssetsLoss());
         _accrueFee();
         emit LibEvents.Compounded(compounded);
     }

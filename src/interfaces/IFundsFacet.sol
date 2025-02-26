@@ -144,7 +144,7 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
 
     /**
      * @dev Compounds rewards by swapping them for the underlying asset.
-     * @dev Callable by FUNDS_OPERATOR.
+     * @dev Callable by SWAP_REWARDS_OPERATOR.
      * @param swapArgs The swap arguments.
      * @return compounded The amount compounded.
      */

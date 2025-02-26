@@ -82,6 +82,11 @@ library LibErrors {
      */
     error MinRedeem();
 
+    /**
+     * @dev During swapRewards totalAssets have been reduced
+     */
+    error TotalAssetsLoss();
+
     // ===================== SwapWrapper ================================
     /**
      * @dev The token is not WETH.
