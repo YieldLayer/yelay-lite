@@ -1,0 +1,263 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.28;
+
+import {PausableUpgradeable} from "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {ERC1155HolderUpgradeable} from
+    "@openzeppelin-upgradeable/contracts/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
+
+/**
+ * @title RewardsDistributor
+ * @notice Contract for distributing yield to users through Merkle proofs
+ * @dev This contract manages the distribution of yield shares to users based on their earned yield
+ *      in the YelayLite vault system. The distribution happens through a Merkle tree system where:
+ *      - A root manager (admin) periodically adds new Merkle roots containing user reward data
+ *      - Each root represents a cycle of rewards
+ *      - Users can claim their rewards by providing valid Merkle proofs
+ *      - The contract tracks claimed rewards to prevent double-claiming
+ *      - Rewards are distributed as the underlying token following direct redeemal of the shares on the vault.
+ *
+ * Key features:
+ * - Merkle-based reward distribution system
+ * - Cycle-based rewards tracking
+ * - Double-claim prevention
+ * - Pausable claim functionality
+ * - Upgradeable contract design
+ */
+contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155HolderUpgradeable, UUPSUpgradeable {
+    using SafeERC20 for IERC20;
+
+    /**
+     * @notice Request data structure for claiming rewards
+     * @param yelayLiteVault Address of the YelayLite vault contract
+     * @param projectId ID of the project in the vault
+     * @param cycle Reward cycle number
+     * @param yieldSharesTotal Total amount of yield shares to be claimed
+     * @param proof Merkle proof array for verification
+     */
+    struct ClaimRequest {
+        address yelayLiteVault;
+        uint256 projectId;
+        uint256 cycle;
+        uint256 yieldSharesTotal;
+        bytes32[] proof;
+    }
+
+    /**
+     * @notice New root was added to the pool
+     * @param cycle Number of new cycle
+     * @param root Newly added root
+     */
+    event PoolRootAdded(uint256 indexed cycle, bytes32 root);
+
+    /**
+     * @notice Pool's root was updated
+     * @param cycle Number of cycle that was updated
+     * @param previousRoot Previous root for the cycle
+     * @param newRoot New root for the cycle
+     */
+    event PoolRootUpdated(uint256 indexed cycle, bytes32 previousRoot, bytes32 newRoot);
+
+    /**
+     * @notice Claimed rewards
+     * @param user claimer
+     * @param yelayLiteVault yelayLiteVault address
+     * @param projectId project id
+     * @param cycle cycle number
+     * @param amount claimed amount
+     */
+    event RewardsClaimed(
+        address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
+    );
+
+    /**
+     * @notice Thrown when a Merkle proof is invalid
+     * @param idx Index of the invalid claim request
+     */
+    error InvalidProof(uint256 idx);
+
+    /**
+     * @notice Thrown when a proof has already been claimed
+     * @param idx Index of the already claimed proof
+     */
+    error ProofAlreadyClaimed(uint256 idx);
+
+    /**
+     * @notice Thrown when an invalid cycle number is provided
+     */
+    error InvalidCycle();
+
+    /**
+     * @notice Thrown when sender is not the root manager
+     * @param sender Address of the unauthorized sender
+     */
+    error NotRootManager(address sender);
+
+    /**
+     * @notice Merkle tree root for each cycle
+     */
+    mapping(uint256 => bytes32) public roots;
+
+    /**
+     * @notice Tracks whether a specific leaf has been claimed
+     */
+    mapping(bytes32 => bool) public isLeafClaimed;
+
+    /**
+     * @notice Tracks yield shares claimed by users
+     * @dev Mapping structure: user => yelayLiteVault => projectId => amount
+     */
+    mapping(address => mapping(address => mapping(uint256 => uint256))) public yieldSharesClaimed;
+
+    /**
+     * @notice Current cycle count for reward distributions
+     */
+    uint256 public cycleCount;
+
+    /**
+     * @notice Address authorized to manage Merkle roots
+     */
+    address public rootManager;
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @dev Initializes the contract with the given owner.
+     * @param owner The address of the owner.
+     */
+    function initialize(address owner, address _rootManager) public initializer {
+        __Ownable_init(owner);
+        __ERC1155Holder_init();
+        __UUPSUpgradeable_init();
+
+        rootManager = _rootManager;
+    }
+
+    /**
+     * @notice Pause claiming
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause claiming
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    /**
+     * @notice Update root manager
+     * @param _rootManager New root manager
+     */
+    function updateRootManager(address _rootManager) external onlyOwner {
+        rootManager = _rootManager;
+    }
+
+    /**
+     * @notice Add a Merkle tree root for a new cycle
+     * @param root Root to add
+     */
+    function addTreeRoot(bytes32 root) external onlyRootManager {
+        cycleCount++;
+        roots[cycleCount] = root;
+
+        emit PoolRootAdded(cycleCount, root);
+    }
+
+    /**
+     * @notice Update existing root for a given cycle
+     * @param root New root
+     * @param cycle Cycle to update
+     */
+    function updateTreeRoot(bytes32 root, uint256 cycle) external onlyRootManager {
+        require(cycle <= cycleCount, InvalidCycle());
+
+        bytes32 previousRoot = roots[cycle];
+        roots[cycle] = root;
+
+        emit PoolRootUpdated(cycle, previousRoot, root);
+    }
+
+    /**
+     * @notice Claim incentives by submitting a Merkle proof
+     * @param data Array of claim requests
+     */
+    function claim(ClaimRequest[] calldata data) external whenNotPaused {
+        for (uint256 i; i < data.length; ++i) {
+            bytes32 leaf = _getLeaf(data[i], msg.sender);
+            require(!isLeafClaimed[leaf], ProofAlreadyClaimed(i));
+            require(_verify(data[i], leaf), InvalidProof(i));
+
+            isLeafClaimed[leaf] = true;
+
+            uint256 alreadyClaimed = yieldSharesClaimed[msg.sender][data[i].yelayLiteVault][data[i].projectId];
+            uint256 toClaim = data[i].yieldSharesTotal - alreadyClaimed;
+            yieldSharesClaimed[msg.sender][data[i].yelayLiteVault][data[i].projectId] = data[i].yieldSharesTotal;
+
+            IFundsFacet(data[i].yelayLiteVault).redeem(toClaim, data[i].projectId, msg.sender);
+
+            emit RewardsClaimed(msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim);
+        }
+    }
+
+    /**
+     * @notice Verify a Merkle proof for given claim request
+     * @param data Claim request to verify
+     * @param user User address for claim request
+     */
+    function verify(ClaimRequest memory data, address user) external view returns (bool) {
+        return _verify(data, _getLeaf(data, user));
+    }
+
+    /**
+     * @notice Verifies a Merkle proof for a claim request
+     * @param data Claim request to verify
+     * @param leaf Computed leaf node for verification
+     * @return bool True if the proof is valid
+     */
+    function _verify(ClaimRequest memory data, bytes32 leaf) internal view returns (bool) {
+        return MerkleProof.verify(data.proof, roots[data.cycle], leaf);
+    }
+
+    /**
+     * @notice Computes the leaf node for a claim request
+     * @param data Claim request data
+     * @param user Address of the claiming user
+     * @return bytes32 Computed leaf node
+     */
+    function _getLeaf(ClaimRequest memory data, address user) internal pure returns (bytes32) {
+        return keccak256(
+            bytes.concat(
+                keccak256(abi.encode(user, data.cycle, data.yelayLiteVault, data.projectId, data.yieldSharesTotal))
+            )
+        );
+    }
+
+    /**
+     * @notice Modifier implementation for root manager access control
+     */
+    function _onlyRootManager() internal view {
+        require(msg.sender == rootManager, NotRootManager(msg.sender));
+    }
+
+    /**
+     * @dev UUPS upgrade authorization function.
+     * Only the owner may upgrade.
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    modifier onlyRootManager() {
+        _onlyRootManager();
+        _;
+    }
+}
