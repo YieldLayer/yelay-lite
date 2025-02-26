@@ -20,7 +20,8 @@ The YelayLiteVault is a managed vault where specific roles govern its operation:
 
 - STRATEGY_AUTHORITY: Responsible for adding and removing strategies within the vault.
 - QUEUES_OPERATOR: Configures the deposit and withdrawal queues based on the existing strategies. These queues define the ordered list of strategies with which users will interact first.
-- FUNDS_OPERATOR: Handles reallocations, reward claims, and compounding operations to optimize fund management.
+- FUNDS_OPERATOR: Handles reallocations, reward claims to optimize fund management.
+- SWAP_REWARDS_OPERATOR: Responsible for handling swapRewards only (compounding).
 - PAUSER/UNPAUSER: Selective pausing/unpausing of specific functions.
 
 It is assumed that the vault operator acts in good faith, striving to achieve the highest possible yield while carefully considering the risks associated with each strategy.
