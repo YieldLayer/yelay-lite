@@ -1,11 +1,11 @@
 {
     "swapper": {
-        "proxy": "0x769F5bc628CF538E1D64F2e8ED235A8831312249",
+        "proxy": "0xbBC6E62F23F714405D7e0b4D3DDe079E22748a58",
         "implementation": "0x5fccacaef88e6e2727bc8e682980e082c4c91015"
     },
     "vaultWrapper": {
-        "proxy": "0xE252b5c05a18140F15E1941dD2Df8a95bDa8A20b",
-        "implementation": "0x28b905d160dacdc93160de62f01bb8f146f93d9d"
+        "proxy": "0xDCcf337eA77b687A4DaCA5586351B08f8927C825",
+        "implementation": "0xcf19f89addd88cba706fe94251ec3cf66611be43"
     },
     "ownerFacet": "0x30DFA736b3A20ed032E19894E7cE87FF95055e08",
     "fundsFacet": "0x0551C10e0507A9CEc1B1a2c6322bf3dd237825b9",
@@ -13,8 +13,8 @@
     "managementFacet": "0xc19ECBd4a12E3fe0842Dc922d07Bcd44b9f1C91A",
     "clientsFacet": "0xa101751e18a091181E322d6fAa7fBD71d5aa634d",
     "vaults": {
-        "USDC": "0x7b3D25c37c6ADf650F1f7696be2278cCFa2b638F",
-        "WETH": "0x1f463353feA78e38568499Cf117437493d334eCf"
+        "USDC": "0x0c6dAf9B4e0EB49A0c80c325da82EC028Cb8118B",
+        "WETH": "0xf0533A9eb11b144aC3B9BbE134728D0F7F547c52"
     },
     "strategies": {
         "aaveV3": "0x1c2a5ca1232052F56BD193d99AD238830e362c08",

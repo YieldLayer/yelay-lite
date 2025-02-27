@@ -32,6 +32,7 @@ export const ROLES = {
     STRATEGY_AUTHORITY: ethers.id('STRATEGY_AUTHORITY'),
     FUNDS_OPERATOR: ethers.id('FUNDS_OPERATOR'),
     QUEUES_OPERATOR: ethers.id('QUEUES_OPERATOR'),
+    SWAP_REWARDS_OPERATOR: ethers.id('SWAP_REWARDS_OPERATOR'),
     PAUSER: ethers.id('PAUSER'),
     UNPAUSER: ethers.id('UNPAUSER'),
 };
