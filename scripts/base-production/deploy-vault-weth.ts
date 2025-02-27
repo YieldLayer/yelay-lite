@@ -45,10 +45,10 @@ async function main() {
     const data = await Promise.all([
         prepareSetSelectorFacets({
             yelayLiteVault,
-            fundsFacet: FundsFacet__factory.connect(contracts.fundsFacet),
-            managementFacet: ManagementFacet__factory.connect(contracts.managementFacet),
-            accessFacet: AccessFacet__factory.connect(contracts.accessFacet),
-            clientsFacet: ClientsFacet__factory.connect(contracts.clientsFacet),
+            fundsFacet: contracts.fundsFacet,
+            managementFacet: contracts.managementFacet,
+            accessFacet: contracts.accessFacet,
+            clientsFacet: contracts.clientsFacet,
         }),
     ]);
 

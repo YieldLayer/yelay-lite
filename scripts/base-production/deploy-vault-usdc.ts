@@ -1,13 +1,7 @@
 import fs from 'fs';
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/base-production.json';
-import {
-    AccessFacet__factory,
-    ClientsFacet__factory,
-    FundsFacet__factory,
-    IYelayLiteVault__factory,
-    ManagementFacet__factory,
-} from '../../typechain-types';
+import { IYelayLiteVault__factory } from '../../typechain-types';
 import { ADDRESSES } from '../constants';
 import { prepareSetSelectorFacets } from '../utils';
 
@@ -45,10 +39,10 @@ async function main() {
     const data = await Promise.all([
         prepareSetSelectorFacets({
             yelayLiteVault,
-            fundsFacet: FundsFacet__factory.connect(contracts.fundsFacet),
-            managementFacet: ManagementFacet__factory.connect(contracts.managementFacet),
-            accessFacet: AccessFacet__factory.connect(contracts.accessFacet),
-            clientsFacet: ClientsFacet__factory.connect(contracts.clientsFacet),
+            fundsFacet: contracts.fundsFacet,
+            managementFacet: contracts.managementFacet,
+            accessFacet: contracts.accessFacet,
+            clientsFacet: contracts.clientsFacet,
         }),
     ]);
 
