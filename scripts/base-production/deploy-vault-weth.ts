@@ -12,6 +12,10 @@ import { ADDRESSES } from '../constants';
 import { prepareSetSelectorFacets } from '../utils';
 
 async function main() {
+    const yieldExtractor = '';
+    if (!yieldExtractor) {
+        throw new Error('No yield extractor');
+    }
     const [deployer] = await ethers.getSigners();
     const asset = 'WETH';
     const uri = 'https://lite.yelay.io/base/metadata/{id}';
@@ -23,7 +27,7 @@ async function main() {
                 deployer.address,
                 contracts.ownerFacet,
                 ADDRESSES.BASE[asset],
-                deployer.address,
+                yieldExtractor,
                 uri,
             ),
         )

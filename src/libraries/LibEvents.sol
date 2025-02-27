@@ -56,6 +56,12 @@ library LibEvents {
     event UpdateLastTotalAssets(uint256 lastTotalAssets);
 
     /**
+     * @dev Emitted when the yield extractor address is updated.
+     * @param newYieldExtractor address.
+     */
+    event UpdateYieldExtractor(address newYieldExtractor);
+
+    /**
      * @dev Emitted when assets are compounded.
      * @param amount The amount of assets compounded.
      */

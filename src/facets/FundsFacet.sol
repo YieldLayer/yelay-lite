@@ -98,6 +98,13 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /// @inheritdoc IFundsFacet
+    function setYieldExtractor(address _yieldExtractor) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        sF.yieldExtractor = _yieldExtractor;
+        emit LibEvents.UpdateYieldExtractor(_yieldExtractor);
+    }
+
+    /// @inheritdoc IFundsFacet
     function swapper() external view returns (address) {
         return address(_swapper);
     }

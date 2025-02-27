@@ -80,6 +80,7 @@ export const prepareSetSelectorFacets = async ({
                 fundsFacet.interface.getFunction('claimStrategyRewards').selector,
                 fundsFacet.interface.getFunction('balanceOf').selector,
                 fundsFacet.interface.getFunction('uri').selector,
+                fundsFacet.interface.getFunction('setYieldExtractor').selector,
             ],
         },
         {
