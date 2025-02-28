@@ -24,13 +24,13 @@ import {Utils} from "./Utils.sol";
  * // user, cycle, vault, projectId, rewards
  * // cycle 1
  * const values1 = [
- *   ["0x1111111111111111111111111111111111111111", "1", "0xc7183455a4C133Ae270771860664b6B7ec320bB1", "1", "5000000000000000000"],
- *   ["0x2222222222222222222222222222222222222222", "1", "0xc7183455a4C133Ae270771860664b6B7ec320bB1", "1", "5000000000000000000"],
+ *   ["0x1111111111111111111111111111111111111111", "1", "0x1d1499e622D69689cdf9004d05Ec547d650Ff211", "1", "5000000000000000000"],
+ *   ["0x2222222222222222222222222222222222222222", "1", "0x1d1499e622D69689cdf9004d05Ec547d650Ff211", "1", "5000000000000000000"],
  * ];
  * // cycle 2
  * const values2 = [
- *   ["0x1111111111111111111111111111111111111111", "2", "0xc7183455a4C133Ae270771860664b6B7ec320bB1", "1", "5010000000000000000"],
- *   ["0x2222222222222222222222222222222222222222", "2", "0xc7183455a4C133Ae270771860664b6B7ec320bB1", "1", "5010000000000000000"],
+ *   ["0x1111111111111111111111111111111111111111", "2", "0x1d1499e622D69689cdf9004d05Ec547d650Ff211", "1", "5010000000000000000"],
+ *   ["0x2222222222222222222222222222222222222222", "2", "0x1d1499e622D69689cdf9004d05Ec547d650Ff211", "1", "5010000000000000000"],
  * ];
  *
  * let tree;
@@ -44,39 +44,36 @@ import {Utils} from "./Utils.sol";
  * console.log('Tree(2):', tree.dump());
  */
 contract RewardsDistributorTest is Test {
-    event PoolRootAdded(uint256 indexed cycle, bytes32 root);
-    event PoolRootUpdated(uint256 indexed cycle, bytes32 previousRoot, bytes32 newRoot);
+    event PoolRootAdded(uint256 indexed cycle, RewardsDistributor.Root root);
+    event PoolRootUpdated(uint256 indexed cycle, RewardsDistributor.Root previousRoot, RewardsDistributor.Root newRoot);
 
-    RewardsDistributor public rewardDistributor;
+    RewardsDistributor public rewardsDistributor;
     IYelayLiteVault public mockVault;
     MockToken token;
     uint256 public projectId = 1;
 
-    bytes32 constant treeRoot0 = 0x55ff69a9de890de6129f2d7964fbe15bc92eef5bfd82354c8c0543dd5e404887;
-    bytes32 constant treeRoot1 = 0xd37cd0a4822f2d57834126e2ee0771aaee758d0e5e01da5a261badc9090b8005;
+    bytes32 constant treeRoot0 = 0xd819a32ef83898d5bc2e494eb5a09e040b01a3fbe329d2e8e3c7dcfa57531a86;
+    bytes32 constant treeRoot1 = 0x2bd53706981cbb6fc2a65f578277d28393d9a653790cce73af2fe0820967a38d;
 
-    bytes32 constant proof0 = 0x59c902ab746b3c70d11a56a13eb919ba8b5314cf92340820ada5cc0cce66fbdc;
-    bytes32 constant proof1 = 0x640c6290894a69bd7a2722484cb9f49652069564ba46624abf311dbfa37e22e0;
+    bytes32 constant proof0 = 0xfecb0b85efc37879e10a6b092546938f20c056b2db5b624b73bdd7fdf1574124;
+    bytes32 constant proof1 = 0xa12f215bcd1b483809cca5b2a7ed0a99cb6682da7589961c20dea5e0d1acb6f4;
     bytes32 constant proof_fail = bytes32(uint256(proof0) - 1);
 
     uint256 constant rewardsTotal0 = 5000000000000000000;
     uint256 constant rewardsTotal1 = 5010000000000000000;
     uint256 constant rewardsTotal_fail = rewardsTotal0 + 1;
 
-    address alice = 0x1111111111111111111111111111111111111111;
+    address user = 0x1111111111111111111111111111111111111111;
+    address user_fail = address(bytes20(uint160(user) + 1));
+
+    address vault = 0x1d1499e622D69689cdf9004d05Ec547d650Ff211;
+    address vault_fail = address(bytes20(uint160(vault) + 1));
 
     function setUp() public {
-        uint256 toDeposit = 1000e18;
-
-        // Deploy a mock underlying ERC20 and fund the user.
         token = new MockToken("Underlying", "UND", 18);
-        deal(address(token), alice, toDeposit);
-
-        mockVault = Utils.deployDiamond(address(this), address(token), address(this), "");
-        assertEq(address(mockVault), 0xc7183455a4C133Ae270771860664b6B7ec320bB1);
 
         RewardsDistributor impl = new RewardsDistributor();
-        rewardDistributor = RewardsDistributor(
+        rewardsDistributor = RewardsDistributor(
             address(
                 new ERC1967Proxy(
                     address(impl),
@@ -85,43 +82,68 @@ contract RewardsDistributorTest is Test {
             )
         );
 
-        // deposit into the vault, send shares to reward distributor
-        vm.startPrank(alice);
-        token.approve(address(mockVault), toDeposit);
-        IFundsFacet(mockVault).deposit(toDeposit, projectId, address(rewardDistributor));
-        vm.stopPrank();
+        mockVault = Utils.deployDiamond(address(this), address(token), address(rewardsDistributor), "");
+        assertEq(address(mockVault), vault);
+
+        mockVault.grantRole(LibRoles.QUEUES_OPERATOR, address(this));
+        mockVault.grantRole(LibRoles.STRATEGY_AUTHORITY, address(this));
+        mockVault.grantRole(LibRoles.FUNDS_OPERATOR, address(this));
+
+        mintYieldShares(rewardsTotal1);
+    }
+
+    function mintYieldShares(uint256 amount) internal {
+        // 1. modify mockVault.underlyingBalance storage with 'amount'
+        vm.record();
+        mockVault.underlyingBalance();
+        (bytes32[] memory reads,) = vm.accesses(address(mockVault));
+        vm.store(address(mockVault), reads[1], bytes32(amount));
+
+        // 2. mint 'amount' of token to mockVault
+        deal(address(token), address(mockVault), amount);
+
+        // 3. mockVault.accrueFee: rewardsDistributor now has 'amount' shares of project 0
+        mockVault.accrueFee();
+    }
+
+    function addTreeRoot(bytes32 hash) internal returns (RewardsDistributor.Root memory root) {
+        root = RewardsDistributor.Root({hash: hash, blockNumber: block.number});
+        uint256 cycleBefore = rewardsDistributor.cycleCount();
+        vm.expectEmit(true, true, true, true);
+        emit PoolRootAdded(cycleBefore + 1, root);
+        rewardsDistributor.addTreeRoot(root);
+
+        uint256 cycle = rewardsDistributor.cycleCount();
+        assertEq(cycle, cycleBefore + 1);
+        assertEq(getTreeRoot(cycle), hash);
+    }
+
+    function getTreeRoot(uint256 cycle) internal view returns (bytes32 hash) {
+        (hash,) = rewardsDistributor.roots(cycle);
     }
 
     function test_addRoot_success() public {
-        uint256 cycleBefore = rewardDistributor.cycleCount();
-
-        vm.expectEmit(true, true, true, true);
-        emit PoolRootAdded(cycleBefore + 1, treeRoot0);
-
-        rewardDistributor.addTreeRoot(treeRoot0);
-
-        uint256 cycle = rewardDistributor.cycleCount();
-
-        assertEq(cycle, cycleBefore + 1);
-        assertEq(rewardDistributor.roots(cycle), treeRoot0);
+        addTreeRoot(treeRoot0);
     }
 
     function test_updateRoot_success() public {
-        rewardDistributor.addTreeRoot(treeRoot0);
+        RewardsDistributor.Root memory root0 = addTreeRoot(treeRoot0);
 
-        uint256 cycle = rewardDistributor.cycleCount();
+        uint256 cycle = rewardsDistributor.cycleCount();
+
+        RewardsDistributor.Root memory root1 = addTreeRoot(treeRoot1);
 
         vm.expectEmit(true, true, true, true);
-        emit PoolRootUpdated(cycle, treeRoot0, treeRoot1);
-        rewardDistributor.updateTreeRoot(treeRoot1, 1);
+        emit PoolRootUpdated(cycle, root0, root1);
+        rewardsDistributor.updateTreeRoot(root1, 1);
 
-        assertEq(rewardDistributor.roots(1), treeRoot1);
+        assertEq(getTreeRoot(1), treeRoot1);
     }
 
     function test_updateRoot_revertInvalidCycle() public {
-        rewardDistributor.addTreeRoot(treeRoot0);
+        RewardsDistributor.Root memory root0 = addTreeRoot(treeRoot0);
         vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.InvalidCycle.selector));
-        rewardDistributor.updateTreeRoot(treeRoot0, 10);
+        rewardsDistributor.updateTreeRoot(root0, 10);
     }
 
     function test_verifyProof_success() public {
@@ -135,8 +157,8 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
-        assertTrue(rewardDistributor.verify(data, alice));
+        addTreeRoot(treeRoot0);
+        assertTrue(rewardsDistributor.verify(data, user));
     }
 
     function test_verifyProof_invalidProof() public {
@@ -150,8 +172,8 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
-        assertFalse(rewardDistributor.verify(data, alice));
+        addTreeRoot(treeRoot0);
+        assertFalse(rewardsDistributor.verify(data, user));
     }
 
     function test_verifyProof_invalidYelayLiteVault() public {
@@ -160,14 +182,14 @@ contract RewardsDistributorTest is Test {
 
         // Replace with an invalid vault address
         RewardsDistributor.ClaimRequest memory data = RewardsDistributor.ClaimRequest({
-            yelayLiteVault: 0x0000000000000000000000000000000000000001,
+            yelayLiteVault: vault_fail,
             projectId: projectId,
             cycle: 1,
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
-        assertFalse(rewardDistributor.verify(data, alice));
+        addTreeRoot(treeRoot0);
+        assertFalse(rewardsDistributor.verify(data, user));
     }
 
     function test_verifyProof_invalidUser() public {
@@ -181,9 +203,9 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
-        // Using a different user than alice
-        assertFalse(rewardDistributor.verify(data, 0x1111111111111111111111111111111111111112));
+        addTreeRoot(treeRoot0);
+        // Using a different user than user
+        assertFalse(rewardsDistributor.verify(data, user_fail));
     }
 
     function test_verifyProof_invalidAmount() public {
@@ -197,8 +219,8 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal_fail,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
-        assertFalse(rewardDistributor.verify(data, alice));
+        addTreeRoot(treeRoot0);
+        assertFalse(rewardsDistributor.verify(data, user));
     }
 
     function test_verifyProof_invalidCycle() public {
@@ -212,8 +234,8 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
-        assertFalse(rewardDistributor.verify(data, alice));
+        addTreeRoot(treeRoot0);
+        assertFalse(rewardsDistributor.verify(data, user));
     }
 
     function test_claim_success() public {
@@ -227,22 +249,22 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
+        addTreeRoot(treeRoot0);
 
         RewardsDistributor.ClaimRequest[] memory payload = new RewardsDistributor.ClaimRequest[](1);
         payload[0] = data;
-        vm.prank(alice);
-        rewardDistributor.claim(payload);
+        vm.prank(user);
+        rewardsDistributor.claim(payload);
 
-        assertEq(token.balanceOf(alice), rewardsTotal0);
+        assertEq(token.balanceOf(user), rewardsTotal0);
     }
 
     function test_claim_twoCycles() public {
         bytes32[] memory proof = new bytes32[](1);
         RewardsDistributor.ClaimRequest[] memory payload = new RewardsDistributor.ClaimRequest[](1);
 
-        // Do cycle 1
-        rewardDistributor.addTreeRoot(treeRoot0);
+        // Do cycle 1 - user has 5 shares to claim
+        addTreeRoot(treeRoot0);
         proof[0] = proof0;
         RewardsDistributor.ClaimRequest memory data1 = RewardsDistributor.ClaimRequest({
             yelayLiteVault: address(mockVault),
@@ -253,13 +275,13 @@ contract RewardsDistributorTest is Test {
         });
         payload[0] = data1;
 
-        vm.prank(alice);
-        rewardDistributor.claim(payload);
-        assertEq(token.balanceOf(alice), rewardsTotal0);
-        assertEq(rewardDistributor.yieldSharesClaimed(alice, address(mockVault), 1), rewardsTotal0);
+        vm.prank(user);
+        rewardsDistributor.claim(payload);
+        assertEq(token.balanceOf(user), rewardsTotal0);
+        assertEq(rewardsDistributor.yieldSharesClaimed(user, address(mockVault), 1), rewardsTotal0);
 
-        // Do cycle 2
-        rewardDistributor.addTreeRoot(treeRoot1);
+        // Do cycle 2 - user has another .01 shares to claim, for a total of 5.01
+        addTreeRoot(treeRoot1);
         proof[0] = proof1;
         RewardsDistributor.ClaimRequest memory data2 = RewardsDistributor.ClaimRequest({
             yelayLiteVault: address(mockVault),
@@ -270,10 +292,10 @@ contract RewardsDistributorTest is Test {
         });
         payload[0] = data2;
 
-        vm.prank(alice);
-        rewardDistributor.claim(payload);
-        //assertEq(token.balanceOf(alice), rewardsTotal0 + rewardsTotal1);
-        //assertEq(rewardDistributor.yieldSharesClaimed(alice, address(mockVault), 2), rewardsTotal1);
+        vm.prank(user);
+        rewardsDistributor.claim(payload);
+        assertEq(token.balanceOf(user), rewardsTotal1);
+        assertEq(rewardsDistributor.yieldSharesClaimed(user, address(mockVault), 1), rewardsTotal1);
     }
 
     function test_claim_revertAlreadyClaimed() public {
@@ -287,15 +309,15 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
+        addTreeRoot(treeRoot0);
 
         RewardsDistributor.ClaimRequest[] memory payload = new RewardsDistributor.ClaimRequest[](1);
         payload[0] = data;
 
-        vm.startPrank(alice);
-        rewardDistributor.claim(payload);
+        vm.startPrank(user);
+        rewardsDistributor.claim(payload);
         vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.ProofAlreadyClaimed.selector, 0));
-        rewardDistributor.claim(payload);
+        rewardsDistributor.claim(payload);
         vm.stopPrank();
     }
 
@@ -311,14 +333,14 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
+        addTreeRoot(treeRoot0);
 
         RewardsDistributor.ClaimRequest[] memory payload = new RewardsDistributor.ClaimRequest[](1);
         payload[0] = data;
 
-        vm.startPrank(alice);
+        vm.startPrank(user);
         vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.InvalidProof.selector, 0));
-        rewardDistributor.claim(payload);
+        rewardsDistributor.claim(payload);
         vm.stopPrank();
     }
 
@@ -334,15 +356,15 @@ contract RewardsDistributorTest is Test {
             yieldSharesTotal: rewardsTotal0,
             proof: proof
         });
-        rewardDistributor.addTreeRoot(treeRoot0);
+        addTreeRoot(treeRoot0);
 
         RewardsDistributor.ClaimRequest[] memory payload = new RewardsDistributor.ClaimRequest[](1);
         payload[0] = data;
 
-        rewardDistributor.pause();
+        rewardsDistributor.pause();
 
-        vm.prank(alice);
+        vm.prank(user);
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
-        rewardDistributor.claim(payload);
+        rewardsDistributor.claim(payload);
     }
 }
