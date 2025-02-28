@@ -32,6 +32,8 @@ import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155HolderUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
+    uint256 constant YIELD_PROJECT_ID = 0;
+
     /**
      * @notice Request data structure for claiming rewards
      * @param yelayLiteVault Address of the YelayLite vault contract
@@ -49,11 +51,21 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
     }
 
     /**
+     * @notice Merkle tree root data structure
+     * @param hash Merkle root hash
+     * @param blockNumber Block number at which yield share values were calculated
+     */
+    struct Root {
+        bytes32 hash;
+        uint256 blockNumber;
+    }
+
+    /**
      * @notice New root was added to the pool
      * @param cycle Number of new cycle
      * @param root Newly added root
      */
-    event PoolRootAdded(uint256 indexed cycle, bytes32 root);
+    event PoolRootAdded(uint256 indexed cycle, Root root);
 
     /**
      * @notice Pool's root was updated
@@ -61,7 +73,7 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
      * @param previousRoot Previous root for the cycle
      * @param newRoot New root for the cycle
      */
-    event PoolRootUpdated(uint256 indexed cycle, bytes32 previousRoot, bytes32 newRoot);
+    event PoolRootUpdated(uint256 indexed cycle, Root previousRoot, Root newRoot);
 
     /**
      * @notice Claimed rewards
@@ -101,7 +113,7 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
     /**
      * @notice Merkle tree root for each cycle
      */
-    mapping(uint256 => bytes32) public roots;
+    mapping(uint256 => Root) public roots;
 
     /**
      * @notice Tracks whether a specific leaf has been claimed
@@ -132,6 +144,7 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
     /**
      * @dev Initializes the contract with the given owner.
      * @param owner The address of the owner.
+     * @param _rootManager The address of the root manager.
      */
     function initialize(address owner, address _rootManager) public initializer {
         __Ownable_init(owner);
@@ -167,7 +180,7 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
      * @notice Add a Merkle tree root for a new cycle
      * @param root Root to add
      */
-    function addTreeRoot(bytes32 root) external onlyRootManager {
+    function addTreeRoot(Root memory root) external onlyRootManager {
         cycleCount++;
         roots[cycleCount] = root;
 
@@ -179,10 +192,10 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
      * @param root New root
      * @param cycle Cycle to update
      */
-    function updateTreeRoot(bytes32 root, uint256 cycle) external onlyRootManager {
+    function updateTreeRoot(Root memory root, uint256 cycle) external onlyRootManager {
         require(cycle <= cycleCount, InvalidCycle());
 
-        bytes32 previousRoot = roots[cycle];
+        Root memory previousRoot = roots[cycle];
         roots[cycle] = root;
 
         emit PoolRootUpdated(cycle, previousRoot, root);
@@ -204,7 +217,7 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
             uint256 toClaim = data[i].yieldSharesTotal - alreadyClaimed;
             yieldSharesClaimed[msg.sender][data[i].yelayLiteVault][data[i].projectId] = data[i].yieldSharesTotal;
 
-            IFundsFacet(data[i].yelayLiteVault).redeem(toClaim, data[i].projectId, msg.sender);
+            IFundsFacet(data[i].yelayLiteVault).redeem(toClaim, YIELD_PROJECT_ID, msg.sender);
 
             emit RewardsClaimed(msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim);
         }
@@ -226,7 +239,7 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
      * @return bool True if the proof is valid
      */
     function _verify(ClaimRequest memory data, bytes32 leaf) internal view returns (bool) {
-        return MerkleProof.verify(data.proof, roots[data.cycle], leaf);
+        return MerkleProof.verify(data.proof, roots[data.cycle].hash, leaf);
     }
 
     /**
