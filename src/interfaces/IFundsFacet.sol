@@ -69,6 +69,13 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
     function yieldExtractor() external view returns (address);
 
     /**
+     * @dev Sets the new yield extractor address.
+     * @dev Callable by STRATEGY_AUTHORITY.
+     * @param _yieldExtractor address.
+     */
+    function setYieldExtractor(address _yieldExtractor) external;
+
+    /**
      * @dev Returns the address of the swapper.
      * @return The address of the swapper.
      */
@@ -144,7 +151,7 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
 
     /**
      * @dev Compounds rewards by swapping them for the underlying asset.
-     * @dev Callable by FUNDS_OPERATOR.
+     * @dev Callable by SWAP_REWARDS_OPERATOR.
      * @param swapArgs The swap arguments.
      * @return compounded The amount compounded.
      */

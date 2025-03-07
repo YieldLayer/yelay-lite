@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
 
+import {IAccessControl} from "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {SwapArgs} from "src/interfaces/ISwapper.sol";
@@ -165,6 +166,15 @@ contract CompoundTest is Test {
                     MockExchange.swap.selector, GEARBOX_TOKEN, address(underlyingAsset), gearBalance / 2
                 )
             });
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    IAccessControl.AccessControlUnauthorizedAccount.selector, owner, LibRoles.SWAP_REWARDS_OPERATOR
+                )
+            );
+            yelayLiteVault.swapRewards(s);
+
+            yelayLiteVault.grantRole(LibRoles.SWAP_REWARDS_OPERATOR, owner);
+
             vm.expectRevert(abi.encodeWithSelector(LibErrors.CompoundUnderlyingForbidden.selector));
             yelayLiteVault.swapRewards(s);
         }

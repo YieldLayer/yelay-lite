@@ -18,22 +18,35 @@ const config: HardhatUserConfig = {
         },
     },
     networks: {
-        mainnet: {
-            chainId: 1,
-            url: process.env.MAINNET_URL!,
+        base: {
+            chainId: 8453,
+            url: process.env.BASE_URL!,
+            accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
         },
-        local: {
-            chainId: 1,
-            url: process.env.LOCAL_URL!,
-            accounts: [
-                process.env.LOCAL_DEPLOYER_PRIVATE_KEY!,
-                process.env.LOCAL_YIELD_EXTRACTOR_PRIVATE_KEY!,
-                process.env.LOCAL_USER1_PRIVATE_KEY!,
-                process.env.LOCAL_USER2_PRIVATE_KEY!,
-                process.env.LOCAL_USER3_PRIVATE_KEY!,
-            ],
-            timeout: 5 * 60 * 1000,
+        sonic: {
+            chainId: 146,
+            url: process.env.SONIC_URL!,
+            accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
         },
+    },
+    etherscan: {
+        apiKey: {
+            base: process.env.BASESCAN_API_KEY!,
+            sonic: process.env.SONICSCAN_API_KEY!,
+        },
+        customChains: [
+            {
+                network: 'sonic',
+                chainId: 146,
+                urls: {
+                    apiURL: 'https://api.sonicscan.org/api',
+                    browserURL: 'https://sonicscan.org',
+                },
+            },
+        ],
+    },
+    sourcify: {
+        enabled: false,
     },
 };
 

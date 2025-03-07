@@ -19,8 +19,6 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 contract VaultWrapper is OwnableUpgradeable, UUPSUpgradeable {
     using SafeTransferLib for ERC20;
 
-    address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
     IWETH public immutable weth;
     ISwapper public immutable swapper;
 
