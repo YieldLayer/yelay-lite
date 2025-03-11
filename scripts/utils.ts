@@ -8,10 +8,12 @@ import {
     IManagementFacet__factory,
     IOwnerFacet__factory,
     IYelayLiteVault,
+    IYelayLiteVault__factory,
+    Swapper__factory,
     VaultWrapper,
-    YelayLiteVault,
+    VaultWrapper__factory,
 } from '../typechain-types';
-import { IMPLEMENTATION_STORAGE_SLOT, ROLES } from './constants';
+import { ADDRESSES, IMPLEMENTATION_STORAGE_SLOT, ROLES } from './constants';
 
 export const deployFacets = async (deployer: Signer, swapperAddress: string) => {
     const accessFacet = await ethers
@@ -303,4 +305,95 @@ export const deployMorphoVaultStrategy = async (deployer: Signer, morphoVault: s
         .then((f) => f.deploy(morphoVault))
         .then((r) => r.waitForDeployment())
         .then((r) => r.getAddress());
+};
+
+export const checkSetup = async (contracts: any, provider: typeof ethers.provider) => {
+    for (const asset of ['USDC', 'WETH'] as const) {
+        console.log(`Working on ${asset} vault....`);
+        console.log('');
+        const yelayLiteVault = IYelayLiteVault__factory.connect(contracts.vaults[asset], provider);
+
+        console.log('Checking selectors...');
+        await checkFacets(yelayLiteVault, contracts.accessFacet, getAccessFacetSelectors());
+        await checkFacets(yelayLiteVault, contracts.ownerFacet, getOwnerFacetSelectors());
+        await checkFacets(yelayLiteVault, contracts.fundsFacet, getFundsFacetSelectors());
+        await checkFacets(yelayLiteVault, contracts.managementFacet, getManagementFacetSelectors());
+        await checkFacets(yelayLiteVault, contracts.clientsFacet, getClientFacetSelectors());
+
+        console.log('');
+
+        console.log(`Getting addresses...`);
+        await yelayLiteVault.owner().then((r) => console.log(`Vault owner: ${r}`));
+        await yelayLiteVault.yieldExtractor().then((r) => console.log(`YieldExtractor: ${r}`));
+        await yelayLiteVault.underlyingAsset().then((r) => console.log(`Underlying asset: ${r}`));
+
+        console.log('');
+        console.log('Logging role members....');
+        console.log('');
+
+        await logRoleMembers(yelayLiteVault, 'STRATEGY_AUTHORITY');
+        console.log('');
+        await logRoleMembers(yelayLiteVault, 'QUEUES_OPERATOR');
+        console.log('');
+        await logRoleMembers(yelayLiteVault, 'FUNDS_OPERATOR');
+        console.log('');
+        await logRoleMembers(yelayLiteVault, 'SWAP_REWARDS_OPERATOR');
+        console.log('');
+        await logRoleMembers(yelayLiteVault, 'PAUSER');
+        console.log('');
+        await logRoleMembers(yelayLiteVault, 'UNPAUSER');
+
+        console.log('');
+        console.log('Checking swapper on vault....');
+        console.log('');
+
+        await checkSwapper(yelayLiteVault, contracts.swapper.proxy);
+        console.log('');
+    }
+
+    console.log(`Working on swapper and vaultWrapper...`);
+    console.log('');
+
+    await Swapper__factory.connect(contracts.swapper.proxy, provider)
+        .owner()
+        .then((r) => console.log(`Swapper owner: ${r}`));
+    await VaultWrapper__factory.connect(contracts.vaultWrapper.proxy, provider)
+        .owner()
+        .then((r) => console.log(`VaultWrapper owner: ${r}`));
+
+    console.log('');
+    console.log('Checking swapper implementation....');
+    console.log('');
+
+    await checkImplementation(provider, contracts.swapper.proxy, contracts.swapper.implementation);
+
+    console.log('');
+    console.log('Checking vaultWrapper implementation....');
+    console.log('');
+
+    await checkImplementation(
+        provider,
+        contracts.vaultWrapper.proxy,
+        contracts.vaultWrapper.implementation,
+    );
+
+    console.log('');
+    console.log('Checking swapper on vaultWrapper....');
+    console.log('');
+
+    await checkSwapper(
+        VaultWrapper__factory.connect(contracts.vaultWrapper.proxy, provider),
+        contracts.swapper.proxy,
+    );
+
+    console.log('');
+    console.log('Checking one inch whitelisting on swapper...');
+    console.log('');
+    await Swapper__factory.connect(contracts.swapper.proxy, provider)
+        .exchangeAllowlist(ADDRESSES.BASE.ONE_INCH_ROUTER_V6)
+        .then((r) => {
+            if (!r) {
+                console.error(`one inch doesn't allowed`);
+            }
+        });
 };

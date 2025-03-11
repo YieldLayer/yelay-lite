@@ -151,7 +151,6 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         shares = _convertToShares(assets, totalSupply(), newTotalAssets);
 
         sF.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
-        _mint(receiver, projectId, shares, "");
         bool success;
         for (uint256 i; i < sM.depositQueue.length; i++) {
             (success,) = sM.activeStrategies[sM.depositQueue[i]].adapter.delegatecall(
@@ -167,6 +166,8 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
             sF.underlyingBalance += SafeCast.toUint192(assets);
         }
         _updateLastTotalAssets(sF, newTotalAssets + assets);
+
+        _mint(receiver, projectId, shares, "");
 
         emit LibEvents.Deposit(projectId, msg.sender, receiver, assets, shares);
     }

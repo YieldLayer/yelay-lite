@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat';
-import contracts from '../../deployments/base-production.json';
+import contracts from '../../deployments/base-testing.json';
 import { checkSetup } from '../utils';
 
 async function main() {

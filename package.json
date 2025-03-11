@@ -2,6 +2,10 @@
     "name": "yelay-lite",
     "version": "1.0.0",
     "license": "MIT",
+    "scripts": {
+        "setup:base:prod": "npx hardhat run scripts/base-production/check-setup.ts --network base",
+        "setup:base:test": "npx hardhat run scripts/base-testing/check-setup.ts --network base"
+    },
     "devDependencies": {
         "@nomicfoundation/hardhat-foundry": "1.1.3",
         "@nomicfoundation/hardhat-toolbox": "5.0.0",
