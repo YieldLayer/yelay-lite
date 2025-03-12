@@ -6,6 +6,7 @@ import {ERC1155HolderUpgradeable} from
     "@openzeppelin-upgradeable/contracts/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {ClientData, IClientsFacet} from "src/interfaces/IClientsFacet.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
@@ -25,6 +26,8 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
  * chosen mode, but cannot switch between active modes.
  */
 contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPSUpgradeable {
+    using SafeTransferLib for ERC20;
+
     /// @notice Maximum allowable lock period – 365 days.
     uint256 public constant MAX_LOCK_PERIOD = 365 days;
 
@@ -139,9 +142,13 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @return shares The amount of vault shares received.
      */
     function depositLocked(address vault, uint256 projectId, uint256 assets) external returns (uint256 shares) {
+        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
+        if (globalUnlockTime > 0) {
+            require(block.timestamp < globalUnlockTime, LibErrors.GlobalUnlockTimeReached(globalUnlockTime));
+        }
         address underlyingAsset = IYelayLiteVault(vault).underlyingAsset();
-        IERC20(underlyingAsset).transferFrom(msg.sender, address(this), assets);
-        IERC20(underlyingAsset).approve(vault, assets);
+        ERC20(underlyingAsset).safeTransferFrom(msg.sender, address(this), assets);
+        ERC20(underlyingAsset).safeApprove(vault, assets);
         shares = IYelayLiteVault(vault).deposit(assets, projectId, address(this));
 
         _addLockedDeposit(vault, projectId, shares);
@@ -304,7 +311,9 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
         );
         uint256 current = globalLockedShares[vault][projectId][msg.sender];
         require(current >= shares, LibErrors.NotEnoughShares(shares, current));
-        globalLockedShares[vault][projectId][msg.sender] = current - shares;
+        unchecked {
+            globalLockedShares[vault][projectId][msg.sender] = current - shares;
+        }
     }
 
     /**

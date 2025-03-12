@@ -157,15 +157,21 @@ library LibErrors {
     /**
      * @dev The requested shares to remove is not available.
      * @param requested The requested shares to remove.
-     * @param remaining Remaining shares from requested amount.
+     * @param available The available shares to remove.
      */
-    error NotEnoughShares(uint256 requested, uint256 remaining);
+    error NotEnoughShares(uint256 requested, uint256 available);
 
     /**
-     * @dev The unlock time exceeds the current block timestamp.
+     * @dev The project is still locked, withdrawals are not allowed.
      * @param unlockTime The unlock time.
      */
     error GlobalUnlockTimeNotReached(uint256 unlockTime);
+
+    /**
+     * @dev Project is unlocked, deposits are not allowed.
+     * @param unlockTime The unlock time.
+     */
+    error GlobalUnlockTimeReached(uint256 unlockTime);
 
     /**
      * @dev The lock mode is already set for the project.
