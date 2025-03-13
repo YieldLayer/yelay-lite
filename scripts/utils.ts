@@ -397,3 +397,37 @@ export const checkSetup = async (contracts: any, provider: typeof ethers.provide
             }
         });
 };
+
+export const deployVault = async (
+    deployer: Signer,
+    contracts: any,
+    deployArgs: { owner: string; underlyingAsset: string; yieldExtractor: string; uri: string },
+    assetSymbol: string,
+    deploymentPath: string,
+) => {
+    const yelayLiteVault = await ethers
+        .getContractFactory('YelayLiteVault', deployer)
+        .then((f) =>
+            f.deploy(
+                deployArgs.owner,
+                contracts.ownerFacet,
+                deployArgs.underlyingAsset,
+                deployArgs.yieldExtractor,
+                deployArgs.uri,
+            ),
+        )
+        .then(async (c) => {
+            const d = await c.waitForDeployment();
+            const tx = await ethers.provider.getTransaction(d.deploymentTransaction()!.hash);
+            console.log(`Vault: ${await c.getAddress()}`);
+            console.log(`Vault creation blocknumber: ${tx?.blockNumber}`);
+            const block = await ethers.provider.getBlock(tx!.blockNumber!);
+            console.log(`Timestamp: ${block?.timestamp}`);
+            return d.getAddress();
+        })
+        .then((a) => IYelayLiteVault__factory.connect(a, deployer));
+
+    contracts.vaults[assetSymbol] = await yelayLiteVault.getAddress();
+
+    fs.writeFileSync(deploymentPath, JSON.stringify(contracts, null, 4) + '\n');
+};

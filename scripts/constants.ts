@@ -27,6 +27,9 @@ export const ADDRESSES = {
     MAINNET: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
         WETH: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+        USDC: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+        WBTC: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+        URI: 'https://lite.api.yelay.io/mainnet/metadata/{id}',
     },
 };
 
