@@ -27,6 +27,7 @@
                 "pendle-wbtc": "0x58957C6EF5B4d2512f692972dCaF7B8c76E30aAC",
                 "gauntlet-wbtc-core": "0x0c6dAf9B4e0EB49A0c80c325da82EC028Cb8118B"
             }
-        }
+        },
+        "aaveV3": "0x0c35F21f527F8753Ba5a0f46c87A617b20DD9E0c"
     }
 }
