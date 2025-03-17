@@ -308,7 +308,7 @@ export const deployMorphoVaultStrategy = async (deployer: Signer, morphoVault: s
 };
 
 export const checkSetup = async (contracts: any, provider: typeof ethers.provider) => {
-    for (const asset of ['USDC', 'WETH'] as const) {
+    for (const asset of Object.keys(contracts.vaults)) {
         console.log(`Working on ${asset} vault....`);
         console.log('');
         const yelayLiteVault = IYelayLiteVault__factory.connect(contracts.vaults[asset], provider);
