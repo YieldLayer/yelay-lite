@@ -26,10 +26,26 @@ export const ADDRESSES = {
     },
     MAINNET: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
+        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
         WETH: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
         USDC: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
         WBTC: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
         URI: 'https://lite.api.yelay.io/mainnet/metadata/{id}',
+        AAVE_V3_POOL: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+        MORPHO_VAULTS: {
+            USDC: {
+                'steakhouse-usdc': '0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB',
+                'gauntlet-usdc-core': '0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458',
+            },
+            WETH: {
+                'mev-capital-weth': '0x9a8bC3B04b7f3D87cfC09ba407dCED575f2d61D8',
+                'gauntlet-weth-core': '0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658',
+            },
+            WBTC: {
+                'pendle-wbtc': '0x2f1aBb81ed86Be95bcf8178bA62C8e72D6834775',
+                'gauntlet-wbtc-core': '0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2',
+            },
+        },
     },
 };
 
