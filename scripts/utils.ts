@@ -401,15 +401,16 @@ export const checkSetup = async (contracts: any, provider: typeof ethers.provide
 export const deployVault = async (
     deployer: Signer,
     contracts: any,
-    deployArgs: { owner: string; underlyingAsset: string; yieldExtractor: string; uri: string },
+    deployArgs: { underlyingAsset: string; yieldExtractor: string; uri: string },
     assetSymbol: string,
     deploymentPath: string,
 ) => {
+    const deployerAddress = await deployer.getAddress();
     const yelayLiteVault = await ethers
         .getContractFactory('YelayLiteVault', deployer)
         .then((f) =>
             f.deploy(
-                deployArgs.owner,
+                deployerAddress,
                 contracts.ownerFacet,
                 deployArgs.underlyingAsset,
                 deployArgs.yieldExtractor,
@@ -428,6 +429,5 @@ export const deployVault = async (
         .then((a) => IYelayLiteVault__factory.connect(a, deployer));
 
     contracts.vaults[assetSymbol] = await yelayLiteVault.getAddress();
-
     fs.writeFileSync(deploymentPath, JSON.stringify(contracts, null, 4) + '\n');
 };

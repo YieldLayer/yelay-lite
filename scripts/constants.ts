@@ -32,6 +32,7 @@ export const ADDRESSES = {
         WBTC: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
         URI: 'https://lite.api.yelay.io/mainnet/metadata/{id}',
         AAVE_V3_POOL: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+        ONE_INCH_ROUTER_V6: '0x111111125421cA6dc452d289314280a0f8842A65',
         MORPHO_VAULTS: {
             USDC: {
                 'steakhouse-usdc': '0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB',
