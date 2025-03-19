@@ -8,8 +8,8 @@ async function main() {
     const [deployer] = await ethers.getSigners();
     const yelayLiteVault = IYelayLiteVault__factory.connect(contracts.vaults[asset], deployer);
 
-    const aToken = await IPool__factory.connect(ADDRESSES.MAINNET.AAVE_V3_POOL, deployer)
-        .getReserveData(ADDRESSES.MAINNET[asset])
+    const aToken = await IPool__factory.connect(ADDRESSES[1].AAVE_V3_POOL, deployer)
+        .getReserveData(ADDRESSES[1][asset])
         .then((r) => r.aTokenAddress);
 
     const data = await Promise.all([
@@ -18,7 +18,7 @@ async function main() {
             adapter: contracts.strategies.aaveV3,
             supplement: new ethers.AbiCoder().encode(
                 ['address', 'address'],
-                [ADDRESSES.MAINNET[asset], aToken],
+                [ADDRESSES[1][asset], aToken],
             ),
         }),
         yelayLiteVault.addStrategy.populateTransaction({

@@ -18,7 +18,7 @@ async function main() {
     for (const vault of data[asset]) {
         const morphoVault = await deployMorphoVaultStrategy(
             deployer,
-            ADDRESSES.MAINNET.MORPHO_VAULTS[asset][vault],
+            ADDRESSES[1].MORPHO_VAULTS[asset][vault],
         );
 
         // @ts-ignore

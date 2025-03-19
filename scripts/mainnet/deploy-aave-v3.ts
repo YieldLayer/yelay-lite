@@ -7,7 +7,7 @@ import { deployAaveV3Strategy } from '../utils/deploy';
 async function main() {
     const [deployer] = await ethers.getSigners();
 
-    const aaveV3 = await deployAaveV3Strategy(deployer, ADDRESSES.MAINNET.AAVE_V3_POOL);
+    const aaveV3 = await deployAaveV3Strategy(deployer, ADDRESSES[1].AAVE_V3_POOL);
 
     // @ts-ignore
     contracts.strategies.aaveV3 = aaveV3;

@@ -1,20 +1,18 @@
 import fs from 'fs';
 import { ethers } from 'hardhat';
-import contracts from '../../deployments/base-testing.json';
-import {
-    AccessFacet__factory,
-    ClientsFacet__factory,
-    FundsFacet__factory,
-    IYelayLiteVault__factory,
-    ManagementFacet__factory,
-} from '../../typechain-types';
-import { ADDRESSES, ROLES } from '../constants';
+import contracts from '../../deployments/base-production.json';
+import { IYelayLiteVault__factory } from '../../typechain-types';
+import { ADDRESSES } from '../constants';
 import { prepareSetSelectorFacets } from '../utils/deploy';
 
 async function main() {
+    const yieldExtractor = '';
+    if (!yieldExtractor) {
+        throw new Error('No yield extractor');
+    }
     const [deployer] = await ethers.getSigners();
     const asset = 'WETH';
-    const uri = 'https://lite.dev.yelay.io/base/metadata/{id}';
+    const uri = 'https://lite.yelay.io/base/metadata/{id}';
 
     const yelayLiteVault = await ethers
         .getContractFactory('YelayLiteVault', deployer)
@@ -22,8 +20,8 @@ async function main() {
             f.deploy(
                 deployer.address,
                 contracts.ownerFacet,
-                ADDRESSES.BASE[asset],
-                deployer.address,
+                ADDRESSES[8453][asset],
+                yieldExtractor,
                 uri,
             ),
         )
@@ -46,9 +44,6 @@ async function main() {
             accessFacet: contracts.accessFacet,
             clientsFacet: contracts.clientsFacet,
         }),
-        yelayLiteVault.grantRole.populateTransaction(ROLES.FUNDS_OPERATOR, deployer.address),
-        yelayLiteVault.grantRole.populateTransaction(ROLES.STRATEGY_AUTHORITY, deployer.address),
-        yelayLiteVault.grantRole.populateTransaction(ROLES.QUEUES_OPERATOR, deployer.address),
     ]);
 
     await yelayLiteVault.multicall(data.map((d) => d.data));
@@ -56,7 +51,10 @@ async function main() {
     // @ts-ignore
     contracts.vaults[asset] = await yelayLiteVault.getAddress();
 
-    fs.writeFileSync('./deployments/base-testing.json', JSON.stringify(contracts, null, 4) + '\n');
+    fs.writeFileSync(
+        './deployments/base-production.json',
+        JSON.stringify(contracts, null, 4) + '\n',
+    );
 }
 
 main()

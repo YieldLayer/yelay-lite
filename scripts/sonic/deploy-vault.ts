@@ -16,7 +16,7 @@ async function main() {
             f.deploy(
                 deployer.address,
                 contracts.ownerFacet,
-                ADDRESSES.SONIC[asset],
+                ADDRESSES[146][asset],
                 deployer.address,
                 uri,
             ),

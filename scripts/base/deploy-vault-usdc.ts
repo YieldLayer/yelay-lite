@@ -20,7 +20,7 @@ async function main() {
             f.deploy(
                 deployer.address,
                 contracts.ownerFacet,
-                ADDRESSES.BASE[asset],
+                ADDRESSES[8453][asset],
                 yieldExtractor,
                 uri,
             ),

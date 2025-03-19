@@ -14,7 +14,7 @@ async function main() {
                 deployer.address,
             ),
             yelayLiteVault.revokeRole.populateTransaction(ROLES.QUEUES_OPERATOR, deployer.address),
-            yelayLiteVault.transferOwnership.populateTransaction(ADDRESSES.MAINNET.OWNER),
+            yelayLiteVault.transferOwnership.populateTransaction(ADDRESSES[1].OWNER),
         ]);
 
         await yelayLiteVault.multicall(data.map((d) => d.data));

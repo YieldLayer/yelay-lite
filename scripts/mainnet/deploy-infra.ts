@@ -7,8 +7,8 @@ async function main() {
 
     await deployInfra(
         deployer,
-        ADDRESSES.MAINNET.OWNER,
-        ADDRESSES.MAINNET.WETH,
+        ADDRESSES[1].OWNER,
+        ADDRESSES[1].WETH,
         './deployments/mainnet.json',
     );
 }

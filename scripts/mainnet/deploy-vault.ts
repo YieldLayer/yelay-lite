@@ -11,9 +11,9 @@ async function main() {
         deployer,
         contracts,
         {
-            underlyingAsset: ADDRESSES.MAINNET[asset],
-            yieldExtractor: ADDRESSES.MAINNET.OWNER,
-            uri: ADDRESSES.MAINNET.URI,
+            underlyingAsset: ADDRESSES[1][asset],
+            yieldExtractor: ADDRESSES[1].OWNER,
+            uri: ADDRESSES[1].URI,
         },
         asset,
         './deployments/mainnet.json',

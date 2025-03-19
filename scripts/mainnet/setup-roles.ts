@@ -12,28 +12,25 @@ async function main() {
             // OWNER
             yelayLiteVault.grantRole.populateTransaction(
                 ROLES.STRATEGY_AUTHORITY,
-                ADDRESSES.MAINNET.OWNER,
+                ADDRESSES[1].OWNER,
             ),
-            yelayLiteVault.grantRole.populateTransaction(ROLES.PAUSER, ADDRESSES.MAINNET.OWNER),
-            yelayLiteVault.grantRole.populateTransaction(ROLES.UNPAUSER, ADDRESSES.MAINNET.OWNER),
-            yelayLiteVault.grantRole.populateTransaction(
-                ROLES.QUEUES_OPERATOR,
-                ADDRESSES.MAINNET.OWNER,
-            ),
+            yelayLiteVault.grantRole.populateTransaction(ROLES.PAUSER, ADDRESSES[1].OWNER),
+            yelayLiteVault.grantRole.populateTransaction(ROLES.UNPAUSER, ADDRESSES[1].OWNER),
+            yelayLiteVault.grantRole.populateTransaction(ROLES.QUEUES_OPERATOR, ADDRESSES[1].OWNER),
 
             // OPERATOR
             yelayLiteVault.grantRole.populateTransaction(
                 ROLES.FUNDS_OPERATOR,
-                ADDRESSES.MAINNET.OPERATOR,
+                ADDRESSES[1].OPERATOR,
             ),
             yelayLiteVault.grantRole.populateTransaction(
                 ROLES.QUEUES_OPERATOR,
-                ADDRESSES.MAINNET.OPERATOR,
+                ADDRESSES[1].OPERATOR,
             ),
-            yelayLiteVault.grantRole.populateTransaction(ROLES.PAUSER, ADDRESSES.MAINNET.OPERATOR),
+            yelayLiteVault.grantRole.populateTransaction(ROLES.PAUSER, ADDRESSES[1].OPERATOR),
             yelayLiteVault.grantRole.populateTransaction(
                 ROLES.SWAP_REWARDS_OPERATOR,
-                ADDRESSES.MAINNET.OPERATOR,
+                ADDRESSES[1].OPERATOR,
             ),
 
             // DEPLOYER FOR INITIAL SETUP
