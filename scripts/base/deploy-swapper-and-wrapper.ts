@@ -7,7 +7,7 @@ async function main() {
     const [deployer] = await ethers.getSigners();
 
     const ownerAddress = deployer.address;
-    const wethAddress = ADDRESSES.BASE.WETH;
+    const wethAddress = ADDRESSES[8453].WETH;
 
     const swapperFactory = await ethers.getContractFactory('Swapper', deployer);
     const swapper = await upgrades

@@ -1,15 +1,9 @@
 import fs from 'fs';
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/base-production.json';
-import {
-    AccessFacet__factory,
-    ClientsFacet__factory,
-    FundsFacet__factory,
-    IYelayLiteVault__factory,
-    ManagementFacet__factory,
-} from '../../typechain-types';
+import { IYelayLiteVault__factory } from '../../typechain-types';
 import { ADDRESSES } from '../constants';
-import { prepareSetSelectorFacets } from '../utils';
+import { prepareSetSelectorFacets } from '../utils/deploy';
 
 async function main() {
     const yieldExtractor = '';
@@ -26,7 +20,7 @@ async function main() {
             f.deploy(
                 deployer.address,
                 contracts.ownerFacet,
-                ADDRESSES.BASE[asset],
+                ADDRESSES[8453][asset],
                 yieldExtractor,
                 uri,
             ),

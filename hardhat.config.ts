@@ -18,6 +18,11 @@ const config: HardhatUserConfig = {
         },
     },
     networks: {
+        mainnet: {
+            chainId: 1,
+            url: process.env.MAINNET_URL!,
+            accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
+        },
         base: {
             chainId: 8453,
             url: process.env.BASE_URL!,
@@ -31,6 +36,7 @@ const config: HardhatUserConfig = {
     },
     etherscan: {
         apiKey: {
+            mainnet: process.env.ETHERSCAN_API_KEY!,
             base: process.env.BASESCAN_API_KEY!,
             sonic: process.env.SONICSCAN_API_KEY!,
         },

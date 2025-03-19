@@ -1,15 +1,15 @@
 import { ethers } from 'hardhat';
 import { ADDRESSES } from '../constants';
-import { deployInfra } from '../utils';
+import { deployInfra } from './../utils/deploy';
 
 async function main() {
     const [deployer] = await ethers.getSigners();
 
     await deployInfra(
         deployer,
-        deployer.address,
-        ADDRESSES.BASE.WETH,
-        './deployments/base-testing.json',
+        ADDRESSES[1].OWNER,
+        ADDRESSES[1].WETH,
+        './deployments/mainnet.json',
     );
 }
 

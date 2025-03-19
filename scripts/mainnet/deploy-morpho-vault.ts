@@ -1,15 +1,16 @@
 import fs from 'fs';
 import { ethers } from 'hardhat';
-import contracts from '../../deployments/base-testing.json';
+import contracts from '../../deployments/mainnet.json';
 import { ADDRESSES } from '../constants';
-import { deployMorphoVaultStrategy } from '../utils';
+import { deployMorphoVaultStrategy } from './../utils/deploy';
 
 const data = {
-    USDC: ['steakhouse-usdc', 'gauntlet-usdc-prime', 'gauntlet-usdc-core'],
-    WETH: ['ionic-ecosystem-weth', 'moonwell-flagship-eth'],
+    USDC: ['steakhouse-usdc', 'gauntlet-usdc-core'],
+    WETH: ['mev-capital-weth', 'gauntlet-weth-core'],
+    WBTC: ['pendle-wbtc', 'gauntlet-wbtc-core'],
 } as const;
 
-const asset = 'WETH';
+const asset = 'WBTC';
 
 async function main() {
     const [deployer] = await ethers.getSigners();
@@ -17,7 +18,7 @@ async function main() {
     for (const vault of data[asset]) {
         const morphoVault = await deployMorphoVaultStrategy(
             deployer,
-            ADDRESSES.BASE.MORHO_VAULTS[asset][vault],
+            ADDRESSES[1].MORPHO_VAULTS[asset][vault],
         );
 
         // @ts-ignore
@@ -34,7 +35,7 @@ async function main() {
         contracts.strategies.morphoVaults[asset][vault] = morphoVault;
     }
 
-    fs.writeFileSync('./deployments/base-testing.json', JSON.stringify(contracts, null, 4) + '\n');
+    fs.writeFileSync('./deployments/mainnet.json', JSON.stringify(contracts, null, 4) + '\n');
 }
 
 main()
