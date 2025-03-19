@@ -3,6 +3,7 @@ import { ethers } from 'hardhat';
 export const ADDRESSES = {
     BASE: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
+        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
         WETH: '0x4200000000000000000000000000000000000006',
         USDC: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
         AAVE_V3_POOL: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
@@ -23,6 +24,8 @@ export const ADDRESSES = {
     SONIC: {
         WS: '0x039e2fb66102314ce7b64ce5ce3e5183bc94ad38',
         USDCe: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+        OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
+        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
     },
     MAINNET: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',

@@ -2,7 +2,7 @@ import fs from 'fs';
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/mainnet.json';
 import { ADDRESSES } from '../constants';
-import { deployAaveV3Strategy } from '../utils';
+import { deployAaveV3Strategy } from '../utils/deploy';
 
 async function main() {
     const [deployer] = await ethers.getSigners();

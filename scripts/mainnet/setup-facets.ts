@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/mainnet.json';
 import { IYelayLiteVault__factory } from '../../typechain-types';
-import { prepareSetSelectorFacets } from '../utils';
+import { prepareSetSelectorFacets } from '../utils/deploy';
 
 async function main() {
     const [deployer] = await ethers.getSigners();

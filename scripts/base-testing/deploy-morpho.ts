@@ -2,7 +2,7 @@ import fs from 'fs';
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/base-testing.json';
 import { ADDRESSES } from '../constants';
-import { deployMorphoBlueStrategy } from '../utils';
+import { deployMorphoBlueStrategy } from '../utils/deploy';
 
 async function main() {
     const [deployer] = await ethers.getSigners();

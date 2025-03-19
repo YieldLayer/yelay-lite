@@ -1,15 +1,9 @@
 import fs from 'fs';
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/sonic.json';
-import {
-    AccessFacet__factory,
-    ClientsFacet__factory,
-    FundsFacet__factory,
-    IYelayLiteVault__factory,
-    ManagementFacet__factory,
-} from '../../typechain-types';
+import { IYelayLiteVault__factory } from '../../typechain-types';
 import { ADDRESSES, ROLES } from '../constants';
-import { prepareSetSelectorFacets } from '../utils';
+import { prepareSetSelectorFacets } from './../utils/deploy';
 
 async function main() {
     const [deployer] = await ethers.getSigners();

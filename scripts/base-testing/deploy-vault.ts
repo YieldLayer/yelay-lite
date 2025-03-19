@@ -9,7 +9,7 @@ import {
     ManagementFacet__factory,
 } from '../../typechain-types';
 import { ADDRESSES, ROLES } from '../constants';
-import { prepareSetSelectorFacets } from '../utils';
+import { prepareSetSelectorFacets } from '../utils/deploy';
 
 async function main() {
     const [deployer] = await ethers.getSigners();

@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/mainnet.json';
 import { ADDRESSES } from '../constants';
-import { deployVault } from '../utils';
+import { deployVault } from './../utils/deploy';
 
 async function main() {
     const asset = 'WBTC';

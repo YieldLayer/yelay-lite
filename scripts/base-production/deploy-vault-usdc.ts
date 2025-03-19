@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import contracts from '../../deployments/base-production.json';
 import { IYelayLiteVault__factory } from '../../typechain-types';
 import { ADDRESSES } from '../constants';
-import { prepareSetSelectorFacets } from '../utils';
+import { prepareSetSelectorFacets } from '../utils/deploy';
 
 async function main() {
     const yieldExtractor = '';

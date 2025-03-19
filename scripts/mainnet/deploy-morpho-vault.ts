@@ -2,7 +2,7 @@ import fs from 'fs';
 import { ethers } from 'hardhat';
 import contracts from '../../deployments/mainnet.json';
 import { ADDRESSES } from '../constants';
-import { deployMorphoVaultStrategy } from '../utils';
+import { deployMorphoVaultStrategy } from './../utils/deploy';
 
 const data = {
     USDC: ['steakhouse-usdc', 'gauntlet-usdc-core'],
