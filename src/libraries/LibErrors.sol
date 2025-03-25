@@ -140,4 +140,54 @@ library LibErrors {
      * @param tokenOut The token that was intended to be received.
      */
     error NothingSwapped(address tokenOut);
+
+    // ===================== DepositLockPlugin ================================
+
+    /**
+     * @dev The caller is not the project owner.
+     * @param vault The address of the vault.
+     * @param projectId The ID of the project.
+     * @param caller The address of the caller.
+     */
+    error NotProjectOwner(address vault, uint256 projectId, address caller);
+
+    /**
+     * @dev The lock period exceeds the maximum allowable period.
+     * @param lockPeriod The lock period.
+     */
+    error LockPeriodExceedsMaximum(uint256 lockPeriod);
+
+    /**
+     * @dev Lock Mode is unset for the project.
+     * @param vault The address of the vault.
+     * @param projectId The ID of the project.
+     */
+    error LockModeNotSetForProject(address vault, uint256 projectId);
+
+    /**
+     * @dev The requested shares to remove is not available.
+     * @param requested The requested shares to remove.
+     * @param available The available shares to remove.
+     */
+    error NotEnoughShares(uint256 requested, uint256 available);
+
+    /**
+     * @dev The project is still locked, withdrawals are not allowed.
+     * @param unlockTime The unlock time.
+     */
+    error GlobalUnlockTimeNotReached(uint256 unlockTime);
+
+    /**
+     * @dev Project is unlocked, deposits are not allowed.
+     * @param unlockTime The unlock time.
+     */
+    error GlobalUnlockTimeReached(uint256 unlockTime);
+
+    /**
+     * @dev The lock mode is already set for the project.
+     * @param vault The address of the vault.
+     * @param projectId The ID of the project.
+     * @param lockMode The lock mode.
+     */
+    error LockModeAlreadySet(address vault, uint256 projectId, uint256 lockMode);
 }
