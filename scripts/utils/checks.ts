@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat';
 import { isDeepStrictEqual } from 'node:util';
 import {
+    DepositLockPlugin__factory,
     IYelayLiteVault,
     IYelayLiteVault__factory,
     Swapper__factory,
@@ -74,7 +75,7 @@ export const checkSetup = async (
         unpauser,
     }: ExpectedAddresses,
 ) => {
-    console.log(`Working on swapper and vaultWrapper...`);
+    console.log(`Working on swapper, vaultWrapper, depositLockPlugin...`);
     console.log('');
 
     await Swapper__factory.connect(contracts.swapper.proxy, provider)
@@ -93,6 +94,15 @@ export const checkSetup = async (
                 );
             }
         });
+    await DepositLockPlugin__factory.connect(contracts.depositLockPlugin.proxy, provider)
+        .owner()
+        .then((depositLockPluginOwner) => {
+            if (depositLockPluginOwner.toLowerCase() !== owner.toLowerCase()) {
+                warning(
+                    `DepositLockPlugin owner mismatch! Expected: ${owner}. Actual: ${depositLockPluginOwner}`,
+                );
+            }
+        });
 
     await checkImplementation(provider, contracts.swapper.proxy, contracts.swapper.implementation);
 
@@ -100,6 +110,12 @@ export const checkSetup = async (
         provider,
         contracts.vaultWrapper.proxy,
         contracts.vaultWrapper.implementation,
+    );
+
+    await checkImplementation(
+        provider,
+        contracts.depositLockPlugin.proxy,
+        contracts.depositLockPlugin.implementation,
     );
 
     await checkSwapper(

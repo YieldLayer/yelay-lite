@@ -125,7 +125,11 @@ export const getRoleMembers = async (yelayLiteVault: IYelayLiteVault, role: stri
         );
 };
 
-export const getContracts = async (chainId: number, testing = false) => {
+export const getContracts = async (contractsPath: string) => {
+    return import(contractsPath).then((f) => f.default);
+};
+
+export const getContractsPath = (chainId: number, testing = false) => {
     if (chainId !== 8453 && testing) {
         throw new Error('Testing is only on Base');
     }
@@ -141,7 +145,5 @@ export const getContracts = async (chainId: number, testing = false) => {
         throw new Error(`No contracts for chainId ${chainId}`);
     }
 
-    const contractsPath = path.resolve(process.cwd(), 'deployments', fileName);
-
-    return import(contractsPath).then((f) => f.default);
+    return path.resolve(process.cwd(), 'deployments', fileName);
 };

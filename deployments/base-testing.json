@@ -30,5 +30,9 @@
                 "moonwell-flagship-eth": "0xBaF88bd991e135A877B01178dc6b0ee5F1a9ed60"
             }
         }
+    },
+    "depositLockPlugin": {
+        "proxy": "0x92f4Ad3cBA90Bc8f7DD88C899B0d4b42263969F5",
+        "implementation": "0xabcfa71cacedeb0967865fbd7e98998ac2352d94"
     }
 }

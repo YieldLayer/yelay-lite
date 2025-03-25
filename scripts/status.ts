@@ -1,13 +1,15 @@
 import { ethers, network } from 'hardhat';
 import { getExpectedAddresses } from './constants';
 import { checkSetup } from './utils/checks';
-import { getContracts } from './utils/getters';
+import { isTesting } from './utils/common';
+import { getContracts, getContractsPath } from './utils/getters';
 
 async function main() {
     const chainId = network.config.chainId!;
-    const test = process.env.TEST === 'true';
+    const test = isTesting();
 
-    const contracts = await getContracts(chainId, test);
+    const contractsPath = getContractsPath(chainId, test);
+    const contracts = await getContracts(contractsPath);
     const expectedAddresses = getExpectedAddresses(chainId, test);
 
     await checkSetup(contracts, ethers.provider, expectedAddresses);
