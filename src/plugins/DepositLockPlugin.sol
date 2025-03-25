@@ -86,7 +86,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @dev Mapping to track the pointer for each user's deposits (for Variable mode)
      * so that redeemed deposits need not be shuffled.
      */
-    mapping(address => mapping(uint256 => mapping(address => uint256))) private depositPointers;
+    mapping(address => mapping(uint256 => mapping(address => uint256))) public depositPointers;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -193,6 +193,30 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
         IYelayLiteVault(vault).migratePosition(fromProjectId, toProjectId, shares);
 
         emit LibEvents.MigrateLocked(msg.sender, vault, fromProjectId, toProjectId, shares);
+    }
+
+    /**
+     * @notice Returns all pending deposits with variable mode.
+     * @param vault The vault address.
+     * @param projectId The project identifier.
+     * @param user The address of the user.
+     * @return deposits The list of pending deposits.
+     */
+    function getLockedDeposits(address vault, uint256 projectId, address user)
+        external
+        view
+        returns (Deposit[] memory)
+    {
+        LockMode lockMode = projectLockModes[vault][projectId];
+        require(lockMode == LockMode.Variable, LibErrors.LockModeMismatch(vault, projectId, uint256(lockMode)));
+
+        uint256 pointer = depositPointers[vault][projectId][user];
+        uint256 length = lockedDeposits[vault][projectId][user].length;
+        Deposit[] memory deposits = new Deposit[](length - pointer);
+        for (uint256 i = pointer; i < length; i++) {
+            deposits[i - pointer] = lockedDeposits[vault][projectId][user][i];
+        }
+        return deposits;
     }
 
     /**

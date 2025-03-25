@@ -190,4 +190,12 @@ library LibErrors {
      * @param lockMode The lock mode.
      */
     error LockModeAlreadySet(address vault, uint256 projectId, uint256 lockMode);
+
+    /**
+     * @dev The lock mode mismatch for particular project.
+     * @param vault The address of the vault.
+     * @param projectId The ID of the project.
+     * @param lockMode The lock mode.
+     */
+    error LockModeMismatch(address vault, uint256 projectId, uint256 lockMode);
 }
