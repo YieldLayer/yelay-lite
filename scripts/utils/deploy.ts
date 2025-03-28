@@ -2,10 +2,13 @@ import type { Signer } from 'ethers';
 import fs from 'fs';
 import { ethers, upgrades } from 'hardhat';
 import { IYelayLiteVault, IYelayLiteVault__factory } from '../../typechain-types';
-import { IMPLEMENTATION_STORAGE_SLOT } from '../constants';
+import { getExpectedAddresses, IMPLEMENTATION_STORAGE_SLOT } from '../constants';
+import { isTesting } from './common';
 import {
     getAccessFacetSelectors,
     getClientFacetSelectors,
+    getContracts,
+    getContractsPath,
     getFundsFacetSelectors,
     getManagementFacetSelectors,
 } from './getters';
@@ -190,4 +193,35 @@ export const deployVault = async (
 
     contracts.vaults[assetSymbol] = await yelayLiteVault.getAddress();
     fs.writeFileSync(deploymentPath, JSON.stringify(contracts, null, 4) + '\n');
+};
+
+export const deployDepositLockPlugin = async (deployer: Signer) => {
+    const chainId = Number((await deployer.provider!.getNetwork()).chainId);
+    const testing = isTesting();
+    const contractsPath = getContractsPath(chainId, testing);
+    const contracts = await getContracts(contractsPath);
+    const owner = getExpectedAddresses(chainId, testing).owner;
+
+    if (contracts.depositLockPlugin) {
+        throw new Error(`DepositLockPlugin already deployed for ${chainId}`);
+    }
+
+    const depositLockPluginFactory = await ethers.getContractFactory('DepositLockPlugin', deployer);
+    const depositLockPlugin = await upgrades
+        .deployProxy(depositLockPluginFactory, [owner], {
+            kind: 'uups',
+        })
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+
+    const depositLockPluginImplementation = await deployer
+        .provider!.getStorage(depositLockPlugin, IMPLEMENTATION_STORAGE_SLOT)
+        .then((r) => ethers.dataSlice(r, 12));
+
+    contracts.depositLockPlugin = {
+        proxy: depositLockPlugin,
+        implementation: depositLockPluginImplementation,
+    };
+
+    fs.writeFileSync(contractsPath, JSON.stringify(contracts, null, 4) + '\n');
 };

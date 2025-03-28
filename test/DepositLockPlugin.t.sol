@@ -228,6 +228,105 @@ contract DepositLockPluginTest is Test {
         assertFalse(statuses[1]);
     }
 
+    function test_getLockedDeposits() public {
+        uint256 newLockPeriod = 120; // seconds
+        vm.prank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
+
+        uint256 firstLockTime = block.timestamp;
+        vm.startPrank(user);
+        underlying.approve(address(depositLock), 1000 ether);
+        depositLock.depositLocked(address(mockVault), projectId, 1000 ether);
+        vm.stopPrank();
+
+        {
+            DepositLockPlugin.Deposit[] memory deposits =
+                depositLock.getLockedDeposits(address(mockVault), projectId, user);
+            assertEq(deposits.length, 1);
+            assertEq(deposits[0].shares, 1000 ether);
+            assertEq(deposits[0].lockTime, firstLockTime);
+        }
+
+        vm.warp(block.timestamp + 130);
+
+        uint256 secondLockTime = block.timestamp;
+        vm.startPrank(user);
+        underlying.approve(address(depositLock), 500 ether);
+        depositLock.depositLocked(address(mockVault), projectId, 500 ether);
+        vm.stopPrank();
+
+        {
+            DepositLockPlugin.Deposit[] memory deposits =
+                depositLock.getLockedDeposits(address(mockVault), projectId, user);
+            assertEq(deposits.length, 2);
+            assertEq(deposits[0].shares, 1000 ether);
+            assertEq(deposits[0].lockTime, firstLockTime);
+            assertEq(deposits[1].shares, 500 ether);
+            assertEq(deposits[1].lockTime, secondLockTime);
+        }
+
+        vm.startPrank(user);
+        depositLock.redeemLocked(address(mockVault), projectId, 500 ether);
+        vm.stopPrank();
+
+        {
+            DepositLockPlugin.Deposit[] memory deposits =
+                depositLock.getLockedDeposits(address(mockVault), projectId, user);
+            assertEq(deposits.length, 2);
+            assertEq(deposits[0].shares, 500 ether);
+            assertEq(deposits[0].lockTime, firstLockTime);
+            assertEq(deposits[1].shares, 500 ether);
+            assertEq(deposits[1].lockTime, secondLockTime);
+        }
+
+        vm.startPrank(user);
+        depositLock.redeemLocked(address(mockVault), projectId, 500 ether);
+        vm.stopPrank();
+
+        {
+            DepositLockPlugin.Deposit[] memory deposits =
+                depositLock.getLockedDeposits(address(mockVault), projectId, user);
+            assertEq(deposits.length, 1);
+            assertEq(deposits[0].shares, 500 ether);
+            assertEq(deposits[0].lockTime, secondLockTime);
+        }
+
+        vm.warp(block.timestamp + 130);
+
+        vm.startPrank(user);
+        depositLock.redeemLocked(address(mockVault), projectId, 500 ether);
+        vm.stopPrank();
+
+        {
+            DepositLockPlugin.Deposit[] memory deposits =
+                depositLock.getLockedDeposits(address(mockVault), projectId, user);
+            assertEq(deposits.length, 0);
+        }
+
+        uint256 newProjectId = projectId + 7;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                LibErrors.LockModeMismatch.selector,
+                address(mockVault),
+                newProjectId,
+                uint256(DepositLockPlugin.LockMode.Unset)
+            )
+        );
+        depositLock.getLockedDeposits(address(mockVault), newProjectId, user);
+
+        vm.prank(projectOwner);
+        depositLock.updateGlobalUnlockTime(address(mockVault), newProjectId, 123);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                LibErrors.LockModeMismatch.selector,
+                address(mockVault),
+                newProjectId,
+                uint256(DepositLockPlugin.LockMode.Global)
+            )
+        );
+        depositLock.getLockedDeposits(address(mockVault), newProjectId, user);
+    }
+
     function test_migrateLocked_destinationLockNotSet() public {
         uint256 newLockPeriod = 1 days;
         uint256 toProjectId = 456;
