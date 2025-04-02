@@ -18,5 +18,9 @@
     },
     "strategies": {
         "aaveV3": "0x1a0170FF66169FF3FC14c4A5822f97c835FF9F43"
+    },
+    "depositLockPlugin": {
+        "proxy": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B",
+        "implementation": "0x5ad91b2f07a5fb7ba13c39940fa16826e9bbd5b9"
     }
 }

@@ -108,6 +108,18 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
             unpauser: [ADDRESSES[chainId].OWNER],
         };
+    } else if (chainId === 146) {
+        return {
+            owner: ADDRESSES[chainId].OWNER,
+            yieldExtractor: ADDRESSES[chainId].OWNER,
+            oneInchRouter: ethers.ZeroAddress,
+            strategyAuthority: [ADDRESSES[chainId].OWNER],
+            fundsOperator: [ADDRESSES[chainId].OPERATOR],
+            queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
+            pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            unpauser: [ADDRESSES[chainId].OWNER],
+        };
     }
     throw new Error('Chain not supported');
 };

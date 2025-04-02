@@ -20,6 +20,11 @@
       "address": "0x0872e8391662D4e53D6649c8dE5d4bF581Bd778C",
       "txHash": "0x42dddc88e97f21ab20f50ad9187e462d7f64dd20b9b695f48929a3709b20789e",
       "kind": "uups"
+    },
+    {
+      "address": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B",
+      "txHash": "0x98ecfc7d9de44351dc586fae1ade94616e45a7fb177dac9a0c67289bd764c2ef",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -248,6 +253,216 @@
           "t_uint64": {
             "label": "uint64",
             "numberOfBytes": "8"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "76914389eba20224cb9747df7960dc0688476904a823ecf822ee67c064563d73": {
+      "address": "0x5ad91B2f07a5fb7BA13C39940fa16826e9bBd5b9",
+      "txHash": "0x2ac125c7e604f416b116ad754c2a2872bbe3fd484a925990f7df20deb46ef669",
+      "layout": {
+        "solcVersion": "0.8.28",
+        "storage": [
+          {
+            "label": "lockedDeposits",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_mapping(t_address,t_array(t_struct(Deposit)14677_storage)dyn_storage)))",
+            "contract": "DepositLockPlugin",
+            "src": "src/plugins/DepositLockPlugin.sol:60"
+          },
+          {
+            "label": "globalLockedShares",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_mapping(t_address,t_uint256)))",
+            "contract": "DepositLockPlugin",
+            "src": "src/plugins/DepositLockPlugin.sol:65"
+          },
+          {
+            "label": "projectLockPeriods",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "DepositLockPlugin",
+            "src": "src/plugins/DepositLockPlugin.sol:71"
+          },
+          {
+            "label": "projectGlobalUnlockTime",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "DepositLockPlugin",
+            "src": "src/plugins/DepositLockPlugin.sol:77"
+          },
+          {
+            "label": "projectLockModes",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_enum(LockMode)14671))",
+            "contract": "DepositLockPlugin",
+            "src": "src/plugins/DepositLockPlugin.sol:83"
+          },
+          {
+            "label": "depositPointers",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_mapping(t_address,t_uint256)))",
+            "contract": "DepositLockPlugin",
+            "src": "src/plugins/DepositLockPlugin.sol:89"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)307_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)151_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_struct(Deposit)14677_storage)dyn_storage": {
+            "label": "struct DepositLockPlugin.Deposit[]",
+            "numberOfBytes": "32"
+          },
+          "t_enum(LockMode)14671": {
+            "label": "enum DepositLockPlugin.LockMode",
+            "members": [
+              "Unset",
+              "Variable",
+              "Global"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_array(t_struct(Deposit)14677_storage)dyn_storage)": {
+            "label": "mapping(address => struct DepositLockPlugin.Deposit[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_enum(LockMode)14671))": {
+            "label": "mapping(address => mapping(uint256 => enum DepositLockPlugin.LockMode))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_mapping(t_address,t_array(t_struct(Deposit)14677_storage)dyn_storage)))": {
+            "label": "mapping(address => mapping(uint256 => mapping(address => struct DepositLockPlugin.Deposit[])))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_mapping(t_address,t_uint256)))": {
+            "label": "mapping(address => mapping(uint256 => mapping(address => uint256)))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_enum(LockMode)14671)": {
+            "label": "mapping(uint256 => enum DepositLockPlugin.LockMode)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_array(t_struct(Deposit)14677_storage)dyn_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct DepositLockPlugin.Deposit[]))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(uint256 => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Deposit)14677_storage": {
+            "label": "struct DepositLockPlugin.Deposit",
+            "members": [
+              {
+                "label": "shares",
+                "type": "t_uint192",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "lockTime",
+                "type": "t_uint64",
+                "offset": 24,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint192": {
+            "label": "uint192",
+            "numberOfBytes": "24"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
           }
         },
         "namespaces": {
