@@ -64,7 +64,6 @@ export const checkSetup = async (
     provider: typeof ethers.provider,
     {
         owner,
-        operator,
         yieldExtractor,
         oneInchRouter,
         strategyAuthority,

@@ -12,6 +12,11 @@
     "accessFacet": "0x90b8695EDCdEfAFA678Df6d819307573f7B1a18C",
     "managementFacet": "0x95a02e5ac5Ca7D633287f922f6FFe1129F92E39C",
     "clientsFacet": "0x500250021a0C72d2Cf86b389b1cb953Cbf626b07",
-    "vaults": {},
-    "strategies": {}
+    "vaults": {
+        "USDCe": "0x56b0c5C989C65e712463278976ED26D6e07592ab",
+        "WS": "0x6880bb001417f123f824c573A07a991e0cD00daC"
+    },
+    "strategies": {
+        "aaveV3": "0x1a0170FF66169FF3FC14c4A5822f97c835FF9F43"
+    }
 }

@@ -26,6 +26,8 @@ export const ADDRESSES = {
         USDCe: '0x29219dd400f2bf60e5a23d13be72b486d4038894',
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
         OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
+        URI: 'https://lite.api.yelay.io/sonic/metadata/{id}',
+        AAVE_V3_POOL: '0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3',
     },
     1: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
@@ -55,7 +57,6 @@ export const ADDRESSES = {
 
 export type ExpectedAddresses = {
     owner: string;
-    operator: string;
     yieldExtractor: string;
     oneInchRouter: string;
     strategyAuthority: string[];
@@ -74,7 +75,6 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
         if (test) {
             return {
                 owner: ADDRESSES[chainId].OWNER,
-                operator: ADDRESSES[chainId].OPERATOR,
                 yieldExtractor: ADDRESSES[chainId].OPERATOR,
                 oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
                 strategyAuthority: [ADDRESSES[chainId].OPERATOR],
@@ -87,7 +87,6 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
         }
         return {
             owner: ADDRESSES[chainId].OWNER,
-            operator: ADDRESSES[chainId].OPERATOR,
             yieldExtractor: ADDRESSES[chainId].OWNER,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
@@ -100,7 +99,6 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
     } else if (chainId === 1) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            operator: ADDRESSES[chainId].OPERATOR,
             yieldExtractor: ADDRESSES[chainId].OWNER,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
