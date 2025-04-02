@@ -286,7 +286,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /// @inheritdoc IFundsFacet
-    function accrueFee() public notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function accrueFee() public notPaused {
         _accrueFee();
     }
 
