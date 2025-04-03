@@ -23,6 +23,7 @@ export const ADDRESSES = {
     },
     146: {
         WS: '0x039e2fb66102314ce7b64ce5ce3e5183bc94ad38',
+        WETH: '0x50c42deacd8fc9773493ed674b675be577f2634b',
         USDCe: '0x29219dd400f2bf60e5a23d13be72b486d4038894',
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
         OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
