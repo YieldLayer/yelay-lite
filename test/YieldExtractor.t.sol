@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import {Test, console} from "forge-std/Test.sol";
 
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {IAccessControlDefaultAdminRules} from
+    "@openzeppelin/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
 import {PausableUpgradeable} from "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -515,5 +517,36 @@ contract YieldExtractorTest is Test {
         vm.prank(user);
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         yieldExtractor.claim(payload);
+    }
+
+    function test_ownership_transfer() public {
+        assertEq(owner, yieldExtractor.owner());
+
+        vm.startPrank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControlDefaultAdminRules.AccessControlEnforcedDefaultAdminRules.selector)
+        );
+        yieldExtractor.grantRole(0x00, yieldPublisher);
+
+        yieldExtractor.beginDefaultAdminTransfer(yieldPublisher);
+        vm.stopPrank();
+
+        assertEq(owner, yieldExtractor.owner());
+        {
+            (address newOwner,) = yieldExtractor.pendingDefaultAdmin();
+            assertEq(newOwner, yieldPublisher);
+        }
+
+        vm.warp(block.timestamp + 1);
+
+        vm.startPrank(yieldPublisher);
+        yieldExtractor.acceptDefaultAdminTransfer();
+        vm.stopPrank();
+
+        assertEq(yieldPublisher, yieldExtractor.owner());
+        {
+            (address newOwner,) = yieldExtractor.pendingDefaultAdmin();
+            assertEq(newOwner, address(0));
+        }
     }
 }
