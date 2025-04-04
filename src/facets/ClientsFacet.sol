@@ -23,6 +23,7 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
         require(reservedProjects > 0, LibErrors.ReservedProjectsIsZero());
         require(clientName != bytes32(0), LibErrors.ClientNameEmpty());
         require(clientStorage.isClientNameTaken[clientName] == false, LibErrors.ClientNameTaken());
+        require(clientStorage.ownerToClientData[clientOwner].minProjectId == 0, LibErrors.ClientOwnerReserved());
         uint128 minProjectId = SafeCast.toUint128(clientStorage.lastProjectId + 1);
         uint128 maxProjectId = minProjectId + reservedProjects - 1;
         clientStorage.ownerToClientData[clientOwner] =

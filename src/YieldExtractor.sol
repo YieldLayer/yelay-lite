@@ -12,33 +12,33 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 
 /**
- * @title RewardsDistributor
+ * @title YieldExtractor
  * @notice Contract for distributing yield to users through Merkle proofs
  * @dev This contract manages the distribution of yield shares to users based on their earned yield
  *      in the YelayLite vault system. The distribution happens through a Merkle tree system where:
- *      - A root manager (admin) periodically adds new Merkle roots containing user reward data
- *      - Each root represents a cycle of rewards
- *      - Users can claim their rewards by providing valid Merkle proofs
- *      - The contract tracks claimed rewards to prevent double-claiming
- *      - Rewards are distributed as the underlying token following direct redeemal of the shares on the vault.
+ *      - A root manager (admin) periodically adds new Merkle roots containing user yield data
+ *      - Each root represents a cycle of yield
+ *      - Clients / Users can claim the yield by providing valid Merkle proofs
+ *      - The contract tracks claimed yield to prevent double-claiming
+ *      - Yield is distributed as the underlying token following direct redeemal of the shares on the vault.
  *
  * Key features:
- * - Merkle-based reward distribution system
- * - Cycle-based rewards tracking
+ * - Merkle-based yield distribution system
+ * - Cycle-based yield tracking
  * - Double-claim prevention
  * - Pausable claim functionality
  * - Upgradeable contract design
  */
-contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155HolderUpgradeable, UUPSUpgradeable {
+contract YieldExtractor is OwnableUpgradeable, PausableUpgradeable, ERC1155HolderUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     uint256 constant YIELD_PROJECT_ID = 0;
 
     /**
-     * @notice Request data structure for claiming rewards
+     * @notice Request data structure for claiming yield
      * @param yelayLiteVault Address of the YelayLite vault contract
      * @param projectId ID of the project in the vault
-     * @param cycle Reward cycle number
+     * @param cycle Yield cycle number
      * @param yieldSharesTotal Total amount of yield shares to be claimed
      * @param proof Merkle proof array for verification
      */
@@ -76,14 +76,14 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
     event PoolRootUpdated(uint256 indexed cycle, Root previousRoot, Root newRoot);
 
     /**
-     * @notice Claimed rewards
+     * @notice Claimed yield
      * @param user claimer
      * @param yelayLiteVault yelayLiteVault address
      * @param projectId project id
      * @param cycle cycle number
      * @param amount claimed amount
      */
-    event RewardsClaimed(
+    event YieldClaimed(
         address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
     );
 
@@ -127,7 +127,7 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
     mapping(address => mapping(address => mapping(uint256 => uint256))) public yieldSharesClaimed;
 
     /**
-     * @notice Current cycle count for reward distributions
+     * @notice Current cycle count for yield distributions
      */
     uint256 public cycleCount;
 
@@ -219,7 +219,7 @@ contract RewardsDistributor is OwnableUpgradeable, PausableUpgradeable, ERC1155H
 
             IFundsFacet(data[i].yelayLiteVault).redeem(toClaim, YIELD_PROJECT_ID, msg.sender);
 
-            emit RewardsClaimed(msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim);
+            emit YieldClaimed(msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim);
         }
     }
 
