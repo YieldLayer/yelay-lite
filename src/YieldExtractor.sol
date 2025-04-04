@@ -10,6 +10,8 @@ import {UUPSUpgradeable} from "@openzeppelin-upgradeable/contracts/proxy/utils/U
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import {LibEvents} from "src/libraries/LibEvents.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
@@ -67,50 +69,6 @@ contract YieldExtractor is
         bytes32 hash;
         uint256 blockNumber;
     }
-
-    /**
-     * @notice New root was added to the pool
-     * @param cycle Number of new cycle
-     * @param root Newly added root
-     */
-    event PoolRootAdded(uint256 indexed cycle, Root root);
-
-    /**
-     * @notice Pool's root was updated
-     * @param cycle Number of cycle that was updated
-     * @param previousRoot Previous root for the cycle
-     * @param newRoot New root for the cycle
-     */
-    event PoolRootUpdated(uint256 indexed cycle, Root previousRoot, Root newRoot);
-
-    /**
-     * @notice Claimed yield
-     * @param user claimer
-     * @param yelayLiteVault yelayLiteVault address
-     * @param projectId project id
-     * @param cycle cycle number
-     * @param amount claimed amount
-     */
-    event YieldClaimed(
-        address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
-    );
-
-    /**
-     * @notice Thrown when a Merkle proof is invalid
-     * @param idx Index of the invalid claim request
-     */
-    error InvalidProof(uint256 idx);
-
-    /**
-     * @notice Thrown when a proof has already been claimed
-     * @param idx Index of the already claimed proof
-     */
-    error ProofAlreadyClaimed(uint256 idx);
-
-    /**
-     * @notice Thrown when an invalid cycle number is provided
-     */
-    error InvalidCycle();
 
     /**
      * @notice Merkle tree root for each cycle
@@ -182,7 +140,7 @@ contract YieldExtractor is
         cycleCount++;
         roots[cycleCount] = root;
 
-        emit PoolRootAdded(cycleCount, root);
+        emit LibEvents.PoolRootAdded(cycleCount, root.hash, root.blockNumber);
     }
 
     /**
@@ -191,12 +149,12 @@ contract YieldExtractor is
      * @param cycle Cycle to update
      */
     function updateTreeRoot(Root memory root, uint256 cycle) external onlyRole(LibRoles.YIELD_PUBLISHER) {
-        require(cycle <= cycleCount, InvalidCycle());
+        require(cycle <= cycleCount, LibErrors.InvalidCycle());
 
         Root memory previousRoot = roots[cycle];
         roots[cycle] = root;
 
-        emit PoolRootUpdated(cycle, previousRoot, root);
+        emit LibEvents.PoolRootUpdated(cycle, previousRoot.hash, root.hash, root.blockNumber);
     }
 
     /**
@@ -206,8 +164,8 @@ contract YieldExtractor is
     function claim(ClaimRequest[] calldata data) external whenNotPaused {
         for (uint256 i; i < data.length; ++i) {
             bytes32 leaf = _getLeaf(data[i], msg.sender);
-            require(!isLeafClaimed[leaf], ProofAlreadyClaimed(i));
-            require(_verify(data[i], leaf), InvalidProof(i));
+            require(!isLeafClaimed[leaf], LibErrors.ProofAlreadyClaimed(i));
+            require(_verify(data[i], leaf), LibErrors.InvalidProof(i));
 
             isLeafClaimed[leaf] = true;
 
@@ -217,7 +175,7 @@ contract YieldExtractor is
 
             IFundsFacet(data[i].yelayLiteVault).redeem(toClaim, YIELD_PROJECT_ID, msg.sender);
 
-            emit YieldClaimed(msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim);
+            emit LibEvents.YieldClaimed(msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim);
         }
     }
 
