@@ -45,9 +45,6 @@ import {Utils} from "./Utils.sol";
  * console.log('Tree(2):', tree.dump());
  */
 contract YieldExtractorTest is Test {
-    event PoolRootAdded(uint256 indexed cycle, YieldExtractor.Root root);
-    event PoolRootUpdated(uint256 indexed cycle, YieldExtractor.Root previousRoot, YieldExtractor.Root newRoot);
-
     YieldExtractor public yieldExtractor;
     IYelayLiteVault public mockVault;
     MockToken token;
@@ -111,18 +108,6 @@ contract YieldExtractorTest is Test {
         mockVault.accrueFee();
     }
 
-    function addTreeRoot(bytes32 hash) internal returns (YieldExtractor.Root memory root) {
-        root = YieldExtractor.Root({hash: hash, blockNumber: block.number});
-        uint256 cycleBefore = yieldExtractor.cycleCount();
-        vm.expectEmit(true, true, true, true);
-        emit PoolRootAdded(cycleBefore + 1, root);
-        yieldExtractor.addTreeRoot(root);
-
-        uint256 cycle = yieldExtractor.cycleCount();
-        assertEq(cycle, cycleBefore + 1);
-        assertEq(getTreeRoot(cycle), hash);
-    }
-
     function getTreeRoot(uint256 cycle) internal view returns (bytes32 hash) {
         (hash,) = yieldExtractor.roots(cycle);
     }
@@ -133,7 +118,7 @@ contract YieldExtractorTest is Test {
         vm.startPrank(yieldPublisher);
         YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
         vm.expectEmit(true, true, true, true);
-        emit PoolRootAdded(cycleBefore + 1, root);
+        emit LibEvents.PoolRootAdded(cycleBefore + 1, root.hash, root.blockNumber);
         yieldExtractor.addTreeRoot(root);
         vm.stopPrank();
 
@@ -177,7 +162,7 @@ contract YieldExtractorTest is Test {
 
         vm.startPrank(yieldPublisher);
         vm.expectEmit(true, true, true, true);
-        emit PoolRootUpdated(cycle, root0, root1);
+        emit LibEvents.PoolRootUpdated(cycle, root0.hash, root1.hash, root1.blockNumber);
         yieldExtractor.updateTreeRoot(root1, 1);
         vm.stopPrank();
 
@@ -190,7 +175,7 @@ contract YieldExtractorTest is Test {
         YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0);
 
-        vm.expectRevert(abi.encodeWithSelector(YieldExtractor.InvalidCycle.selector));
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.InvalidCycle.selector));
         yieldExtractor.updateTreeRoot(root0, 10);
         vm.stopPrank();
     }
@@ -324,6 +309,8 @@ contract YieldExtractorTest is Test {
         YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
         payload[0] = data;
         vm.prank(user);
+        vm.expectEmit(true, true, true, true);
+        emit LibEvents.YieldClaimed(user, data.yelayLiteVault, data.projectId, data.cycle, data.yieldSharesTotal);
         yieldExtractor.claim(payload);
 
         assertEq(token.balanceOf(user), yieldTotal0);
@@ -395,7 +382,7 @@ contract YieldExtractorTest is Test {
 
         vm.startPrank(user);
         yieldExtractor.claim(payload);
-        vm.expectRevert(abi.encodeWithSelector(YieldExtractor.ProofAlreadyClaimed.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ProofAlreadyClaimed.selector, 0));
         yieldExtractor.claim(payload);
         vm.stopPrank();
     }
@@ -421,7 +408,7 @@ contract YieldExtractorTest is Test {
         payload[0] = data;
 
         vm.startPrank(user);
-        vm.expectRevert(abi.encodeWithSelector(YieldExtractor.InvalidProof.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.InvalidProof.selector, 0));
         yieldExtractor.claim(payload);
         vm.stopPrank();
     }
