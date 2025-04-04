@@ -23,9 +23,12 @@ export const ADDRESSES = {
     },
     146: {
         WS: '0x039e2fb66102314ce7b64ce5ce3e5183bc94ad38',
-        USDCe: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+        WETH: '0x50c42deacd8fc9773493ed674b675be577f2634b',
+        USDCe: '0x29219dd400f2bf60e5a23d13be72b486d4038894',
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
         OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
+        URI: 'https://lite.api.yelay.io/sonic/metadata/{id}',
+        AAVE_V3_POOL: '0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3',
     },
     1: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
@@ -55,7 +58,6 @@ export const ADDRESSES = {
 
 export type ExpectedAddresses = {
     owner: string;
-    operator: string;
     yieldExtractor: string;
     oneInchRouter: string;
     strategyAuthority: string[];
@@ -74,7 +76,6 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
         if (test) {
             return {
                 owner: ADDRESSES[chainId].OWNER,
-                operator: ADDRESSES[chainId].OPERATOR,
                 yieldExtractor: ADDRESSES[chainId].OPERATOR,
                 oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
                 strategyAuthority: [ADDRESSES[chainId].OPERATOR],
@@ -87,7 +88,6 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
         }
         return {
             owner: ADDRESSES[chainId].OWNER,
-            operator: ADDRESSES[chainId].OPERATOR,
             yieldExtractor: ADDRESSES[chainId].OWNER,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
@@ -100,9 +100,20 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
     } else if (chainId === 1) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            operator: ADDRESSES[chainId].OPERATOR,
             yieldExtractor: ADDRESSES[chainId].OWNER,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
+            strategyAuthority: [ADDRESSES[chainId].OWNER],
+            fundsOperator: [ADDRESSES[chainId].OPERATOR],
+            queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
+            pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            unpauser: [ADDRESSES[chainId].OWNER],
+        };
+    } else if (chainId === 146) {
+        return {
+            owner: ADDRESSES[chainId].OWNER,
+            yieldExtractor: ADDRESSES[chainId].OWNER,
+            oneInchRouter: ethers.ZeroAddress,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OPERATOR],
             queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],

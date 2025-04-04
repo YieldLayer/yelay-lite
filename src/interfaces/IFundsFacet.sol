@@ -159,7 +159,6 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
 
     /**
      * @dev Accrues fees.
-     * @dev Callable by FUNDS_OPERATOR.
      */
     function accrueFee() external;
 

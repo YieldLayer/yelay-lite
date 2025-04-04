@@ -212,12 +212,7 @@ contract CompoundTest is Test {
         uint256 lastTotalAssetsTimestampBefore = yelayLiteVault.lastTotalAssetsTimestamp();
         assertEq(totalSupply0Before, 0);
 
-        vm.expectRevert();
         yelayLiteVault.accrueFee();
-
-        vm.startPrank(owner);
-        yelayLiteVault.accrueFee();
-        vm.stopPrank();
 
         assertGt(yelayLiteVault.balanceOf(yieldExtractor, 0), 0);
         assertGt(yelayLiteVault.totalSupply(), totalSupplyBefore);

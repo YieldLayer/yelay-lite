@@ -5,7 +5,12 @@ import { deployInfra } from './../utils/deploy';
 async function main() {
     const [deployer] = await ethers.getSigners();
 
-    await deployInfra(deployer, deployer.address, ADDRESSES[146].WS, './deployments/sonic.json');
+    await deployInfra(
+        deployer,
+        ADDRESSES[146].OWNER,
+        ADDRESSES[146].WS,
+        './deployments/sonic.json',
+    );
 }
 
 main()
