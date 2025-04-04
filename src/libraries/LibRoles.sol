@@ -19,4 +19,7 @@ library LibRoles {
 
     // 0x82b32d9ab5100db08aeb9a0e08b422d14851ec118736590462bf9c085a6e9448
     bytes32 constant UNPAUSER = keccak256("UNPAUSER");
+
+    // 0xe1e438f510a6787349796e72348290fc4309699b8925cfe7df77feeaca3b7020
+    bytes32 constant YIELD_PUBLISHER = keccak256("YIELD_PUBLISHER");
 }
