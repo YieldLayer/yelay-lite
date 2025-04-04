@@ -21,7 +21,7 @@ import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
  * @notice Contract for distributing yield to users through Merkle proofs
  * @dev This contract manages the distribution of yield shares to users based on their earned yield
  *      in the YelayLite vault system. The distribution happens through a Merkle tree system where:
- *      - A root manager (admin) periodically adds new Merkle roots containing user yield data
+ *      - A root manager (YIELD_PUBLISHER) periodically adds new Merkle roots containing user yield data
  *      - Each root represents a cycle of yield
  *      - Clients / Users can claim the yield by providing valid Merkle proofs
  *      - The contract tracks claimed yield to prevent double-claiming
@@ -71,6 +71,11 @@ contract YieldExtractor is
     }
 
     /**
+     * @notice Current cycle count for yield distributions
+     */
+    uint256 public cycleCount;
+
+    /**
      * @notice Merkle tree root for each cycle
      */
     mapping(uint256 => Root) public roots;
@@ -82,14 +87,9 @@ contract YieldExtractor is
 
     /**
      * @notice Tracks yield shares claimed by users
-     * @dev Mapping structure: user => yelayLiteVault => projectId => amount
+     * @dev Mapping structure: user => yelayLiteVault => projectId => shares
      */
     mapping(address => mapping(address => mapping(uint256 => uint256))) public yieldSharesClaimed;
-
-    /**
-     * @notice Current cycle count for yield distributions
-     */
-    uint256 public cycleCount;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
