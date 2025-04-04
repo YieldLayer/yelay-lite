@@ -2,12 +2,15 @@
 pragma solidity ^0.8.28;
 
 import {PausableUpgradeable} from "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {AccessControlDefaultAdminRulesUpgradeable} from
+    "@openzeppelin-upgradeable/contracts/access/extensions/AccessControlDefaultAdminRulesUpgradeable.sol";
 import {ERC1155HolderUpgradeable} from
     "@openzeppelin-upgradeable/contracts/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 
@@ -29,7 +32,12 @@ import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
  * - Pausable claim functionality
  * - Upgradeable contract design
  */
-contract YieldExtractor is OwnableUpgradeable, PausableUpgradeable, ERC1155HolderUpgradeable, UUPSUpgradeable {
+contract YieldExtractor is
+    PausableUpgradeable,
+    ERC1155HolderUpgradeable,
+    AccessControlDefaultAdminRulesUpgradeable,
+    UUPSUpgradeable
+{
     using SafeERC20 for IERC20;
 
     uint256 constant YIELD_PROJECT_ID = 0;
@@ -105,12 +113,6 @@ contract YieldExtractor is OwnableUpgradeable, PausableUpgradeable, ERC1155Holde
     error InvalidCycle();
 
     /**
-     * @notice Thrown when sender is not the root manager
-     * @param sender Address of the unauthorized sender
-     */
-    error NotRootManager(address sender);
-
-    /**
      * @notice Merkle tree root for each cycle
      */
     mapping(uint256 => Root) public roots;
@@ -131,11 +133,6 @@ contract YieldExtractor is OwnableUpgradeable, PausableUpgradeable, ERC1155Holde
      */
     uint256 public cycleCount;
 
-    /**
-     * @notice Address authorized to manage Merkle roots
-     */
-    address public rootManager;
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -144,43 +141,44 @@ contract YieldExtractor is OwnableUpgradeable, PausableUpgradeable, ERC1155Holde
     /**
      * @dev Initializes the contract with the given owner.
      * @param owner The address of the owner.
-     * @param _rootManager The address of the root manager.
+     * @param _yieldPublisher The yield publisher address with rights to update Merkle root
      */
-    function initialize(address owner, address _rootManager) public initializer {
-        __Ownable_init(owner);
+    function initialize(address owner, address _yieldPublisher) public initializer {
         __ERC1155Holder_init();
         __UUPSUpgradeable_init();
+        __AccessControlDefaultAdminRules_init(0, owner);
 
-        rootManager = _rootManager;
+        _grantRole(LibRoles.YIELD_PUBLISHER, _yieldPublisher);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC1155HolderUpgradeable, AccessControlDefaultAdminRulesUpgradeable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 
     /**
      * @notice Pause claiming
      */
-    function pause() external onlyOwner {
+    function pause() external onlyRole(LibRoles.PAUSER) {
         _pause();
     }
 
     /**
      * @notice Unpause claiming
      */
-    function unpause() external onlyOwner {
+    function unpause() external onlyRole(LibRoles.UNPAUSER) {
         _unpause();
-    }
-
-    /**
-     * @notice Update root manager
-     * @param _rootManager New root manager
-     */
-    function updateRootManager(address _rootManager) external onlyOwner {
-        rootManager = _rootManager;
     }
 
     /**
      * @notice Add a Merkle tree root for a new cycle
      * @param root Root to add
      */
-    function addTreeRoot(Root memory root) external onlyRootManager {
+    function addTreeRoot(Root memory root) external onlyRole(LibRoles.YIELD_PUBLISHER) {
         cycleCount++;
         roots[cycleCount] = root;
 
@@ -192,7 +190,7 @@ contract YieldExtractor is OwnableUpgradeable, PausableUpgradeable, ERC1155Holde
      * @param root New root
      * @param cycle Cycle to update
      */
-    function updateTreeRoot(Root memory root, uint256 cycle) external onlyRootManager {
+    function updateTreeRoot(Root memory root, uint256 cycle) external onlyRole(LibRoles.YIELD_PUBLISHER) {
         require(cycle <= cycleCount, InvalidCycle());
 
         Root memory previousRoot = roots[cycle];
@@ -257,20 +255,8 @@ contract YieldExtractor is OwnableUpgradeable, PausableUpgradeable, ERC1155Holde
     }
 
     /**
-     * @notice Modifier implementation for root manager access control
-     */
-    function _onlyRootManager() internal view {
-        require(msg.sender == rootManager, NotRootManager(msg.sender));
-    }
-
-    /**
      * @dev UUPS upgrade authorization function.
      * Only the owner may upgrade.
      */
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-
-    modifier onlyRootManager() {
-        _onlyRootManager();
-        _;
-    }
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }

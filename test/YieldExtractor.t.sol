@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
 
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {PausableUpgradeable} from "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -63,6 +64,11 @@ contract YieldExtractorTest is Test {
     uint256 constant yieldTotal1 = 5010000000000000000;
     uint256 constant yieldTotal_fail = yieldTotal0 + 1;
 
+    address owner = address(0x01);
+    address yieldPublisher = address(0x02);
+    address pauser = address(0x03);
+    address unpauser = address(0x04);
+
     address user = 0x1111111111111111111111111111111111111111;
     address user_fail = address(bytes20(uint160(user) + 1));
 
@@ -76,8 +82,7 @@ contract YieldExtractorTest is Test {
         yieldExtractor = YieldExtractor(
             address(
                 new ERC1967Proxy(
-                    address(impl),
-                    abi.encodeWithSelector(YieldExtractor.initialize.selector, address(this), address(this))
+                    address(impl), abi.encodeWithSelector(YieldExtractor.initialize.selector, owner, yieldPublisher)
                 )
             )
         );
@@ -123,27 +128,71 @@ contract YieldExtractorTest is Test {
     }
 
     function test_addRoot_success() public {
-        addTreeRoot(treeRoot0);
+        uint256 cycleBefore = yieldExtractor.cycleCount();
+
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        vm.expectEmit(true, true, true, true);
+        emit PoolRootAdded(cycleBefore + 1, root);
+        yieldExtractor.addTreeRoot(root);
+        vm.stopPrank();
+
+        uint256 cycle = yieldExtractor.cycleCount();
+        assertEq(cycle, cycleBefore + 1);
+        assertEq(getTreeRoot(cycle), treeRoot0);
+    }
+
+    function test_addRoot_failure() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), LibRoles.YIELD_PUBLISHER
+            )
+        );
+        YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root);
     }
 
     function test_updateRoot_success() public {
-        YieldExtractor.Root memory root0 = addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
 
         uint256 cycle = yieldExtractor.cycleCount();
 
-        YieldExtractor.Root memory root1 = addTreeRoot(treeRoot1);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root1 = YieldExtractor.Root({hash: treeRoot1, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root1);
+        vm.stopPrank();
 
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), LibRoles.YIELD_PUBLISHER
+            )
+        );
+        yieldExtractor.updateTreeRoot(root1, 1);
+
+        assertEq(getTreeRoot(1), treeRoot0);
+        assertEq(getTreeRoot(2), treeRoot1);
+
+        vm.startPrank(yieldPublisher);
         vm.expectEmit(true, true, true, true);
         emit PoolRootUpdated(cycle, root0, root1);
         yieldExtractor.updateTreeRoot(root1, 1);
+        vm.stopPrank();
 
         assertEq(getTreeRoot(1), treeRoot1);
+        assertEq(getTreeRoot(2), treeRoot1);
     }
 
     function test_updateRoot_revertInvalidCycle() public {
-        YieldExtractor.Root memory root0 = addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+
         vm.expectRevert(abi.encodeWithSelector(YieldExtractor.InvalidCycle.selector));
         yieldExtractor.updateTreeRoot(root0, 10);
+        vm.stopPrank();
     }
 
     function test_verifyProof_success() public {
@@ -157,7 +206,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
         assertTrue(yieldExtractor.verify(data, user));
     }
 
@@ -172,7 +224,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
     }
 
@@ -188,7 +243,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
     }
 
@@ -203,7 +261,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
         // Using a different user than user
         assertFalse(yieldExtractor.verify(data, user_fail));
     }
@@ -219,7 +280,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal_fail,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
     }
 
@@ -234,7 +298,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
     }
 
@@ -249,7 +316,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
 
         YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
         payload[0] = data;
@@ -264,7 +334,10 @@ contract YieldExtractorTest is Test {
         YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
 
         // Do cycle 1 - user has 5 shares to claim
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
         proof[0] = proof0;
         YieldExtractor.ClaimRequest memory data1 = YieldExtractor.ClaimRequest({
             yelayLiteVault: address(mockVault),
@@ -281,7 +354,10 @@ contract YieldExtractorTest is Test {
         assertEq(yieldExtractor.yieldSharesClaimed(user, address(mockVault), 1), yieldTotal0);
 
         // Do cycle 2 - user has another .01 shares to claim, for a total of 5.01
-        addTreeRoot(treeRoot1);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root1 = YieldExtractor.Root({hash: treeRoot1, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root1);
+        vm.stopPrank();
         proof[0] = proof1;
         YieldExtractor.ClaimRequest memory data2 = YieldExtractor.ClaimRequest({
             yelayLiteVault: address(mockVault),
@@ -309,7 +385,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
 
         YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
         payload[0] = data;
@@ -333,7 +412,10 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
 
         YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
         payload[0] = data;
@@ -342,6 +424,78 @@ contract YieldExtractorTest is Test {
         vm.expectRevert(abi.encodeWithSelector(YieldExtractor.InvalidProof.selector, 0));
         yieldExtractor.claim(payload);
         vm.stopPrank();
+    }
+
+    function test_roles_pausing() public {
+        vm.startPrank(pauser);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, pauser, LibRoles.PAUSER)
+        );
+        yieldExtractor.pause();
+        vm.stopPrank();
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), 0x00)
+        );
+        yieldExtractor.grantRole(LibRoles.PAUSER, pauser);
+
+        vm.startPrank(owner);
+        yieldExtractor.grantRole(LibRoles.PAUSER, pauser);
+        vm.stopPrank();
+
+        assertTrue(yieldExtractor.hasRole(LibRoles.PAUSER, pauser));
+
+        assertFalse(yieldExtractor.paused());
+
+        vm.startPrank(pauser);
+        yieldExtractor.pause();
+        vm.stopPrank();
+
+        assertTrue(yieldExtractor.paused());
+
+        vm.startPrank(unpauser);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, unpauser, LibRoles.UNPAUSER
+            )
+        );
+        yieldExtractor.unpause();
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        yieldExtractor.grantRole(LibRoles.UNPAUSER, unpauser);
+        vm.stopPrank();
+
+        vm.startPrank(unpauser);
+        yieldExtractor.unpause();
+        assertFalse(yieldExtractor.paused());
+        vm.stopPrank();
+    }
+
+    function test_roles_upgrade() public {
+        address newImpl = address(new YieldExtractor());
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), 0x00)
+        );
+        yieldExtractor.upgradeToAndCall(newImpl, "");
+
+        bytes32 implSlot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        {
+            bytes32 implBytes = vm.load(address(yieldExtractor), implSlot);
+            address impl = address(uint160(uint256(implBytes)));
+            console.log(impl);
+            assertNotEq(impl, newImpl);
+        }
+
+        vm.startPrank(owner);
+        yieldExtractor.upgradeToAndCall(newImpl, "");
+        vm.stopPrank();
+
+        {
+            bytes32 implBytes = vm.load(address(yieldExtractor), implSlot);
+            address impl = address(uint160(uint256(implBytes)));
+            assertEq(impl, newImpl);
+        }
     }
 
     function test_claim_revertSystemPaused() public {
@@ -356,12 +510,20 @@ contract YieldExtractorTest is Test {
             yieldSharesTotal: yieldTotal0,
             proof: proof
         });
-        addTreeRoot(treeRoot0);
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0);
+        vm.stopPrank();
 
         YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
         payload[0] = data;
 
+        vm.startPrank(owner);
+        yieldExtractor.grantRole(LibRoles.PAUSER, pauser);
+        vm.stopPrank();
+        vm.startPrank(pauser);
         yieldExtractor.pause();
+        vm.stopPrank();
 
         vm.prank(user);
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
