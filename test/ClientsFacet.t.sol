@@ -46,8 +46,10 @@ contract ClientsFacetTest is Test {
         vm.expectRevert(abi.encodeWithSelector(LibErrors.ClientNameEmpty.selector));
         yelayLiteVault.createClient(client, 1000, "");
         yelayLiteVault.createClient(client, 1000, "client");
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ClientOwnerReserved.selector));
+        yelayLiteVault.createClient(client, 2000, "client2");
         vm.expectRevert(abi.encodeWithSelector(LibErrors.ClientNameTaken.selector));
-        yelayLiteVault.createClient(client, 2000, "client");
+        yelayLiteVault.createClient(address(0x123456), 2000, "client");
         vm.stopPrank();
 
         assertEq(yelayLiteVault.lastProjectId(), 1999);
