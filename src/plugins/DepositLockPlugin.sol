@@ -142,10 +142,6 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @return shares The amount of vault shares received.
      */
     function depositLocked(address vault, uint256 projectId, uint256 assets) external returns (uint256 shares) {
-        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
-        if (globalUnlockTime > 0) {
-            require(block.timestamp < globalUnlockTime, LibErrors.GlobalUnlockTimeReached(globalUnlockTime));
-        }
         address underlyingAsset = IYelayLiteVault(vault).underlyingAsset();
         ERC20(underlyingAsset).safeTransferFrom(msg.sender, address(this), assets);
         ERC20(underlyingAsset).safeApprove(vault, assets);
@@ -349,6 +345,10 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      * @param shares The amount of shares to lock.
      */
     function _addLockedDeposit(address vault, uint256 projectId, uint256 shares) internal {
+        uint256 globalUnlockTime = projectGlobalUnlockTime[vault][projectId];
+        if (globalUnlockTime > 0) {
+            require(block.timestamp < globalUnlockTime, LibErrors.GlobalUnlockTimeReached(globalUnlockTime));
+        }
         if (projectLockModes[vault][projectId] == LockMode.Global) {
             globalLockedShares[vault][projectId][msg.sender] += shares;
         } else if (projectLockModes[vault][projectId] == LockMode.Variable) {

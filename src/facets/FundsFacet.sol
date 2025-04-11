@@ -224,7 +224,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external notPaused {
         require(
             LibClients._isProjectActive(fromProjectId) && LibClients._isProjectActive(toProjectId)
-                && LibClients._sameClient(fromProjectId, toProjectId),
+                && LibClients._sameClient(fromProjectId, toProjectId) && fromProjectId != toProjectId,
             LibErrors.PositionMigrationForbidden()
         );
         _accrueFee();

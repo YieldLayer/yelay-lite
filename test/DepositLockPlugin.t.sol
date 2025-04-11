@@ -116,6 +116,21 @@ contract DepositLockPluginTest is Test {
         vm.stopPrank();
     }
 
+    function test_depositLocked_revertsIfGlobalUnlockTimeReached() public {
+        uint256 globalUnlockTime = block.timestamp + 1 days;
+        vm.prank(projectOwner);
+        depositLock.updateGlobalUnlockTime(address(mockVault), projectId, globalUnlockTime);
+
+        vm.warp(globalUnlockTime);
+
+        uint256 depositAmount = 1000 ether;
+        vm.startPrank(user);
+        underlying.approve(address(depositLock), depositAmount);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.GlobalUnlockTimeReached.selector, globalUnlockTime));
+        depositLock.depositLocked(address(mockVault), projectId, depositAmount);
+        vm.stopPrank();
+    }
+
     function test_depositLocked_success() public {
         uint256 newLockPeriod = 1 days;
         vm.prank(projectOwner);
@@ -371,6 +386,29 @@ contract DepositLockPluginTest is Test {
         vm.prank(user);
         vm.expectRevert(abi.encodeWithSelector(LibErrors.NotEnoughShares.selector, migrateAmount, depositAmount));
         depositLock.migrateLocked(address(mockVault), projectId, toProjectId, migrateAmount);
+    }
+
+    function test_migrateLocked_revertsIfGlobalUnlockTimeReached() public {
+        uint256 newLockPeriod = 1 days;
+        uint256 globalLockPeriod = block.timestamp + newLockPeriod;
+        uint256 toProjectId = 456;
+        vm.startPrank(projectOwner);
+        depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
+        depositLock.updateGlobalUnlockTime(address(mockVault), toProjectId, globalLockPeriod);
+        vm.stopPrank();
+
+        uint256 depositAmount = 500 ether;
+
+        vm.startPrank(user);
+        underlying.approve(address(depositLock), depositAmount);
+        depositLock.depositLocked(address(mockVault), projectId, depositAmount);
+        vm.stopPrank();
+
+        vm.warp(globalLockPeriod);
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.GlobalUnlockTimeReached.selector, globalLockPeriod));
+        depositLock.migrateLocked(address(mockVault), projectId, toProjectId, depositAmount);
     }
 
     function test_migrateLocked_success() public {

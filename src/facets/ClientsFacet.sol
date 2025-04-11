@@ -19,6 +19,7 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
     function createClient(address clientOwner, uint128 reservedProjects, bytes32 clientName) external {
         LibOwner.onlyOwner();
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
+        require(clientStorage.ownerToClientData[clientOwner].minProjectId == 0, LibErrors.ClientOwnerReserved());
         require(reservedProjects > 0, LibErrors.ReservedProjectsIsZero());
         require(clientName != bytes32(0), LibErrors.ClientNameEmpty());
         require(clientStorage.isClientNameTaken[clientName] == false, LibErrors.ClientNameTaken());

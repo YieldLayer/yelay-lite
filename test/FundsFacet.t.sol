@@ -91,10 +91,15 @@ contract FundsFacetTest is Test {
 
         vm.startPrank(user);
         yelayLiteVault.deposit(toDeposit, projectId, user);
+        // only within the same client
         vm.expectRevert(abi.encodeWithSelector(LibErrors.PositionMigrationForbidden.selector));
         yelayLiteVault.migratePosition(projectId, 100500, toDeposit / 4);
+        // to non activated project is forbidden
         vm.expectRevert(abi.encodeWithSelector(LibErrors.PositionMigrationForbidden.selector));
         yelayLiteVault.migratePosition(projectId, 51, toDeposit / 4);
+        // same projectId
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.PositionMigrationForbidden.selector));
+        yelayLiteVault.migratePosition(projectId, projectId, toDeposit / 4);
         yelayLiteVault.migratePosition(projectId, newProjectId, toDeposit / 4);
         vm.stopPrank();
 
