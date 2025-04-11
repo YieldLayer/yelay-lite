@@ -5,42 +5,33 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 
 contract ERC4626Strategy is IStrategyBase {
-    IERC4626 immutable vault;
-
-    constructor(address vault_) {
-        vault = IERC4626(vault_);
+    function _decodeSupplement(bytes calldata supplement) internal pure returns (IERC4626 vault) {
+        return abi.decode(supplement, (IERC4626));
     }
 
-    function protocol() external view virtual returns (address) {
+    function protocol(bytes calldata supplement) external virtual returns (address) {
+        IERC4626 vault = _decodeSupplement(supplement);
         return address(vault);
     }
 
-    function deposit(uint256 amount, bytes calldata) external virtual {
-        _deposit(amount);
+    function deposit(uint256 amount, bytes calldata supplement) external virtual {
+        IERC4626 vault = _decodeSupplement(supplement);
+        vault.deposit(amount, address(this));
     }
 
-    function _deposit(uint256 amount) internal returns (uint256 shares) {
-        return vault.deposit(amount, address(this));
-    }
-
-    function withdraw(uint256 amount, bytes calldata) external virtual returns (uint256 withdrawn) {
-        withdrawn = _withdraw(amount);
-    }
-
-    function _withdraw(uint256 amount) internal returns (uint256) {
+    function withdraw(uint256 amount, bytes calldata supplement) external virtual returns (uint256 withdrawn) {
+        IERC4626 vault = _decodeSupplement(supplement);
         uint256 shares = vault.previewWithdraw(amount);
-        return vault.redeem(shares, address(this), address(this));
+        withdrawn = vault.redeem(shares, address(this), address(this));
     }
 
-    function assetBalance(address spoolLiteVault, bytes calldata) external view virtual returns (uint256) {
-        return vault.previewRedeem(vault.balanceOf(address(spoolLiteVault)));
+    function assetBalance(address yelayLiteVault, bytes calldata supplement) external view virtual returns (uint256) {
+        IERC4626 vault = _decodeSupplement(supplement);
+        return vault.previewRedeem(vault.balanceOf(address(yelayLiteVault)));
     }
 
-    function withdrawAll(bytes calldata) external virtual returns (uint256 withdrawn) {
-        withdrawn = _withdrawAll();
-    }
-
-    function _withdrawAll() internal returns (uint256 withdrawn) {
+    function withdrawAll(bytes calldata supplement) external virtual returns (uint256 withdrawn) {
+        IERC4626 vault = _decodeSupplement(supplement);
         withdrawn = vault.redeem(vault.balanceOf(address(this)), address(this), address(this));
     }
 
