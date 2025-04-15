@@ -41,7 +41,7 @@ library Utils {
         selectorsToFacets[0] =
             SelectorsToFacet({facet: address(new FundsFacet(swapper)), selectors: _fundsFacetSelectors()});
         selectorsToFacets[1] =
-            SelectorsToFacet({facet: address(new ManagementFacet()), selectors: _managementFacetSelectors()});
+            SelectorsToFacet({facet: address(new ManagementFacet()), selectors: managementFacetSelectors()});
         selectorsToFacets[2] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
         selectorsToFacets[3] =
             SelectorsToFacet({facet: address(new ClientsFacet()), selectors: _clientsFacetSelectors()});
@@ -85,7 +85,7 @@ library Utils {
         return selectors;
     }
 
-    function _managementFacetSelectors() private pure returns (bytes4[] memory) {
+    function managementFacetSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](11);
         selectors[0] = ManagementFacet.addStrategy.selector;
         selectors[1] = ManagementFacet.removeStrategy.selector;
