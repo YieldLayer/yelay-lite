@@ -39,12 +39,12 @@ library Utils {
 
         SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](4);
         selectorsToFacets[0] =
-            SelectorsToFacet({facet: address(new FundsFacet(swapper)), selectors: _fundsFacetSelectors()});
+            SelectorsToFacet({facet: address(new FundsFacet(swapper)), selectors: fundsFacetSelectors()});
         selectorsToFacets[1] =
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: managementFacetSelectors()});
         selectorsToFacets[2] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
         selectorsToFacets[3] =
-            SelectorsToFacet({facet: address(new ClientsFacet()), selectors: _clientsFacetSelectors()});
+            SelectorsToFacet({facet: address(new ClientsFacet()), selectors: clientsFacetSelectors()});
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
         yelayLiteVault.createClient(owner, 999, "test");
@@ -54,7 +54,7 @@ library Utils {
         return yelayLiteVault;
     }
 
-    function _fundsFacetSelectors() private pure returns (bytes4[] memory) {
+    function fundsFacetSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](24);
         selectors[0] = FundsFacet.deposit.selector;
         selectors[1] = FundsFacet.redeem.selector;
@@ -114,7 +114,7 @@ library Utils {
         return selectors;
     }
 
-    function _clientsFacetSelectors() private pure returns (bytes4[] memory) {
+    function clientsFacetSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](8);
         selectors[0] = ClientsFacet.createClient.selector;
         selectors[1] = ClientsFacet.transferClientOwnership.selector;
