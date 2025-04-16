@@ -198,4 +198,23 @@ library LibErrors {
      * @param lockMode The lock mode.
      */
     error LockModeMismatch(address vault, uint256 projectId, uint256 lockMode);
+
+    // ===================== YieldExtractor ================================
+
+    /**
+     * @notice Thrown when a Merkle proof is invalid
+     * @param idx Index of the invalid claim request
+     */
+    error InvalidProof(uint256 idx);
+
+    /**
+     * @notice Thrown when a proof has already been claimed
+     * @param idx Index of the already claimed proof
+     */
+    error ProofAlreadyClaimed(uint256 idx);
+
+    /**
+     * @notice Thrown when an invalid cycle number is provided
+     */
+    error InvalidCycle();
 }
