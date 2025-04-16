@@ -12,11 +12,13 @@ import {
 import { ADDRESSES } from '../constants';
 import fs from 'fs';
 import path from 'path';
+import { getContractsPath } from '../utils/getters';
 
 async function main() {
     //Set before running
     const chainId = 8453;
-    const deploymentPath = './deployments/base-testing.json';
+    const testing = true;
+    const deploymentPath = getContractsPath(chainId, testing);
 
     const [deployer] = await ethers.getSigners();
     const deploymentData = JSON.parse(fs.readFileSync(path.resolve(deploymentPath), 'utf8'));
