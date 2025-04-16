@@ -18,7 +18,7 @@ contract MorphoBlueStrategy is IStrategyBase {
         return abi.decode(supplement, (Id));
     }
 
-    function protocol() external view returns (address) {
+    function protocol(bytes calldata) external view returns (address) {
         return address(morpho);
     }
 

@@ -53,9 +53,9 @@ contract ManagementFacetTest is Test {
             StrategyData({adapter: address(mockStrategy2), name: "mockStrategy2", supplement: hex"1234"});
         StrategyData memory strategy3 =
             StrategyData({adapter: address(mockStrategy3), name: "mockStrategy3", supplement: hex"5678"});
-        assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol()), 0);
-        assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol()), 0);
-        assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol()), 0);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy1.protocol(strategy1.supplement)), 0);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy2.protocol(strategy2.supplement)), 0);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), mockStrategy3.protocol(strategy3.supplement)), 0);
         {
             yelayLiteVault.addStrategy(strategy1);
             StrategyData[] memory strategies = yelayLiteVault.getStrategies();

@@ -150,7 +150,7 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
     function approveStrategy(uint256 index, uint256 amount) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
         LibFunds.FundsStorage memory sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        address protocol = IStrategyBase(sM.strategies[index].adapter).protocol();
+        address protocol = IStrategyBase(sM.strategies[index].adapter).protocol(sM.strategies[index].supplement);
         sF.underlyingAsset.safeApprove(protocol, amount);
     }
 }

@@ -9,10 +9,10 @@ struct Reward {
 interface IStrategyBase {
     /**
      * @dev Returns the address of the protocol.
+     * @param supplement Additional data required for the protocol address determination.
      * @return The address of the protocol.
      */
-    function protocol() external returns (address);
-
+    function protocol(bytes calldata supplement) external returns (address);
     /**
      * @dev Deposits the specified amount into the strategy.
      * @param amount The amount to deposit.
