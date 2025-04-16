@@ -13,32 +13,52 @@ import {
     getManagementFacetSelectors,
 } from './getters';
 
-export const deployFacets = async (deployer: Signer, swapperAddress: string) => {
-    const accessFacet = await ethers
+export const deployAccessFacet = async (deployer: Signer) => {
+    return ethers
         .getContractFactory('AccessFacet', deployer)
         .then((f) => f.deploy())
         .then((r) => r.waitForDeployment())
         .then((r) => r.getAddress());
-    const clientsFacet = await ethers
+};
+
+export const deployClientsFacet = async (deployer: Signer) => {
+    return ethers
         .getContractFactory('ClientsFacet', deployer)
         .then((f) => f.deploy())
         .then((r) => r.waitForDeployment())
         .then((r) => r.getAddress());
-    const fundsFacet = await ethers
+};
+
+export const deployFundsFacet = async (deployer: Signer, swapperAddress: string) => {
+    return ethers
         .getContractFactory('FundsFacet', deployer)
         .then((f) => f.deploy(swapperAddress))
         .then((r) => r.waitForDeployment())
         .then((r) => r.getAddress());
-    const managementFacet = await ethers
+};
+
+export const deployManagementFacet = async (deployer: Signer) => {
+    return ethers
         .getContractFactory('ManagementFacet', deployer)
         .then((f) => f.deploy())
         .then((r) => r.waitForDeployment())
         .then((r) => r.getAddress());
-    const ownerFacet = await ethers
+};
+
+export const deployOwnerFacet = async (deployer: Signer) => {
+    return ethers
         .getContractFactory('OwnerFacet', deployer)
         .then((f) => f.deploy())
         .then((r) => r.waitForDeployment())
         .then((r) => r.getAddress());
+};
+
+export const deployFacets = async (deployer: Signer, swapperAddress: string) => {
+    const accessFacet = await deployAccessFacet(deployer);
+    const clientsFacet = await deployClientsFacet(deployer);
+    const fundsFacet = await deployFundsFacet(deployer, swapperAddress);
+    const managementFacet = await deployManagementFacet(deployer);
+    const ownerFacet = await deployOwnerFacet(deployer);
     return { ownerFacet, fundsFacet, managementFacet, accessFacet, clientsFacet };
 };
 
@@ -153,10 +173,18 @@ export const deployMorphoBlueStrategy = async (deployer: Signer, morpho: string)
         .then((r) => r.getAddress());
 };
 
-export const deployMorphoVaultStrategy = async (deployer: Signer, morphoVault: string) => {
+export const deployERC4626Strategy = async (deployer: Signer) => {
     return ethers
         .getContractFactory('ERC4626Strategy', deployer)
-        .then((f) => f.deploy(morphoVault))
+        .then((f) => f.deploy())
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+};
+
+export const deployGearboxV3Strategy = async (deployer: Signer, gearToken: string) => {
+    return ethers
+        .getContractFactory('GearboxV3Strategy', deployer)
+        .then((f) => f.deploy(gearToken))
         .then((r) => r.waitForDeployment())
         .then((r) => r.getAddress());
 };
