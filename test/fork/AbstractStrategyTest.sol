@@ -24,6 +24,9 @@ abstract contract AbstractStrategyTest is Test {
     uint256 constant yieldProjectId = 0;
     uint256 constant projectId = 1;
 
+    uint256 userBalance = 10_000e18;
+    uint256 toDeposit = 1000e18;
+
     IYelayLiteVault yelayLiteVault;
 
     IERC20 underlyingAsset = IERC20(DAI_ADDRESS);
@@ -31,8 +34,12 @@ abstract contract AbstractStrategyTest is Test {
     // Override this to test particular strategy
     function _setupStrategy() internal virtual {}
 
-    function setUp() external {
+    function _setupFork() internal virtual {
         vm.createSelectFork(vm.envString("MAINNET_URL"), MAINNET_BLOCK_NUMBER);
+    }
+
+    function setUp() external {
+        _setupFork();
 
         vm.startPrank(owner);
         yelayLiteVault =
@@ -53,8 +60,6 @@ abstract contract AbstractStrategyTest is Test {
     }
 
     function test_deposit_with_strategy() external {
-        uint256 userBalance = 10_000e18;
-        uint256 toDeposit = 1000e18;
         deal(address(underlyingAsset), user, userBalance);
 
         assertEq(underlyingAsset.balanceOf(user), userBalance);
@@ -76,7 +81,6 @@ abstract contract AbstractStrategyTest is Test {
     }
 
     function test_deactivate_strategy() external {
-        uint256 toDeposit = 1000e18;
         deal(address(underlyingAsset), user, toDeposit);
 
         assertEq(yelayLiteVault.getActiveStrategies().length, 1);
@@ -105,8 +109,6 @@ abstract contract AbstractStrategyTest is Test {
     }
 
     function test_withdraw_with_strategy() external {
-        uint256 userBalance = 10_000e18;
-        uint256 toDeposit = 1000e18;
         deal(address(underlyingAsset), user, userBalance);
 
         vm.startPrank(user);
@@ -121,13 +123,13 @@ abstract contract AbstractStrategyTest is Test {
     }
 
     function test_managedWithdrawAll_with_strategy() external {
-        uint256 userBalance = 10_000e18;
-        uint256 toDeposit = 1000e18;
         deal(address(underlyingAsset), user, userBalance);
 
         vm.startPrank(user);
         yelayLiteVault.deposit(toDeposit, projectId, user);
         vm.stopPrank();
+
+        assertEq(yelayLiteVault.underlyingBalance(), 0);
 
         uint256 a = yelayLiteVault.strategyAssets(0);
 
@@ -142,12 +144,10 @@ abstract contract AbstractStrategyTest is Test {
         vm.stopPrank();
 
         assertEq(yelayLiteVault.strategyAssets(0), 0);
+        assertEq(yelayLiteVault.underlyingBalance(), b);
     }
 
     function test_yield_extraction() external {
-        uint256 toDeposit = 1_000e18;
-        // uint256 yieldExtractorShareBalance;
-
         for (uint256 i = 1; i < 20; i++) {
             address user3 = address(bytes20(bytes32(111111111111111111111111111111111111111111 * i)));
             deal(address(underlyingAsset), user3, toDeposit);
@@ -159,11 +159,6 @@ abstract contract AbstractStrategyTest is Test {
             if (i + 1 < 20) {
                 vm.warp(block.timestamp + 6 hours);
             }
-            // uint256 newYieldExtractorShareBalance = yelayLiteVault.balanceOf(yieldExtractor, yieldProjectId);
-            // if (newYieldExtractorShareBalance > 0) {
-            //     assertGt(newYieldExtractorShareBalance, yieldExtractorShareBalance);
-            // }
-            // yieldExtractorShareBalance = newYieldExtractorShareBalance;
         }
 
         vm.startPrank(owner);
@@ -218,8 +213,6 @@ abstract contract AbstractStrategyTest is Test {
 
     function test_deposit_optional_totalAssetsUpdate() external {
         uint256 start = block.timestamp;
-        uint256 userBalance = 10_000e18;
-        uint256 toDeposit = 1000e18;
         deal(address(underlyingAsset), user, userBalance);
 
         assertEq(yelayLiteVault.lastTotalAssetsTimestamp(), 0);
