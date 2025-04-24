@@ -32,6 +32,12 @@ jobs:
       - name: Set environment variables
         run: echo "MAINNET_URL=${{ secrets.MAINNET_URL }}" >> $GITHUB_ENV
 
+      - name: Set environment variables
+        run: echo "BASE_URL=${{ secrets.BASE_URL }}" >> $GITHUB_ENV
+        
+      - name: Set environment variables
+        run: echo "SONIC_URL=${{ secrets.SONIC_URL }}" >> $GITHUB_ENV
+
       - name: Run Forge fmt
         run: |
           forge fmt --check
