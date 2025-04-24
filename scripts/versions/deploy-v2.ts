@@ -16,7 +16,7 @@ import { getContractsPath } from '../utils/getters';
 
 async function main() {
     //Set before running
-    const chainId = 146;
+    const chainId = 1;
     const testing = false;
     const deploymentPath = getContractsPath(chainId, testing);
 
@@ -50,12 +50,12 @@ async function main() {
     console.log('Erc4626Strategy deployed at:', erc4626Strategy);
     deploymentData.strategies.erc4626 = erc4626Strategy;
 
-    // const gearboxV3Strategy = await deployGearboxV3Strategy(
-    //     deployer,
-    //     ADDRESSES[chainId].GEARBOX_TOKEN,
-    // );
-    // deploymentData.strategies.gearboxV3 = gearboxV3Strategy;
-    // console.log('GearboxV3Strategy deployed at:', gearboxV3Strategy);
+    const gearboxV3Strategy = await deployGearboxV3Strategy(
+        deployer,
+        ADDRESSES[chainId].GEARBOX_TOKEN,
+    );
+    deploymentData.strategies.gearboxV3 = gearboxV3Strategy;
+    console.log('GearboxV3Strategy deployed at:', gearboxV3Strategy);
 
     fs.writeFileSync(path.resolve(deploymentPath), JSON.stringify(deploymentData, null, 4));
 }

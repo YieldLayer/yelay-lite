@@ -53,6 +53,7 @@ export const ADDRESSES = {
                 'gauntlet-wbtc-core': '0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2',
             },
         },
+        GEARBOX_TOKEN: `0xBa3335588D9403515223F109EdC4eB7269a9Ab5D`,
     },
 } as const;
 
