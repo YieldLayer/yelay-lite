@@ -16,8 +16,8 @@ import { getContractsPath } from '../utils/getters';
 
 async function main() {
     //Set before running
-    const chainId = 8453;
-    const testing = true;
+    const chainId = 146;
+    const testing = false;
     const deploymentPath = getContractsPath(chainId, testing);
 
     const [deployer] = await ethers.getSigners();
@@ -42,15 +42,19 @@ async function main() {
     console.log('AaveV3Strategy deployed at:', aaveV3Strategy);
     deploymentData.strategies.aaveV3 = aaveV3Strategy;
 
-    const morphoBlueStrategy = await deployMorphoBlueStrategy(deployer, ADDRESSES[chainId].MORPHO);
-    console.log('MorphoBlueStrategy deployed at:', morphoBlueStrategy);
-    deploymentData.strategies.morpho = morphoBlueStrategy;
+    // const morphoBlueStrategy = await deployMorphoBlueStrategy(deployer, ADDRESSES[chainId].MORPHO);
+    // console.log('MorphoBlueStrategy deployed at:', morphoBlueStrategy);
+    // deploymentData.strategies.morpho = morphoBlueStrategy;
 
     const erc4626Strategy = await deployERC4626Strategy(deployer);
     console.log('Erc4626Strategy deployed at:', erc4626Strategy);
     deploymentData.strategies.erc4626 = erc4626Strategy;
 
-    // const gearboxV3Strategy = await deployGearboxV3Strategy(deployer, ADDRESSES[chainId].GEARBOX_TOKEN);
+    // const gearboxV3Strategy = await deployGearboxV3Strategy(
+    //     deployer,
+    //     ADDRESSES[chainId].GEARBOX_TOKEN,
+    // );
+    // deploymentData.strategies.gearboxV3 = gearboxV3Strategy;
     // console.log('GearboxV3Strategy deployed at:', gearboxV3Strategy);
 
     fs.writeFileSync(path.resolve(deploymentPath), JSON.stringify(deploymentData, null, 4));
