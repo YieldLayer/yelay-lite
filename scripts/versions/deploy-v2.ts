@@ -42,9 +42,9 @@ async function main() {
     console.log('AaveV3Strategy deployed at:', aaveV3Strategy);
     deploymentData.strategies.aaveV3 = aaveV3Strategy;
 
-    // const morphoBlueStrategy = await deployMorphoBlueStrategy(deployer, ADDRESSES[chainId].MORPHO);
-    // console.log('MorphoBlueStrategy deployed at:', morphoBlueStrategy);
-    // deploymentData.strategies.morpho = morphoBlueStrategy;
+    const morphoBlueStrategy = await deployMorphoBlueStrategy(deployer, ADDRESSES[chainId].MORPHO);
+    console.log('MorphoBlueStrategy deployed at:', morphoBlueStrategy);
+    deploymentData.strategies.morpho = morphoBlueStrategy;
 
     const erc4626Strategy = await deployERC4626Strategy(deployer);
     console.log('Erc4626Strategy deployed at:', erc4626Strategy);

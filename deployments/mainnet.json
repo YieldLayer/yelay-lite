@@ -20,7 +20,8 @@
     "strategies": {
         "aaveV3": "0xF4a23fC0f9beB15Df3d4e1a44425Ec559f746D4F",
         "erc4626": "0xa1A32FC1573B8D0532845c833cF4e8eA205345f1",
-        "gearboxV3": "0x7Cdd48a57AD24BcE6195234B153b0b8a0ee3974f"
+        "gearboxV3": "0x7Cdd48a57AD24BcE6195234B153b0b8a0ee3974f",
+        "morpho": "0xFFB90D5599892054dDE4B415Fd827908B376DCf8"
     },
     "depositLockPlugin": {
         "proxy": "0xACa04A50519c831f58E5Aa1C5D8aE942402FB8e1",
