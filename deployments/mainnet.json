@@ -8,31 +8,20 @@
         "implementation": "0x93ec44bccfce56c519a0cad5ff13a5d6d0e98256"
     },
     "ownerFacet": "0x4E078e0345820B6e466A843CEeBD074D483AD008",
-    "fundsFacet": "0x7f3a36aEf7A6859Eb4cb1EB0664Ab014076b66d9",
+    "fundsFacet": "0x94cec01bCed84022c91Cd5bf4f424A5CC781deE3",
     "accessFacet": "0xb61413b0E6811bA11A6B34534A8CE4AF69D504b4",
-    "managementFacet": "0x0551C10e0507A9CEc1B1a2c6322bf3dd237825b9",
-    "clientsFacet": "0x0E11f249C69acBfd709aF134c2c6180481bb26d3",
+    "managementFacet": "0x0A09027643d21F35df24f156694A97776d211907",
+    "clientsFacet": "0x1798b36C340DBA0A2bd7BD379dF100af07396e57",
     "vaults": {
         "USDC": "0x39DAc87bE293DC855b60feDd89667364865378cc",
         "WETH": "0x4d95E929ABb21b6C6C0FF1ff0Ac69609e02BB368",
         "WBTC": "0x6545e81356CE709823EA8797E566A60934A9B110"
     },
     "strategies": {
-        "morphoVaults": {
-            "USDC": {
-                "steakhouse-usdc": "0xD1144208078f013102d6b92f8903325E408e4B24",
-                "gauntlet-usdc-core": "0xbBC6E62F23F714405D7e0b4D3DDe079E22748a58"
-            },
-            "WETH": {
-                "mev-capital-weth": "0xCf19f89aDdd88CbA706fe94251ec3Cf66611be43",
-                "gauntlet-weth-core": "0xDCcf337eA77b687A4DaCA5586351B08f8927C825"
-            },
-            "WBTC": {
-                "pendle-wbtc": "0x58957C6EF5B4d2512f692972dCaF7B8c76E30aAC",
-                "gauntlet-wbtc-core": "0x0c6dAf9B4e0EB49A0c80c325da82EC028Cb8118B"
-            }
-        },
-        "aaveV3": "0x0c35F21f527F8753Ba5a0f46c87A617b20DD9E0c"
+        "aaveV3": "0xF4a23fC0f9beB15Df3d4e1a44425Ec559f746D4F",
+        "erc4626": "0xa1A32FC1573B8D0532845c833cF4e8eA205345f1",
+        "gearboxV3": "0x7Cdd48a57AD24BcE6195234B153b0b8a0ee3974f",
+        "morpho": "0xFFB90D5599892054dDE4B415Fd827908B376DCf8"
     },
     "depositLockPlugin": {
         "proxy": "0xACa04A50519c831f58E5Aa1C5D8aE942402FB8e1",
