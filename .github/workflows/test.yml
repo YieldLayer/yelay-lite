@@ -30,7 +30,9 @@ jobs:
           forge --version
 
       - name: Set environment variables
-        run: echo "MAINNET_URL=${{ secrets.MAINNET_URL }}" >> $GITHUB_ENV
+        run: |
+          echo "MAINNET_URL=${{ secrets.MAINNET_URL }}" >> $GITHUB_ENV
+          echo "SONIC_URL=${{ secrets.SONIC_URL }}" >> $GITHUB_ENV
 
       - name: Run Forge fmt
         run: |
