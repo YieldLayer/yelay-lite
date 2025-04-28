@@ -14,7 +14,8 @@
     "clientsFacet": "0x94cec01bCed84022c91Cd5bf4f424A5CC781deE3",
     "vaults": {
         "USDC": "0x0c6dAf9B4e0EB49A0c80c325da82EC028Cb8118B",
-        "WETH": "0xf0533A9eb11b144aC3B9BbE134728D0F7F547c52"
+        "WETH": "0xf0533A9eb11b144aC3B9BbE134728D0F7F547c52",
+        "CB_BTC": "0x47a879ac3C9646116326B4A1462e1D477056Aff0"
     },
     "strategies": {
         "aaveV3": "0xa1A32FC1573B8D0532845c833cF4e8eA205345f1",
