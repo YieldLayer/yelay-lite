@@ -104,6 +104,7 @@ contract YieldExtractor is
     function initialize(address owner, address _yieldPublisher) public initializer {
         __ERC1155Holder_init();
         __UUPSUpgradeable_init();
+        __Pausable_init();
         __AccessControlDefaultAdminRules_init(0, owner);
 
         _grantRole(LibRoles.YIELD_PUBLISHER, _yieldPublisher);
