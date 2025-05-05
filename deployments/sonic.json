@@ -8,17 +8,18 @@
         "implementation": "0x119242eebda97066045a6e175e508aaeedbe8b68"
     },
     "ownerFacet": "0xda1620236ACE35387ce753A081d82868a738e6ae",
-    "fundsFacet": "0x6cc5a2AA19BfBE58719977d786b096CB77aA8799",
+    "fundsFacet": "0x94cec01bCed84022c91Cd5bf4f424A5CC781deE3",
     "accessFacet": "0x90b8695EDCdEfAFA678Df6d819307573f7B1a18C",
-    "managementFacet": "0x95a02e5ac5Ca7D633287f922f6FFe1129F92E39C",
-    "clientsFacet": "0x500250021a0C72d2Cf86b389b1cb953Cbf626b07",
+    "managementFacet": "0x0A09027643d21F35df24f156694A97776d211907",
+    "clientsFacet": "0x1798b36C340DBA0A2bd7BD379dF100af07396e57",
     "vaults": {
         "USDCe": "0x56b0c5C989C65e712463278976ED26D6e07592ab",
         "WS": "0x6880bb001417f123f824c573A07a991e0cD00daC",
         "WETH": "0xAB865D95A574511a6c893C38A4D892275ca70570"
     },
     "strategies": {
-        "aaveV3": "0x1a0170FF66169FF3FC14c4A5822f97c835FF9F43"
+        "aaveV3": "0xF4a23fC0f9beB15Df3d4e1a44425Ec559f746D4F",
+        "erc4626": "0xa1A32FC1573B8D0532845c833cF4e8eA205345f1"
     },
     "depositLockPlugin": {
         "proxy": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B",

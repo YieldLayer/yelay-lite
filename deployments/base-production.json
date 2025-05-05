@@ -8,28 +8,19 @@
         "implementation": "0xcf19f89addd88cba706fe94251ec3cf66611be43"
     },
     "ownerFacet": "0x30DFA736b3A20ed032E19894E7cE87FF95055e08",
-    "fundsFacet": "0xB2f722dF58cBB704211f1Ca628E63C82FC9F098d",
+    "fundsFacet": "0x226239384EB7d78Cdf279BA6Fb458E2A4945E275",
     "accessFacet": "0x5982506084271f49c48E809dB1893312D4915490",
-    "managementFacet": "0xc19ECBd4a12E3fe0842Dc922d07Bcd44b9f1C91A",
-    "clientsFacet": "0xa101751e18a091181E322d6fAa7fBD71d5aa634d",
+    "managementFacet": "0xF4a23fC0f9beB15Df3d4e1a44425Ec559f746D4F",
+    "clientsFacet": "0x94cec01bCed84022c91Cd5bf4f424A5CC781deE3",
     "vaults": {
         "USDC": "0x0c6dAf9B4e0EB49A0c80c325da82EC028Cb8118B",
-        "WETH": "0xf0533A9eb11b144aC3B9BbE134728D0F7F547c52"
+        "WETH": "0xf0533A9eb11b144aC3B9BbE134728D0F7F547c52",
+        "CB_BTC": "0x47a879ac3C9646116326B4A1462e1D477056Aff0"
     },
     "strategies": {
-        "aaveV3": "0x1c2a5ca1232052F56BD193d99AD238830e362c08",
-        "morpho": "0x51fb496AA1143AA6dC8AF3913cC16aA74417d228",
-        "morphoVaults": {
-            "USDC": {
-                "steakhouse-usdc": "0xa5C64A3C63CF642AD0AF033c8C0934A348810445",
-                "gauntlet-usdc-prime": "0x70B9cfD343b264f5016261c39e00d63087CcEEB2",
-                "gauntlet-usdc-core": "0xB6C91074095949138cA81FD4c7d9242E764998eC"
-            },
-            "WETH": {
-                "ionic-ecosystem-weth": "0x06a3e406D03D3ee5f6E375B05e12623183d7D5Fc",
-                "moonwell-flagship-eth": "0xBaF88bd991e135A877B01178dc6b0ee5F1a9ed60"
-            }
-        }
+        "aaveV3": "0xa1A32FC1573B8D0532845c833cF4e8eA205345f1",
+        "morpho": "0x7Cdd48a57AD24BcE6195234B153b0b8a0ee3974f",
+        "erc4626": "0xFFB90D5599892054dDE4B415Fd827908B376DCf8"
     },
     "depositLockPlugin": {
         "proxy": "0xa3f36Bc04E3E592259b51781fA151bb7342781C4",

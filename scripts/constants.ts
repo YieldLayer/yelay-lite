@@ -6,6 +6,7 @@ export const ADDRESSES = {
         OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
         WETH: '0x4200000000000000000000000000000000000006',
         USDC: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+        CB_BTC: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
         AAVE_V3_POOL: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
         MORPHO: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
         ONE_INCH_ROUTER_V6: '0x111111125421cA6dc452d289314280a0f8842A65',
@@ -38,6 +39,7 @@ export const ADDRESSES = {
         WBTC: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
         URI: 'https://lite.api.yelay.io/mainnet/metadata/{id}',
         AAVE_V3_POOL: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+        MORPHO: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
         ONE_INCH_ROUTER_V6: '0x111111125421cA6dc452d289314280a0f8842A65',
         MORPHO_VAULTS: {
             USDC: {
@@ -53,6 +55,7 @@ export const ADDRESSES = {
                 'gauntlet-wbtc-core': '0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2',
             },
         },
+        GEARBOX_TOKEN: `0xBa3335588D9403515223F109EdC4eB7269a9Ab5D`,
     },
 } as const;
 
