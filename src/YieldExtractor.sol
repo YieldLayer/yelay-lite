@@ -23,6 +23,7 @@ import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
  *      in the YelayLite vault system. The distribution happens through a Merkle tree system where:
  *      - A root manager (YIELD_PUBLISHER) periodically adds new Merkle roots containing user yield data
  *      - Each root represents a cycle of yield
+ *      - Each vault has its own cycle count and root
  *      - Clients / Users can claim the yield by providing valid Merkle proofs
  *      - The contract tracks claimed yield to prevent double-claiming
  *      - Yield is distributed as the underlying token following direct redeemal of the shares on the vault.
@@ -71,14 +72,16 @@ contract YieldExtractor is
     }
 
     /**
-     * @notice Current cycle count for yield distributions
+     * @notice Current cycle count for yield distributions per vault
+     * @dev Mapping structure: vaultAddress => cycleCount
      */
-    uint256 public cycleCount;
+    mapping(address => uint256) public cycleCount;
 
     /**
-     * @notice Merkle tree root for each cycle
+     * @notice Merkle tree root for each cycle per vault
+     * @dev Mapping structure: vaultAddress => cycleCount => Root
      */
-    mapping(uint256 => Root) public roots;
+    mapping(address => mapping(uint256 => Root)) public roots;
 
     /**
      * @notice Tracks whether a specific leaf has been claimed
@@ -134,28 +137,33 @@ contract YieldExtractor is
     }
 
     /**
-     * @notice Add a Merkle tree root for a new cycle
+     * @notice Add a Merkle tree root for a new cycle for a given vault
      * @param root Root to add
+     * @param yelayLiteVault Address of the vault
      */
-    function addTreeRoot(Root memory root) external onlyRole(LibRoles.YIELD_PUBLISHER) {
-        cycleCount++;
-        roots[cycleCount] = root;
+    function addTreeRoot(Root memory root, address yelayLiteVault) external onlyRole(LibRoles.YIELD_PUBLISHER) {
+        cycleCount[yelayLiteVault]++;
+        roots[yelayLiteVault][cycleCount[yelayLiteVault]] = root;
 
-        emit LibEvents.PoolRootAdded(cycleCount, root.hash, root.blockNumber);
+        emit LibEvents.PoolRootAdded(yelayLiteVault, cycleCount[yelayLiteVault], root.hash, root.blockNumber);
     }
 
     /**
-     * @notice Update existing root for a given cycle
+     * @notice Update existing root for a given cycle for a given vault
      * @param root New root
      * @param cycle Cycle to update
+     * @param yelayLiteVault Address of the vault
      */
-    function updateTreeRoot(Root memory root, uint256 cycle) external onlyRole(LibRoles.YIELD_PUBLISHER) {
-        require(cycle <= cycleCount, LibErrors.InvalidCycle());
+    function updateTreeRoot(Root memory root, uint256 cycle, address yelayLiteVault)
+        external
+        onlyRole(LibRoles.YIELD_PUBLISHER)
+    {
+        require(cycle <= cycleCount[yelayLiteVault], LibErrors.InvalidCycle());
 
-        Root memory previousRoot = roots[cycle];
-        roots[cycle] = root;
+        Root memory previousRoot = roots[yelayLiteVault][cycle];
+        roots[yelayLiteVault][cycle] = root;
 
-        emit LibEvents.PoolRootUpdated(cycle, previousRoot.hash, root.hash, root.blockNumber);
+        emit LibEvents.PoolRootUpdated(yelayLiteVault, cycle, previousRoot.hash, root.hash, root.blockNumber);
     }
 
     /**
@@ -196,7 +204,7 @@ contract YieldExtractor is
      * @return bool True if the proof is valid
      */
     function _verify(ClaimRequest memory data, bytes32 leaf) internal view returns (bool) {
-        return MerkleProof.verify(data.proof, roots[data.cycle].hash, leaf);
+        return MerkleProof.verify(data.proof, roots[data.yelayLiteVault][data.cycle].hash, leaf);
     }
 
     /**

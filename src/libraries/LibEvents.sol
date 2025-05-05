@@ -241,21 +241,29 @@ library LibEvents {
 
     /**
      * @notice New root was added to the pool
+     * @param yelayLiteVault yelayLiteVault address
      * @param cycle Number of new cycle
      * @param rootHash Newly added root hash
      * @param rootBlocknumber Newly added root block number
      */
-    event PoolRootAdded(uint256 indexed cycle, bytes32 rootHash, uint256 rootBlocknumber);
+    event PoolRootAdded(
+        address indexed yelayLiteVault, uint256 indexed cycle, bytes32 rootHash, uint256 rootBlocknumber
+    );
 
     /**
      * @notice Pool's root was updated
+     * @param yelayLiteVault yelayLiteVault address
      * @param cycle Number of cycle that was updated
      * @param previousRootHash Previous root hash for the cycle
      * @param newRootHash New root hash for the cycle
      * @param newRootBlocknumber New root blocknumber for the cycle
      */
     event PoolRootUpdated(
-        uint256 indexed cycle, bytes32 previousRootHash, bytes32 newRootHash, uint256 newRootBlocknumber
+        address indexed yelayLiteVault,
+        uint256 indexed cycle,
+        bytes32 previousRootHash,
+        bytes32 newRootHash,
+        uint256 newRootBlocknumber
     );
 
     /**
