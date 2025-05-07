@@ -253,11 +253,3 @@ export const deployDepositLockPlugin = async (deployer: Signer) => {
 
     fs.writeFileSync(contractsPath, JSON.stringify(contracts, null, 4) + '\n');
 };
-
-export const deployFeeMRegistrationPlugin = async (deployer: Signer) => {
-    return ethers
-        .getContractFactory('FeeMRegistrationPlugin', deployer)
-        .then((f) => f.deploy())
-        .then((r) => r.waitForDeployment())
-        .then((r) => r.getAddress());
-};
