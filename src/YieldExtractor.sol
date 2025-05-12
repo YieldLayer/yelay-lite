@@ -62,6 +62,22 @@ contract YieldExtractor is
     }
 
     /**
+     * @notice Data structure for already claimed yield, used only during contract initialization
+     * @param user Address of the user that yield belongs to
+     * @param leaf Leaf node for the claim request
+     * @param yelayLiteVault Address of the YelayLite vault contract
+     * @param projectId ID of the project in the vault
+     * @param yieldSharesTotal Total amount of yield shares that were claimed
+     */
+    struct ClaimedRequest {
+        address user;
+        bytes32 leaf;
+        address yelayLiteVault;
+        uint256 projectId;
+        uint256 yieldSharesTotal;
+    }
+
+    /**
      * @notice Merkle tree root data structure
      * @param hash Merkle root hash
      * @param blockNumber Block number at which yield share values were calculated
@@ -104,13 +120,22 @@ contract YieldExtractor is
      * @param owner The address of the owner.
      * @param _yieldPublisher The yield publisher address with rights to update Merkle root
      */
-    function initialize(address owner, address _yieldPublisher) public initializer {
+    function initialize(address owner, address _yieldPublisher, ClaimedRequest[] memory claimedRequests)
+        public
+        initializer
+    {
         __ERC1155Holder_init();
         __UUPSUpgradeable_init();
         __Pausable_init();
         __AccessControlDefaultAdminRules_init(0, owner);
 
         _grantRole(LibRoles.YIELD_PUBLISHER, _yieldPublisher);
+
+        for (uint256 i; i < claimedRequests.length; ++i) {
+            isLeafClaimed[claimedRequests[i].leaf] = true;
+            yieldSharesClaimed[claimedRequests[i].user][claimedRequests[i].yelayLiteVault][claimedRequests[i].projectId]
+            = claimedRequests[i].yieldSharesTotal;
+        }
     }
 
     function supportsInterface(bytes4 interfaceId)

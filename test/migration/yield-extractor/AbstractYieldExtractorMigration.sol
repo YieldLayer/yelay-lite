@@ -30,7 +30,10 @@ abstract contract AbstractYieldExtractorMigration is Test {
         yieldExtractor = YieldExtractor(
             address(
                 new ERC1967Proxy(
-                    address(impl), abi.encodeWithSelector(YieldExtractor.initialize.selector, owner, owner)
+                    address(impl),
+                    abi.encodeWithSelector(
+                        YieldExtractor.initialize.selector, owner, owner, new YieldExtractor.ClaimedRequest[](0)
+                    )
                 )
             )
         );

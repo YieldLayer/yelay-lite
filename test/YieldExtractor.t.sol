@@ -96,12 +96,18 @@ contract YieldExtractorTest is Test {
         yieldExtractor = YieldExtractor(
             address(
                 new ERC1967Proxy(
-                    address(impl), abi.encodeWithSelector(YieldExtractor.initialize.selector, owner, yieldPublisher)
+                    address(impl),
+                    abi.encodeWithSelector(
+                        YieldExtractor.initialize.selector,
+                        owner,
+                        yieldPublisher,
+                        new YieldExtractor.ClaimedRequest[](0)
+                    )
                 )
             )
         );
 
-        mockVault0 = setupMockVault(vault0, yieldTotal1);
+        mockVault0 = setupMockVault(vault0, yieldTotal0 + yieldTotal1);
         mockVault1 = setupMockVault(vault1, yieldTotal1);
     }
 
@@ -131,6 +137,53 @@ contract YieldExtractorTest is Test {
 
     function getTreeRoot(uint256 cycle, address yelayLiteVault) internal view returns (bytes32 hash) {
         (hash,) = yieldExtractor.roots(yelayLiteVault, cycle);
+    }
+
+    function test_initialize_claimedRequest() public {
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(user, 1, vault0, projectId, yieldTotal0))));
+        YieldExtractor.ClaimedRequest[] memory claimedRequests = new YieldExtractor.ClaimedRequest[](1);
+        claimedRequests[0] = YieldExtractor.ClaimedRequest({
+            user: user,
+            leaf: leaf,
+            yelayLiteVault: vault0,
+            projectId: projectId,
+            yieldSharesTotal: yieldTotal0
+        });
+
+        YieldExtractor impl = new YieldExtractor();
+        YieldExtractor newExtractor = YieldExtractor(
+            address(
+                new ERC1967Proxy(
+                    address(impl),
+                    abi.encodeWithSelector(YieldExtractor.initialize.selector, owner, yieldPublisher, claimedRequests)
+                )
+            )
+        );
+
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        newExtractor.addTreeRoot(root0, vault0);
+        vm.stopPrank();
+
+        assertTrue(newExtractor.isLeafClaimed(leaf));
+        assertEq(newExtractor.yieldSharesClaimed(user, vault0, projectId), yieldTotal0);
+
+        // Verify that trying to claim again fails
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = proof0;
+        YieldExtractor.ClaimRequest[] memory claimRequest = new YieldExtractor.ClaimRequest[](1);
+        claimRequest[0] = YieldExtractor.ClaimRequest({
+            yelayLiteVault: vault0,
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldTotal0,
+            proof: proof
+        });
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ProofAlreadyClaimed.selector, 0));
+        newExtractor.claim(claimRequest);
+        vm.stopPrank();
     }
 
     function test_addRoot_success() public {
