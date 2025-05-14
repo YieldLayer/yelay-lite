@@ -28,5 +28,6 @@
     "yieldExtractor": {
         "proxy": "0xB84B621D3da3E5e47A1927883C685455Ad731D7C",
         "implementation": "0x655f41973caf96b0af68abe732b50022c95374e7"
-    }
+    },
+    "feeMRegistrationPlugin": "0xFFB90D5599892054dDE4B415Fd827908B376DCf8"
 }
