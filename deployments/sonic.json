@@ -24,5 +24,9 @@
     "depositLockPlugin": {
         "proxy": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B",
         "implementation": "0x5ad91b2f07a5fb7ba13c39940fa16826e9bbd5b9"
+    },
+    "yieldExtractor": {
+        "proxy": "0xB84B621D3da3E5e47A1927883C685455Ad731D7C",
+        "implementation": "0x655f41973caf96b0af68abe732b50022c95374e7"
     }
 }

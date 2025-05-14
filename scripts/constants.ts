@@ -21,6 +21,8 @@ export const ADDRESSES = {
                 'moonwell-flagship-eth': '0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1',
             },
         },
+        YIELD_PUBLISHER: '0x5F63F86155B5Dd1eb4843a7985776337f9dE6378',
+        YIELD_PUBLISHER_TEST: '0xabcDD1CB8BE0C6031a693BCc3267aa9fF2f7AE14',
     },
     146: {
         WS: '0x039e2fb66102314ce7b64ce5ce3e5183bc94ad38',
@@ -30,6 +32,7 @@ export const ADDRESSES = {
         OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
         URI: 'https://lite.api.yelay.io/sonic/metadata/{id}',
         AAVE_V3_POOL: '0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3',
+        YIELD_PUBLISHER: '0x5F63F86155B5Dd1eb4843a7985776337f9dE6378',
     },
     1: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
@@ -56,6 +59,7 @@ export const ADDRESSES = {
             },
         },
         GEARBOX_TOKEN: `0xBa3335588D9403515223F109EdC4eB7269a9Ab5D`,
+        YIELD_PUBLISHER: '0x5F63F86155B5Dd1eb4843a7985776337f9dE6378',
     },
 } as const;
 
@@ -69,6 +73,7 @@ export type ExpectedAddresses = {
     swapRewardsOperator: string[];
     pauser: string[];
     unpauser: string[];
+    yieldPublisher: string;
 };
 
 export const getExpectedAddresses = (chainId: number, test = false): ExpectedAddresses => {
@@ -87,6 +92,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
                 swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
                 pauser: [ADDRESSES[chainId].OPERATOR],
                 unpauser: [ADDRESSES[chainId].OPERATOR],
+                yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER_TEST,
             };
         }
         return {
@@ -99,6 +105,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
             pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
             unpauser: [ADDRESSES[chainId].OWNER],
+            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
         };
     } else if (chainId === 1) {
         return {
@@ -111,6 +118,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
             pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
             unpauser: [ADDRESSES[chainId].OWNER],
+            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
         };
     } else if (chainId === 146) {
         return {
@@ -123,6 +131,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
             pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
             unpauser: [ADDRESSES[chainId].OWNER],
+            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
         };
     }
     throw new Error('Chain not supported');

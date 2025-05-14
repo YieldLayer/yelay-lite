@@ -253,3 +253,35 @@ export const deployDepositLockPlugin = async (deployer: Signer) => {
 
     fs.writeFileSync(contractsPath, JSON.stringify(contracts, null, 4) + '\n');
 };
+
+export const deployYieldExtractor = async (deployer: Signer) => {
+    const chainId = Number((await deployer.provider!.getNetwork()).chainId);
+    const testing = isTesting();
+    const contractsPath = getContractsPath(chainId, testing);
+    const contracts = await getContracts(contractsPath);
+    const owner = getExpectedAddresses(chainId, testing).owner;
+    const yieldPublisher = getExpectedAddresses(chainId, testing).yieldPublisher;
+
+    if (contracts.yieldExtractor) {
+        throw new Error(`YieldExtractor already deployed for ${chainId}`);
+    }
+
+    const yieldExtractorFactory = await ethers.getContractFactory('YieldExtractor', deployer);
+    const yieldExtractor = await upgrades
+        .deployProxy(yieldExtractorFactory, [owner, yieldPublisher], {
+            kind: 'uups',
+        })
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+
+    const yieldExtractorImplementation = await deployer
+        .provider!.getStorage(yieldExtractor, IMPLEMENTATION_STORAGE_SLOT)
+        .then((r) => ethers.dataSlice(r, 12));
+
+    contracts.yieldExtractor = {
+        proxy: yieldExtractor,
+        implementation: yieldExtractorImplementation,
+    };
+
+    fs.writeFileSync(contractsPath, JSON.stringify(contracts, null, 4) + '\n');
+};
