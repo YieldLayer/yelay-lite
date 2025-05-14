@@ -23,20 +23,17 @@ abstract contract AbstractYieldExtractorMigration is Test {
     function _setupFork() internal virtual {}
 
     function setUp() external {
-        _setupFork();
-
         migrator = new MigrateToYieldExtractor();
         YieldExtractor impl = new YieldExtractor();
         yieldExtractor = YieldExtractor(
             address(
                 new ERC1967Proxy(
-                    address(impl),
-                    abi.encodeWithSelector(
-                        YieldExtractor.initialize.selector, owner, owner, new YieldExtractor.ClaimedRequest[](0)
-                    )
+                    address(impl), abi.encodeWithSelector(YieldExtractor.initialize.selector, owner, owner)
                 )
             )
         );
+
+        _setupFork();
     }
 
     function test_migration() external {

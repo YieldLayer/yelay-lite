@@ -62,19 +62,13 @@ contract YieldExtractor is
     }
 
     /**
-     * @notice Data structure for already claimed yield, used only during contract initialization
+     * @notice Data structure for already claimed yield
      * @param user Address of the user that yield belongs to
-     * @param leaf Leaf node for the claim request
-     * @param yelayLiteVault Address of the YelayLite vault contract
-     * @param projectId ID of the project in the vault
-     * @param yieldSharesTotal Total amount of yield shares that were claimed
+     * @param claimRequest Claim request data
      */
     struct ClaimedRequest {
         address user;
-        bytes32 leaf;
-        address yelayLiteVault;
-        uint256 projectId;
-        uint256 yieldSharesTotal;
+        ClaimRequest claimRequest;
     }
 
     /**
@@ -120,22 +114,13 @@ contract YieldExtractor is
      * @param owner The address of the owner.
      * @param _yieldPublisher The yield publisher address with rights to update Merkle root
      */
-    function initialize(address owner, address _yieldPublisher, ClaimedRequest[] memory claimedRequests)
-        public
-        initializer
-    {
+    function initialize(address owner, address _yieldPublisher) public initializer {
         __ERC1155Holder_init();
         __UUPSUpgradeable_init();
         __Pausable_init();
         __AccessControlDefaultAdminRules_init(0, owner);
 
         _grantRole(LibRoles.YIELD_PUBLISHER, _yieldPublisher);
-
-        for (uint256 i; i < claimedRequests.length; ++i) {
-            isLeafClaimed[claimedRequests[i].leaf] = true;
-            yieldSharesClaimed[claimedRequests[i].user][claimedRequests[i].yelayLiteVault][claimedRequests[i].projectId]
-            = claimedRequests[i].yieldSharesTotal;
-        }
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -220,6 +205,47 @@ contract YieldExtractor is
      */
     function verify(ClaimRequest memory data, address user) external view returns (bool) {
         return _verify(data, _getLeaf(data, user));
+    }
+
+    /**
+     * @notice Initialize claimed leafs and add initial roots
+     * @param initialRoots Array of initial roots
+     * @param yelayLiteVault Address of the vault
+     * @param claimedRequests Array of claimed requests
+     */
+    function initializeClaimedLeafs(
+        Root[] memory initialRoots,
+        address yelayLiteVault,
+        ClaimedRequest[] memory claimedRequests
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint256 i; i < initialRoots.length; ++i) {
+            cycleCount[yelayLiteVault]++;
+            roots[yelayLiteVault][cycleCount[yelayLiteVault]] = initialRoots[i];
+
+            emit LibEvents.PoolRootAdded(
+                yelayLiteVault, cycleCount[yelayLiteVault], initialRoots[i].hash, initialRoots[i].blockNumber
+            );
+        }
+
+        for (uint256 i; i < claimedRequests.length; ++i) {
+            bytes32 leaf = _getLeaf(claimedRequests[i].claimRequest, claimedRequests[i].user);
+            require(!isLeafClaimed[leaf], LibErrors.ProofAlreadyClaimed(i));
+            require(_verify(claimedRequests[i].claimRequest, leaf), LibErrors.InvalidProof(i));
+
+            isLeafClaimed[leaf] = true;
+
+            yieldSharesClaimed[claimedRequests[i].user][claimedRequests[i].claimRequest.yelayLiteVault][claimedRequests[i]
+                .claimRequest
+                .projectId] = claimedRequests[i].claimRequest.yieldSharesTotal;
+
+            emit LibEvents.YieldClaimed(
+                claimedRequests[i].user,
+                claimedRequests[i].claimRequest.yelayLiteVault,
+                claimedRequests[i].claimRequest.projectId,
+                claimedRequests[i].claimRequest.cycle,
+                claimedRequests[i].claimRequest.yieldSharesTotal
+            );
+        }
     }
 
     /**
