@@ -182,7 +182,7 @@ contract MainnetYieldExtractorMigrationTest is AbstractYieldExtractorMigration {
     }
 
     function test_claim_success() public {
-        this._migrate();
+        _migrate();
         vm.prank(0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc);
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = 0x90355c6ad28600bcd5b3d9f79cd25c89305373580af344b676e649066c5277ea;
@@ -201,7 +201,7 @@ contract MainnetYieldExtractorMigrationTest is AbstractYieldExtractorMigration {
     }
 
     function test_initializeClaimedLeafs_unauhorized() public {
-        this._migrate();
+        _migrate();
         vm.startPrank(0x98411E6D808208D3c349D766194492B376af7e49);
         vm.expectRevert(
             abi.encodeWithSelector(
