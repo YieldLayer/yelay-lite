@@ -236,4 +236,45 @@ library LibEvents {
      * @param unlockTime The new global unlock time.
      */
     event GlobalUnlockTimeUpdated(address indexed vault, uint256 indexed projectId, uint256 unlockTime);
+
+    // YieldExtractor
+
+    /**
+     * @notice New root was added to the pool
+     * @param yelayLiteVault yelayLiteVault address
+     * @param cycle Number of new cycle
+     * @param rootHash Newly added root hash
+     * @param rootBlocknumber Newly added root block number
+     */
+    event PoolRootAdded(
+        address indexed yelayLiteVault, uint256 indexed cycle, bytes32 rootHash, uint256 rootBlocknumber
+    );
+
+    /**
+     * @notice Pool's root was updated
+     * @param yelayLiteVault yelayLiteVault address
+     * @param cycle Number of cycle that was updated
+     * @param previousRootHash Previous root hash for the cycle
+     * @param newRootHash New root hash for the cycle
+     * @param newRootBlocknumber New root blocknumber for the cycle
+     */
+    event PoolRootUpdated(
+        address indexed yelayLiteVault,
+        uint256 indexed cycle,
+        bytes32 previousRootHash,
+        bytes32 newRootHash,
+        uint256 newRootBlocknumber
+    );
+
+    /**
+     * @notice Claimed yield
+     * @param user claimer
+     * @param yelayLiteVault yelayLiteVault address
+     * @param projectId project id
+     * @param cycle cycle number
+     * @param amount claimed amount
+     */
+    event YieldClaimed(
+        address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
+    );
 }
