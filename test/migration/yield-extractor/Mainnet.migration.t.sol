@@ -143,7 +143,7 @@ contract MainnetYieldExtractorMigrationTest is AbstractYieldExtractorMigration {
         yieldExtractor.initializeClaimedLeafs(roots, address(wbtcVault), claimedRequests);
     }
 
-    function _migrate() external {
+    function _migrate() internal {
         vm.startPrank(owner);
 
         SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](1);
