@@ -27,6 +27,6 @@
     },
     "yieldExtractor": {
         "proxy": "0xF3b5E160898CFd8b89476e77887050aBB377C277",
-        "implementation": "0xba8911d42d27a281a27c301b3284167ac950ad37"
+        "implementation": "0xF0b56CCFfEC13Dc81A6A9C9134DB431A05365b73"
     }
 }
