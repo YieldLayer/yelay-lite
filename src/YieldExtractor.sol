@@ -60,7 +60,7 @@ contract YieldExtractor is
         uint256 yieldSharesTotal;
         bytes32[] proof;
     }
-    
+
     /**
      * @notice Merkle tree root data structure
      * @param hash Merkle root hash

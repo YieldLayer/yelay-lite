@@ -5,7 +5,6 @@ import {AbstractYieldExtractorMigration} from "./AbstractYieldExtractorMigration
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 
 contract MainnetYieldExtractorMigrationTest is AbstractYieldExtractorMigration {
-
     function _setupFork() internal override {
         vm.createSelectFork(vm.envString("MAINNET_URL"), 22331639);
 
