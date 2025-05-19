@@ -62,16 +62,6 @@ contract YieldExtractor is
     }
 
     /**
-     * @notice Data structure for already claimed yield
-     * @param user Address of the user that yield belongs to
-     * @param claimRequest Claim request data
-     */
-    struct ClaimedRequest {
-        address user;
-        ClaimRequest claimRequest;
-    }
-
-    /**
      * @notice Merkle tree root data structure
      * @param hash Merkle root hash
      * @param blockNumber Block number at which yield share values were calculated
@@ -205,47 +195,6 @@ contract YieldExtractor is
      */
     function verify(ClaimRequest memory data, address user) external view returns (bool) {
         return _verify(data, _getLeaf(data, user));
-    }
-
-    /**
-     * @notice Initialize claimed leafs and add initial roots
-     * @param initialRoots Array of initial roots
-     * @param yelayLiteVault Address of the vault
-     * @param claimedRequests Array of claimed requests
-     */
-    function initializeClaimedLeafs(
-        Root[] memory initialRoots,
-        address yelayLiteVault,
-        ClaimedRequest[] memory claimedRequests
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i; i < initialRoots.length; ++i) {
-            cycleCount[yelayLiteVault]++;
-            roots[yelayLiteVault][cycleCount[yelayLiteVault]] = initialRoots[i];
-
-            emit LibEvents.PoolRootAdded(
-                yelayLiteVault, cycleCount[yelayLiteVault], initialRoots[i].hash, initialRoots[i].blockNumber
-            );
-        }
-
-        for (uint256 i; i < claimedRequests.length; ++i) {
-            bytes32 leaf = _getLeaf(claimedRequests[i].claimRequest, claimedRequests[i].user);
-            require(!isLeafClaimed[leaf], LibErrors.ProofAlreadyClaimed(i));
-            require(_verify(claimedRequests[i].claimRequest, leaf), LibErrors.InvalidProof(i));
-
-            isLeafClaimed[leaf] = true;
-
-            yieldSharesClaimed[claimedRequests[i].user][claimedRequests[i].claimRequest.yelayLiteVault][claimedRequests[i]
-                .claimRequest
-                .projectId] = claimedRequests[i].claimRequest.yieldSharesTotal;
-
-            emit LibEvents.YieldClaimed(
-                claimedRequests[i].user,
-                claimedRequests[i].claimRequest.yelayLiteVault,
-                claimedRequests[i].claimRequest.projectId,
-                claimedRequests[i].claimRequest.cycle,
-                claimedRequests[i].claimRequest.yieldSharesTotal
-            );
-        }
     }
 
     /**
