@@ -273,13 +273,26 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         address _underlyingAsset = address(sF.underlyingAsset);
         uint256 totalAssetsBefore = totalAssets();
+        bool processedUnderlyingAsset;
         for (uint256 i; i < swapArgs.length; i++) {
+            // Special handling for underlying asset - process it only once
+            if (swapArgs[i].tokenIn == _underlyingAsset && !processedUnderlyingAsset) {
+                uint256 balance = sF.underlyingAsset.balanceOf(address(this));
+                uint256 underlyingDiff = balance.zeroFloorSub(sF.underlyingBalance);
+                compounded += underlyingDiff;
+                sF.underlyingBalance += SafeCast.toUint192(underlyingDiff);
+                processedUnderlyingAsset = true;
+                continue;
+            }
             require(swapArgs[i].tokenIn != _underlyingAsset, LibErrors.CompoundUnderlyingForbidden());
             uint256 tokenInAmount = ERC20(swapArgs[i].tokenIn).balanceOf(address(this));
             ERC20(swapArgs[i].tokenIn).safeTransfer(address(_swapper), tokenInAmount);
+            SwapArgs[] memory args = new SwapArgs[](1);
+            args[0] = swapArgs[i];
+            uint256 swapResult = _swapper.swap(args, _underlyingAsset);
+            compounded += swapResult;
+            sF.underlyingBalance += SafeCast.toUint192(swapResult);
         }
-        compounded = _swapper.swap(swapArgs, _underlyingAsset);
-        sF.underlyingBalance += SafeCast.toUint192(compounded);
         require(totalAssets() > totalAssetsBefore, LibErrors.TotalAssetsLoss());
         _accrueFee();
         emit LibEvents.Compounded(compounded);

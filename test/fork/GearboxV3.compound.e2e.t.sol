@@ -132,6 +132,7 @@ contract CompoundTest is Test {
     function test_compound() external {
         uint256 userBalance = 10_000e18;
         uint256 toDeposit = 1000e18;
+        uint256 underlyingBalanceBefore = 1e18;
         deal(address(underlyingAsset), user, userBalance);
 
         vm.startPrank(user);
@@ -155,9 +156,11 @@ contract CompoundTest is Test {
         uint256 gearBalance = IERC20(GEARBOX_TOKEN).balanceOf(address(yelayLiteVault));
 
         uint256 underlyingAssetBefore = yelayLiteVault.underlyingBalance();
+        uint256 compounded;
 
         vm.startPrank(owner);
         {
+            //Test underlyingAsset as reward
             SwapArgs[] memory s = new SwapArgs[](1);
             s[0] = SwapArgs({
                 tokenIn: address(underlyingAsset),
@@ -175,6 +178,26 @@ contract CompoundTest is Test {
 
             yelayLiteVault.grantRole(LibRoles.SWAP_REWARDS_OPERATOR, owner);
 
+            //Test zero underlyingAsset balance
+            vm.expectRevert(abi.encodeWithSelector(LibErrors.TotalAssetsLoss.selector));
+            yelayLiteVault.swapRewards(s);
+
+            deal(address(underlyingAsset), address(yelayLiteVault), 1e18);
+
+            //Test successful underlyingAsset swap
+            compounded += yelayLiteVault.swapRewards(s);
+            assertEq(compounded, underlyingBalanceBefore);
+
+            //Test underlyingAsset balance equal to underlyingBalance
+            vm.expectRevert(abi.encodeWithSelector(LibErrors.TotalAssetsLoss.selector));
+            yelayLiteVault.swapRewards(s);
+        }
+        {
+            //Test underlyingAsset as reward twice
+            SwapArgs[] memory s = new SwapArgs[](2);
+            s[0] = SwapArgs({tokenIn: address(underlyingAsset), swapTarget: address(mockExchange), swapCallData: ""});
+            s[1] = SwapArgs({tokenIn: address(underlyingAsset), swapTarget: address(mockExchange), swapCallData: ""});
+
             vm.expectRevert(abi.encodeWithSelector(LibErrors.CompoundUnderlyingForbidden.selector));
             yelayLiteVault.swapRewards(s);
         }
@@ -186,12 +209,15 @@ contract CompoundTest is Test {
                 MockExchange.swap.selector, GEARBOX_TOKEN, address(underlyingAsset), gearBalance / 2
             )
         });
-        uint256 compounded = yelayLiteVault.swapRewards(swapArgs);
+        compounded += yelayLiteVault.swapRewards(swapArgs);
         vm.stopPrank();
 
         assertEq(yelayLiteVault.underlyingBalance(), underlyingAssetBefore + compounded);
         assertEq(IERC20(GEARBOX_TOKEN).balanceOf(address(yelayLiteVault)), gearBalance / 2);
-        assertEq(compounded, mockExchange.previewSwap(GEARBOX_TOKEN, address(underlyingAsset), gearBalance / 2));
+        assertEq(
+            compounded,
+            mockExchange.previewSwap(GEARBOX_TOKEN, address(underlyingAsset), gearBalance / 2) + underlyingBalanceBefore
+        );
     }
 
     function test_accrueFee() external {
