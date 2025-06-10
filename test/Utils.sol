@@ -55,7 +55,7 @@ library Utils {
     }
 
     function fundsFacetSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](24);
+        bytes4[] memory selectors = new bytes4[](25);
         selectors[0] = FundsFacet.deposit.selector;
         selectors[1] = FundsFacet.redeem.selector;
         selectors[2] = FundsFacet.totalAssets.selector;
@@ -72,16 +72,17 @@ library Utils {
         selectors[13] = FundsFacet.claimStrategyRewards.selector;
         selectors[14] = FundsFacet.swapper.selector;
         selectors[15] = FundsFacet.swapRewards.selector;
-        selectors[16] = FundsFacet.migratePosition.selector;
+        selectors[16] = FundsFacet.compoundUnderlyingReward.selector;
+        selectors[17] = FundsFacet.migratePosition.selector;
 
-        selectors[17] = ERC1155Upgradeable.uri.selector;
-        selectors[18] = ERC1155Upgradeable.balanceOf.selector;
-        selectors[19] = bytes4(keccak256("totalSupply()"));
-        selectors[20] = bytes4(keccak256("totalSupply(uint256)"));
+        selectors[18] = ERC1155Upgradeable.uri.selector;
+        selectors[19] = ERC1155Upgradeable.balanceOf.selector;
+        selectors[20] = bytes4(keccak256("totalSupply()"));
+        selectors[21] = bytes4(keccak256("totalSupply(uint256)"));
 
-        selectors[21] = FundsFacet.lastTotalAssetsTimestamp.selector;
-        selectors[22] = FundsFacet.lastTotalAssetsUpdateInterval.selector;
-        selectors[23] = FundsFacet.setLastTotalAssetsUpdateInterval.selector;
+        selectors[22] = FundsFacet.lastTotalAssetsTimestamp.selector;
+        selectors[23] = FundsFacet.lastTotalAssetsUpdateInterval.selector;
+        selectors[24] = FundsFacet.setLastTotalAssetsUpdateInterval.selector;
         return selectors;
     }
 

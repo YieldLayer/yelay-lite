@@ -158,6 +158,13 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
     function swapRewards(SwapArgs[] memory swapArgs) external returns (uint256 compounded);
 
     /**
+     * @dev Compounds rewards in underlying asset.
+     * @dev Callable by SWAP_REWARDS_OPERATOR.
+     * @return compounded The amount compounded.
+     */
+    function compoundUnderlyingReward() external returns (uint256 compounded);
+
+    /**
      * @dev Accrues fees.
      */
     function accrueFee() external;

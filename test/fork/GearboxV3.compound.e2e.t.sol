@@ -194,6 +194,29 @@ contract CompoundTest is Test {
         assertEq(compounded, mockExchange.previewSwap(GEARBOX_TOKEN, address(underlyingAsset), gearBalance / 2));
     }
 
+    function test_compoundUnderlying() external {
+        uint256 underlyingAssetBefore = yelayLiteVault.underlyingBalance();
+        vm.startPrank(owner);
+        {
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    IAccessControl.AccessControlUnauthorizedAccount.selector, owner, LibRoles.SWAP_REWARDS_OPERATOR
+                )
+            );
+            yelayLiteVault.compoundUnderlyingReward();
+
+            yelayLiteVault.grantRole(LibRoles.SWAP_REWARDS_OPERATOR, owner);
+            vm.expectRevert(abi.encodeWithSelector(LibErrors.TotalAssetsLoss.selector));
+            yelayLiteVault.compoundUnderlyingReward();
+        }
+        deal(address(underlyingAsset), address(yelayLiteVault), 1e18);
+        uint256 compounded = yelayLiteVault.compoundUnderlyingReward();
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.underlyingBalance(), underlyingAssetBefore + compounded);
+        assertEq(compounded, 1e18);
+    }
+
     function test_accrueFee() external {
         uint256 userBalance = 10_000e18;
         uint256 toDeposit = 1000e18;
