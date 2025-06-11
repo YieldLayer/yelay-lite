@@ -19,6 +19,7 @@ import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
 import {ISwapper} from "src/interfaces/ISwapper.sol";
 import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 import {ERC4626Strategy} from "src/strategies/ERC4626Strategy.sol";
+import {IMerklDistributor} from "src/interfaces/external/merkl/IMerklDistributor.sol";
 
 contract Migration is Test {
     using Utils for address;
@@ -28,6 +29,7 @@ contract Migration is Test {
     address constant fundsOperator = address(0x76dBc2c72E5c8eF6816Af0F904621d091857fF80);
     IYelayLiteVault constant yelayLiteVault = IYelayLiteVault(0x39DAc87bE293DC855b60feDd89667364865378cc);
     ISwapper constant swapper = ISwapper(0xD49Dc240CE448BE0513803AB82B85F8484748871);
+    IMerklDistributor constant merklDistributor = IMerklDistributor(0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae);
 
     function setUp() external {
         vm.createSelectFork(vm.envString("MAINNET_URL"), FORK_BLOCK_NUMBER);
@@ -43,7 +45,10 @@ contract Migration is Test {
         // 2. Set selectors for facets (Management, Funds, Clients)
         //No need to remove old facets, all are being replaced, there were no changes to function signatures
         SelectorsToFacet[] memory facets = new SelectorsToFacet[](3);
-        facets[0] = SelectorsToFacet({facet: address(new FundsFacet(swapper)), selectors: Utils.fundsFacetSelectors()});
+        facets[0] = SelectorsToFacet({
+            facet: address(new FundsFacet(swapper, merklDistributor)),
+            selectors: Utils.fundsFacetSelectors()
+        });
         facets[1] =
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: Utils.managementFacetSelectors()});
         facets[2] = SelectorsToFacet({facet: address(new ClientsFacet()), selectors: Utils.clientsFacetSelectors()});

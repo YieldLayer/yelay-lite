@@ -11,6 +11,7 @@ import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 import {ISwapper, SwapArgs} from "src/interfaces/ISwapper.sol";
+import {IMerklDistributor} from "src/interfaces/external/merkl/IMerklDistributor.sol";
 
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
 import {PausableCheck} from "src/abstract/PausableCheck.sol";
@@ -35,13 +36,16 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     uint256 constant WITHDRAW_MARGIN = 10;
 
     ISwapper private immutable _swapper;
+    IMerklDistributor private immutable _merklDistributor;
 
     /**
      * @dev Initializes the contract with the given swapper.
      * @param swapper_ The address of the swapper contract.
+     * @param merklDistributor_ The address of the merkl distributor contract.
      */
-    constructor(ISwapper swapper_) {
+    constructor(ISwapper swapper_, IMerklDistributor merklDistributor_) {
         _swapper = swapper_;
+        _merklDistributor = merklDistributor_;
     }
 
     /// @inheritdoc IFundsFacet
@@ -107,6 +111,11 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     /// @inheritdoc IFundsFacet
     function swapper() external view returns (address) {
         return address(_swapper);
+    }
+
+    /// @inheritdoc IFundsFacet
+    function merklDistributor() external view returns (address) {
+        return address(_merklDistributor);
     }
 
     /// @inheritdoc IFundsFacet
@@ -323,6 +332,19 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         sM.activeStrategies[index].adapter.functionDelegateCall(
             abi.encodeWithSelector(IStrategyBase.claimRewards.selector, sM.activeStrategies[index].supplement)
         );
+    }
+
+    /// @inheritdoc IFundsFacet
+    function claimMerklRewards(address[] calldata tokens, uint256[] calldata amounts, bytes32[][] calldata proofs)
+        external
+        notPaused
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+    {
+        address[] memory users = new address[](tokens.length);
+        for (uint256 i; i < tokens.length; i++) {
+            users[i] = address(this);
+        }
+        _merklDistributor.claim(users, tokens, amounts, proofs);
     }
 
     /**

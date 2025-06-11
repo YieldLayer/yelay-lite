@@ -33,7 +33,9 @@ export const getFundsFacetSelectors = () => {
         'underlyingBalance',
         'underlyingAsset',
         'yieldExtractor',
+        'setYieldExtractor',
         'swapper',
+        'merklDistributor',
         'totalAssets',
         'strategyAssets',
         'strategyRewards',
@@ -44,11 +46,12 @@ export const getFundsFacetSelectors = () => {
         'managedWithdraw',
         'reallocate',
         'swapRewards',
+        'compoundUnderlyingReward',
         'accrueFee',
         'claimStrategyRewards',
+        'claimMerklRewards',
         'balanceOf',
         'uri',
-        'setYieldExtractor',
     ] as const;
     return getFunctionSelectors(i, functions);
 };

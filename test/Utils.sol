@@ -20,12 +20,23 @@ import {OwnerFacet} from "src/facets/OwnerFacet.sol";
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
 import {ISwapper, ExchangeArgs} from "src/interfaces/ISwapper.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
+import {IMerklDistributor} from "src/interfaces/external/merkl/IMerklDistributor.sol";
 
 library Utils {
     function deployDiamond(address owner, address underlyingAsset, address yieldExtractor, string memory uri)
         internal
         returns (IYelayLiteVault)
     {
+        return deployDiamond(owner, underlyingAsset, yieldExtractor, uri, address(0));
+    }
+
+    function deployDiamond(
+        address owner,
+        address underlyingAsset,
+        address yieldExtractor,
+        string memory uri,
+        address merklDistributor
+    ) internal returns (IYelayLiteVault) {
         Swapper swapperImpl = new Swapper();
         ISwapper swapper = ISwapper(
             address(new ERC1967Proxy(address(swapperImpl), abi.encodeWithSelector(Swapper.initialize.selector, owner)))
@@ -38,8 +49,10 @@ library Utils {
         );
 
         SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](4);
-        selectorsToFacets[0] =
-            SelectorsToFacet({facet: address(new FundsFacet(swapper)), selectors: fundsFacetSelectors()});
+        selectorsToFacets[0] = SelectorsToFacet({
+            facet: address(new FundsFacet(swapper, IMerklDistributor(merklDistributor))),
+            selectors: fundsFacetSelectors()
+        });
         selectorsToFacets[1] =
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: managementFacetSelectors()});
         selectorsToFacets[2] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
@@ -56,33 +69,34 @@ library Utils {
 
     function fundsFacetSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](25);
-        selectors[0] = FundsFacet.deposit.selector;
-        selectors[1] = FundsFacet.redeem.selector;
-        selectors[2] = FundsFacet.totalAssets.selector;
-        selectors[3] = FundsFacet.managedDeposit.selector;
-        selectors[4] = FundsFacet.managedWithdraw.selector;
-        selectors[5] = FundsFacet.reallocate.selector;
-        selectors[6] = FundsFacet.strategyAssets.selector;
-        selectors[7] = FundsFacet.lastTotalAssets.selector;
-        selectors[8] = FundsFacet.underlyingBalance.selector;
-        selectors[9] = FundsFacet.underlyingAsset.selector;
-        selectors[10] = FundsFacet.yieldExtractor.selector;
-        selectors[11] = FundsFacet.accrueFee.selector;
-        selectors[12] = FundsFacet.strategyRewards.selector;
-        selectors[13] = FundsFacet.claimStrategyRewards.selector;
-        selectors[14] = FundsFacet.swapper.selector;
-        selectors[15] = FundsFacet.swapRewards.selector;
-        selectors[16] = FundsFacet.compoundUnderlyingReward.selector;
+        selectors[0] = FundsFacet.totalSupply.selector;
+        selectors[1] = FundsFacet.totalSupply(uint256).selector;
+        selectors[2] = FundsFacet.lastTotalAssets.selector;
+        selectors[3] = FundsFacet.lastTotalAssetsTimestamp.selector;
+        selectors[4] = FundsFacet.lastTotalAssetsUpdateInterval.selector;
+        selectors[5] = FundsFacet.setLastTotalAssetsUpdateInterval.selector;
+        selectors[6] = FundsFacet.underlyingBalance.selector;
+        selectors[7] = FundsFacet.underlyingAsset.selector;
+        selectors[8] = FundsFacet.yieldExtractor.selector;
+        selectors[9] = FundsFacet.setYieldExtractor.selector;
+        selectors[10] = FundsFacet.swapper.selector;
+        selectors[11] = FundsFacet.merklDistributor.selector;
+        selectors[12] = FundsFacet.totalAssets.selector;
+        selectors[13] = FundsFacet.strategyAssets.selector;
+        selectors[14] = FundsFacet.strategyRewards.selector;
+        selectors[15] = FundsFacet.deposit.selector;
+        selectors[16] = FundsFacet.redeem.selector;
         selectors[17] = FundsFacet.migratePosition.selector;
-
-        selectors[18] = ERC1155Upgradeable.uri.selector;
-        selectors[19] = ERC1155Upgradeable.balanceOf.selector;
-        selectors[20] = bytes4(keccak256("totalSupply()"));
-        selectors[21] = bytes4(keccak256("totalSupply(uint256)"));
-
-        selectors[22] = FundsFacet.lastTotalAssetsTimestamp.selector;
-        selectors[23] = FundsFacet.lastTotalAssetsUpdateInterval.selector;
-        selectors[24] = FundsFacet.setLastTotalAssetsUpdateInterval.selector;
+        selectors[18] = FundsFacet.managedDeposit.selector;
+        selectors[19] = FundsFacet.managedWithdraw.selector;
+        selectors[20] = FundsFacet.reallocate.selector;
+        selectors[21] = FundsFacet.swapRewards.selector;
+        selectors[22] = FundsFacet.compoundUnderlyingReward.selector;
+        selectors[23] = FundsFacet.accrueFee.selector;
+        selectors[24] = FundsFacet.claimStrategyRewards.selector;
+        selectors[25] = FundsFacet.claimMerklRewards.selector;
+        selectors[26] = FundsFacet.balanceOf.selector;
+        selectors[27] = FundsFacet.uri.selector;
         return selectors;
     }
 
