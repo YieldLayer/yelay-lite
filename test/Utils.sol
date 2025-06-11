@@ -68,9 +68,9 @@ library Utils {
     }
 
     function fundsFacetSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](25);
-        selectors[0] = FundsFacet.totalSupply.selector;
-        selectors[1] = FundsFacet.totalSupply(uint256).selector;
+        bytes4[] memory selectors = new bytes4[](28);
+        selectors[0] = bytes4(keccak256("totalSupply()"));
+        selectors[1] = bytes4(keccak256("totalSupply(uint256)"));
         selectors[2] = FundsFacet.lastTotalAssets.selector;
         selectors[3] = FundsFacet.lastTotalAssetsTimestamp.selector;
         selectors[4] = FundsFacet.lastTotalAssetsUpdateInterval.selector;
@@ -95,8 +95,8 @@ library Utils {
         selectors[23] = FundsFacet.accrueFee.selector;
         selectors[24] = FundsFacet.claimStrategyRewards.selector;
         selectors[25] = FundsFacet.claimMerklRewards.selector;
-        selectors[26] = FundsFacet.balanceOf.selector;
-        selectors[27] = FundsFacet.uri.selector;
+        selectors[26] = ERC1155Upgradeable.balanceOf.selector;
+        selectors[27] = ERC1155Upgradeable.uri.selector;
         return selectors;
     }
 
