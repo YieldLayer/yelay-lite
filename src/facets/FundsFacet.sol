@@ -304,7 +304,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         uint256 totalAssetsBefore = totalAssets();
         uint256 balance = sF.underlyingAsset.balanceOf(address(this));
-        compounded = balance.zeroFloorSub(sF.underlyingBalance);
+        compounded = balance - sF.underlyingBalance;
         sF.underlyingBalance += SafeCast.toUint192(compounded);
         require(totalAssets() > totalAssetsBefore, LibErrors.TotalAssetsLoss());
         _accrueFee();

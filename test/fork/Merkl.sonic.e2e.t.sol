@@ -8,7 +8,7 @@ import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {Utils} from "../Utils.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
-import {OWNER, USDCe} from "../Constants.sol";
+import {OWNER} from "../Constants.sol";
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
 import {IMerklDistributor} from "src/interfaces/external/merkl/IMerklDistributor.sol";
@@ -23,8 +23,6 @@ contract CompoundTest is Test {
     IYelayLiteVault yelayLiteVault = IYelayLiteVault(0x56b0c5C989C65e712463278976ED26D6e07592ab);
     IMerklDistributor merklDistributor = IMerklDistributor(0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae);
     IERC20 ws = IERC20(0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38);
-
-    IERC20 underlyingAsset = IERC20(USDCe);
 
     function _getFundsFacetSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](1);
