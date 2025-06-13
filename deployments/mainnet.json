@@ -8,7 +8,7 @@
         "implementation": "0x93ec44bccfce56c519a0cad5ff13a5d6d0e98256"
     },
     "ownerFacet": "0x4E078e0345820B6e466A843CEeBD074D483AD008",
-    "fundsFacet": "0x94cec01bCed84022c91Cd5bf4f424A5CC781deE3",
+    "fundsFacet": "0xdd4D9766B931d165E44890D0288A6f2Dd565AdEC",
     "accessFacet": "0xb61413b0E6811bA11A6B34534A8CE4AF69D504b4",
     "managementFacet": "0x0A09027643d21F35df24f156694A97776d211907",
     "clientsFacet": "0x1798b36C340DBA0A2bd7BD379dF100af07396e57",
