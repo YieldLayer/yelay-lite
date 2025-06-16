@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {IAccessControl} from "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import {Test, console} from "forge-std/Test.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
@@ -116,5 +117,30 @@ contract FundsFacetTest is Test {
         yelayLiteVault.setLastTotalAssetsUpdateInterval(interval);
         vm.stopPrank();
         assertEq(yelayLiteVault.lastTotalAssetsUpdateInterval(), interval);
+    }
+
+    function test_compoundUnderlying() external {
+        uint256 underlyingAssetBefore = yelayLiteVault.underlyingBalance();
+        uint256 totalAssetsBefore = yelayLiteVault.totalAssets();
+        vm.startPrank(owner);
+        {
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    IAccessControl.AccessControlUnauthorizedAccount.selector, owner, LibRoles.SWAP_REWARDS_OPERATOR
+                )
+            );
+            yelayLiteVault.compoundUnderlyingReward();
+
+            yelayLiteVault.grantRole(LibRoles.SWAP_REWARDS_OPERATOR, owner);
+            vm.expectRevert(abi.encodeWithSelector(LibErrors.TotalAssetsLoss.selector));
+            yelayLiteVault.compoundUnderlyingReward();
+        }
+        deal(address(underlyingAsset), address(yelayLiteVault), 1e18);
+        uint256 compounded = yelayLiteVault.compoundUnderlyingReward();
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.underlyingBalance(), underlyingAssetBefore + compounded);
+        assertEq(yelayLiteVault.totalAssets(), totalAssetsBefore + compounded);
+        assertEq(compounded, 1e18);
     }
 }

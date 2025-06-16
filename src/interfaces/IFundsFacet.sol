@@ -82,6 +82,12 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
     function swapper() external view returns (address);
 
     /**
+     * @dev Returns the address of the merkl distributor.
+     * @return The address of the merkl distributor.
+     */
+    function merklDistributor() external view returns (address);
+
+    /**
      * @dev Returns the total assets managed by the contract.
      * @return assets The total assets managed by the contract.
      */
@@ -158,6 +164,13 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
     function swapRewards(SwapArgs[] memory swapArgs) external returns (uint256 compounded);
 
     /**
+     * @dev Compounds rewards in underlying asset.
+     * @dev Callable by SWAP_REWARDS_OPERATOR.
+     * @return compounded The amount compounded.
+     */
+    function compoundUnderlyingReward() external returns (uint256 compounded);
+
+    /**
      * @dev Accrues fees.
      */
     function accrueFee() external;
@@ -168,4 +181,14 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
      * @param index The index of the strategy.
      */
     function claimStrategyRewards(uint256 index) external;
+
+    /**
+     * @dev Claims rewards from the merkl distributor.
+     * @dev Callable by FUNDS_OPERATOR.
+     * @param tokens Array of ERC20 tokens to be claimed.
+     * @param amounts Array of token amounts to be claimed.
+     * @param proofs Array of merkle proofs required to validate each claim.
+     */
+    function claimMerklRewards(address[] calldata tokens, uint256[] calldata amounts, bytes32[][] calldata proofs)
+        external;
 }
