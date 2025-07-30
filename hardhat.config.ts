@@ -33,13 +33,14 @@ const config: HardhatUserConfig = {
             url: process.env.SONIC_URL!,
             accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
         },
+        arbitrum: {
+            chainId: 42161,
+            url: process.env.ARBITRUM_URL!,
+            accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
+        },
     },
     etherscan: {
-        apiKey: {
-            mainnet: process.env.ETHERSCAN_API_KEY!,
-            base: process.env.BASESCAN_API_KEY!,
-            sonic: process.env.SONICSCAN_API_KEY!,
-        },
+        apiKey: process.env.ETHERSCAN_API_KEY!,
         customChains: [
             {
                 network: 'sonic',
