@@ -1,4 +1,5 @@
 import { ethers } from 'hardhat';
+import arbContracts from '../deployments/arbitrum.json';
 
 export const ADDRESSES = {
     8453: {
@@ -148,10 +149,10 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
     } else if (chainId === 42161) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: ADDRESSES[chainId].OWNER,
+            yieldExtractor: arbContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OPERATOR],
+            fundsOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
             queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
             swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
             pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
