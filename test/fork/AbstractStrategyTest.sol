@@ -20,7 +20,7 @@ abstract contract AbstractStrategyTest is Test {
     address constant owner = address(0x01);
     address constant user = address(0x02);
     address constant user2 = address(0x03);
-    address constant yieldExtractor = address(0x04);
+    address constant yieldExtractor = address(0x100);
     uint256 constant yieldProjectId = 0;
     uint256 constant projectId = 1;
 
