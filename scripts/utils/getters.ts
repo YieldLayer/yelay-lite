@@ -144,6 +144,8 @@ export const getContractsPath = (chainId: number, testing = false) => {
         fileName = 'mainnet.json';
     } else if (chainId === 146) {
         fileName = 'sonic.json';
+    } else if (chainId === 42161) {
+        fileName = 'arbitrum.json';
     } else {
         throw new Error(`No contracts for chainId ${chainId}`);
     }

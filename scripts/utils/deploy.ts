@@ -29,10 +29,14 @@ export const deployClientsFacet = async (deployer: Signer) => {
         .then((r) => r.getAddress());
 };
 
-export const deployFundsFacet = async (deployer: Signer, swapperAddress: string) => {
+export const deployFundsFacet = async (
+    deployer: Signer,
+    swapperAddress: string,
+    merklDistributor = ethers.ZeroAddress,
+) => {
     return ethers
         .getContractFactory('FundsFacet', deployer)
-        .then((f) => f.deploy(swapperAddress))
+        .then((f) => f.deploy(swapperAddress, merklDistributor))
         .then((r) => r.waitForDeployment())
         .then((r) => r.getAddress());
 };
@@ -53,10 +57,14 @@ export const deployOwnerFacet = async (deployer: Signer) => {
         .then((r) => r.getAddress());
 };
 
-export const deployFacets = async (deployer: Signer, swapperAddress: string) => {
+export const deployFacets = async (
+    deployer: Signer,
+    swapperAddress: string,
+    merklAddress = ethers.ZeroAddress,
+) => {
     const accessFacet = await deployAccessFacet(deployer);
     const clientsFacet = await deployClientsFacet(deployer);
-    const fundsFacet = await deployFundsFacet(deployer, swapperAddress);
+    const fundsFacet = await deployFundsFacet(deployer, swapperAddress, merklAddress);
     const managementFacet = await deployManagementFacet(deployer);
     const ownerFacet = await deployOwnerFacet(deployer);
     return { ownerFacet, fundsFacet, managementFacet, accessFacet, clientsFacet };
@@ -130,6 +138,69 @@ export const deployInfra = async (
 
     const { ownerFacet, fundsFacet, accessFacet, managementFacet, clientsFacet } =
         await deployFacets(deployer, swapper);
+
+    fs.writeFileSync(
+        deploymentPath,
+        JSON.stringify(
+            {
+                swapper: {
+                    proxy: swapper,
+                    implementation: swapperImplementationAddress,
+                },
+                vaultWrapper: {
+                    proxy: vaultWrapper,
+                    implementation: vaultWrapperImplementationAddress,
+                },
+                ownerFacet,
+                fundsFacet,
+                accessFacet,
+                managementFacet,
+                clientsFacet,
+                vaults: {},
+                strategies: {},
+            },
+            null,
+            4,
+        ) + '\n',
+    );
+};
+
+export const deployInfraV2 = async (
+    deployer: Signer,
+    ownerAddress: string,
+    wethAddress: string,
+    merklAddress: string,
+    deploymentPath: string,
+) => {
+    const swapperFactory = await ethers.getContractFactory('Swapper', deployer);
+    const swapper = await upgrades
+        .deployProxy(swapperFactory, [ownerAddress], {
+            kind: 'uups',
+            unsafeAllow: ['state-variable-immutable'],
+        })
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+
+    const swapperImplementationAddress = await deployer
+        .provider!.getStorage(swapper, IMPLEMENTATION_STORAGE_SLOT)
+        .then((r) => ethers.dataSlice(r, 12));
+
+    const vaultWrapperFactory = await ethers.getContractFactory('VaultWrapper', deployer);
+    const vaultWrapper = await upgrades
+        .deployProxy(vaultWrapperFactory, [ownerAddress], {
+            kind: 'uups',
+            constructorArgs: [wethAddress, swapper],
+            unsafeAllow: ['state-variable-immutable'],
+        })
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+
+    const vaultWrapperImplementationAddress = await deployer
+        .provider!.getStorage(vaultWrapper, IMPLEMENTATION_STORAGE_SLOT)
+        .then((r) => ethers.dataSlice(r, 12));
+
+    const { ownerFacet, fundsFacet, accessFacet, managementFacet, clientsFacet } =
+        await deployFacets(deployer, swapper, merklAddress);
 
     fs.writeFileSync(
         deploymentPath,

@@ -9,11 +9,11 @@
         "status:base:test": "TEST=true npx hardhat run scripts/status.ts --network base"
     },
     "devDependencies": {
-        "@nomicfoundation/hardhat-foundry": "1.1.3",
-        "@nomicfoundation/hardhat-toolbox": "5.0.0",
-        "@openzeppelin/hardhat-upgrades": "3.7.0",
+        "@nomicfoundation/hardhat-foundry": "1.2.0",
+        "@nomicfoundation/hardhat-toolbox": "6.1.0",
+        "@openzeppelin/hardhat-upgrades": "3.9.1",
         "dotenv": "16.4.7",
-        "hardhat": "2.22.17",
+        "hardhat": "2.26.1",
         "prettier": "3.4.2",
         "ts-node": "10.9.2",
         "typescript": "5.7.2"

@@ -1,4 +1,5 @@
 import { ethers } from 'hardhat';
+import arbContracts from '../deployments/arbitrum.json';
 
 export const ADDRESSES = {
     8453: {
@@ -60,6 +61,18 @@ export const ADDRESSES = {
         },
         GEARBOX_TOKEN: `0xBa3335588D9403515223F109EdC4eB7269a9Ab5D`,
         YIELD_PUBLISHER: '0x5F63F86155B5Dd1eb4843a7985776337f9dE6378',
+    },
+    42161: {
+        OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
+        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
+        WETH: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
+        USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
+        MERKL: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+        AAVE_V3_POOL: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+        URI: 'https://lite.api.yelay.io/arbitrum/metadata/{id}',
+        ONE_INCH_ROUTER_V6: '0x111111125421cA6dc452d289314280a0f8842A65',
+        YIELD_PUBLISHER: '0x5F63F86155B5Dd1eb4843a7985776337f9dE6378',
+        ARBITRUM_TOKEN: '0x912CE59144191C1204E64559FE8253a0e49E6548',
     },
 } as const;
 
@@ -127,6 +140,19 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             oneInchRouter: ethers.ZeroAddress,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OPERATOR],
+            queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
+            pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            unpauser: [ADDRESSES[chainId].OWNER],
+            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
+        };
+    } else if (chainId === 42161) {
+        return {
+            owner: ADDRESSES[chainId].OWNER,
+            yieldExtractor: arbContracts.yieldExtractor.proxy,
+            oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
+            strategyAuthority: [ADDRESSES[chainId].OWNER],
+            fundsOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
             queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
             swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
             pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
