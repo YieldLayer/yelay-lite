@@ -14,7 +14,7 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
-import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
+import {IFundsFacetBase} from "src/interfaces/IFundsFacetBase.sol";
 import {IMulticall} from "src/interfaces/IMulticall.sol";
 
 import {MockStrategy} from "./MockStrategy.sol";
@@ -80,12 +80,12 @@ contract AccessFacetTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, LibRoles.PAUSER)
         );
-        yelayLiteVault.setPaused(IFundsFacet.deposit.selector, true);
+        yelayLiteVault.setPaused(IFundsFacetBase.deposit.selector, true);
 
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, LibRoles.UNPAUSER)
         );
-        yelayLiteVault.setPaused(IFundsFacet.deposit.selector, false);
+        yelayLiteVault.setPaused(IFundsFacetBase.deposit.selector, false);
         vm.stopPrank();
 
         vm.startPrank(owner);
@@ -93,22 +93,22 @@ contract AccessFacetTest is Test {
         yelayLiteVault.grantRole(LibRoles.UNPAUSER, user);
         vm.stopPrank();
 
-        assertEq(yelayLiteVault.selectorToPaused(IFundsFacet.deposit.selector), false);
+        assertEq(yelayLiteVault.selectorToPaused(IFundsFacetBase.deposit.selector), false);
 
         vm.startPrank(user);
-        yelayLiteVault.setPaused(IFundsFacet.deposit.selector, true);
+        yelayLiteVault.setPaused(IFundsFacetBase.deposit.selector, true);
 
-        assertEq(yelayLiteVault.selectorToPaused(IFundsFacet.deposit.selector), true);
-        vm.expectRevert(abi.encodeWithSelector(LibErrors.Paused.selector, IFundsFacet.deposit.selector));
+        assertEq(yelayLiteVault.selectorToPaused(IFundsFacetBase.deposit.selector), true);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.Paused.selector, IFundsFacetBase.deposit.selector));
         yelayLiteVault.deposit(1, 1, user);
 
         bytes[] memory data = new bytes[](1);
-        data[0] = abi.encodeWithSelector(IFundsFacet.deposit.selector, 1, 1, user);
-        vm.expectRevert(abi.encodeWithSelector(LibErrors.Paused.selector, IFundsFacet.deposit.selector));
+        data[0] = abi.encodeWithSelector(IFundsFacetBase.deposit.selector, 1, 1, user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.Paused.selector, IFundsFacetBase.deposit.selector));
         yelayLiteVault.multicall(data);
 
-        yelayLiteVault.setPaused(IFundsFacet.deposit.selector, false);
-        assertEq(yelayLiteVault.selectorToPaused(IFundsFacet.deposit.selector), false);
+        yelayLiteVault.setPaused(IFundsFacetBase.deposit.selector, false);
+        assertEq(yelayLiteVault.selectorToPaused(IFundsFacetBase.deposit.selector), false);
         vm.stopPrank();
     }
 }

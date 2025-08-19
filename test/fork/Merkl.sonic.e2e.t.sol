@@ -9,7 +9,7 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
 import {Utils} from "../Utils.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {OWNER} from "../Constants.sol";
-import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
+import {IFundsFacetBase} from "src/interfaces/IFundsFacetBase.sol";
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
 import {IMerklDistributor} from "src/interfaces/external/merkl/IMerklDistributor.sol";
 import {FundsFacet} from "src/facets/FundsFacet.sol";
@@ -26,7 +26,7 @@ contract CompoundTest is Test {
 
     function _getFundsFacetSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IFundsFacet.claimMerklRewards.selector;
+        selectors[0] = IFundsFacetBase.claimMerklRewards.selector;
         return selectors;
     }
 

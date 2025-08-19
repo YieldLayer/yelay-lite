@@ -217,4 +217,14 @@ library LibErrors {
      * @notice Thrown when an invalid cycle number is provided
      */
     error InvalidCycle();
+
+    error ZeroAmount();
+
+    error ZeroAddress();
+
+    error InsufficientBalance();
+
+    error InvalidRequest();
+
+    error NotSupported();
 }

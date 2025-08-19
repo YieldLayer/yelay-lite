@@ -277,4 +277,27 @@ library LibEvents {
     event YieldClaimed(
         address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
     );
+
+    /**
+     * @notice Async funds request
+     * @param user user address
+     * @param projectId project id
+     * @param sharesRedeemed shares redeemed
+     * @param requestId request id
+     */
+    event AsyncFundsRequest(
+        address indexed user,
+        uint256 indexed projectId,
+        address indexed receiver,
+        uint256 requestId,
+        uint256 sharesRedeemed
+    );
+
+    event AsyncFundsRequestFullfiled(
+        address indexed user,
+        uint256 indexed projectId,
+        address indexed receiver,
+        uint256 requestId,
+        uint256 assetsToClaim
+    );
 }
