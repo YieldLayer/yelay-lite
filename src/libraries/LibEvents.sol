@@ -279,6 +279,23 @@ library LibEvents {
     );
 
     /**
+     * @notice Request yield claiming
+     * @param user claimer
+     * @param yelayLiteVault yelayLiteVault address
+     * @param projectId project id
+     * @param cycle cycle number
+     * @param amount claimed amount
+     */
+    event YieldRequested(
+        address indexed user,
+        address indexed yelayLiteVault,
+        uint256 indexed projectId,
+        uint256 cycle,
+        uint256 amount,
+        uint256 requestId
+    );
+
+    /**
      * @notice Async funds request
      * @param user user address
      * @param projectId project id

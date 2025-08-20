@@ -12,12 +12,14 @@ interface IAsyncFundsFacet is IFundsFacetBase, IERC1155Receiver {
      * @param projectId The project ID.
      * @param receiver The address of the receiver.
      */
-    function requestAsyncFunds(uint256 shares, uint256 projectId, address receiver) external;
+    function requestAsyncFunds(uint256 shares, uint256 projectId, address receiver)
+        external
+        returns (uint256 requestId);
 
     /**
      * @dev Fulfills an async funds request.
      * @dev Callable by FUNDS_OPERATOR.
      * @param requestId The request ID to fulfill.
      */
-    function fullfilAsyncRequest(uint256 requestId) external;
+    function fullfilAsyncRequest(uint256 requestId) external returns (uint256 amount);
 }

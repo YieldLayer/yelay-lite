@@ -25,14 +25,18 @@ contract AsyncFundsFacet is FundsFacetBase, IAsyncFundsFacet {
 
     constructor(ISwapper swapper_, IMerklDistributor merklDistributor_) FundsFacetBase(swapper_, merklDistributor_) {}
 
-    function requestAsyncFunds(uint256 shares, uint256 projectId, address receiver) external notPaused {
+    function requestAsyncFunds(uint256 shares, uint256 projectId, address receiver)
+        external
+        notPaused
+        returns (uint256 requestId)
+    {
         LibAsyncFunds.AsyncFundsStorage storage sA = LibAsyncFunds._getAsyncFundsStorage();
         require(shares > 0, LibErrors.ZeroAmount());
         require(receiver != address(0), LibErrors.ZeroAddress());
         require(balanceOf(msg.sender, projectId) >= shares, LibErrors.InsufficientBalance());
 
         sA.lastRequestId++;
-        uint256 requestId = sA.lastRequestId;
+        requestId = sA.lastRequestId;
 
         sA.requestIdToAsyncFundsRequest[requestId] = LibAsyncFunds.AsyncFundsRequest({
             sharesRedeemed: shares,
@@ -47,14 +51,18 @@ contract AsyncFundsFacet is FundsFacetBase, IAsyncFundsFacet {
         emit LibEvents.AsyncFundsRequest(msg.sender, projectId, receiver, requestId, shares);
     }
 
-    function fullfilAsyncRequest(uint256 requestId) external onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function fullfilAsyncRequest(uint256 requestId)
+        external
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+        returns (uint256 assets)
+    {
         LibAsyncFunds.AsyncFundsStorage storage sA = LibAsyncFunds._getAsyncFundsStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
 
         LibAsyncFunds.AsyncFundsRequest memory request = sA.requestIdToAsyncFundsRequest[requestId];
         require(request.receiver != address(0) && request.assetsSent == 0, LibErrors.InvalidRequest());
         // TODO: make sure we should use lastTotalAssets
-        uint256 assets = _convertToAssets(request.sharesRedeemed, totalSupply(), sF.lastTotalAssets);
+        assets = _convertToAssets(request.sharesRedeemed, totalSupply(), sF.lastTotalAssets);
         sA.requestIdToAsyncFundsRequest[requestId].assetsSent = assets;
         _burn(address(this), request.projectId, request.sharesRedeemed);
         sF.underlyingAsset.safeTransfer(request.receiver, assets);
