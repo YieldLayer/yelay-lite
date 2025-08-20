@@ -1,0 +1,26 @@
+{
+    "swapper": {
+        "proxy": "0x426fC5516e0906Ec33FC2F3Cb237Ca703f5D1e6c",
+        "implementation": "0x5fccacaef88e6e2727bc8e682980e082c4c91015"
+    },
+    "vaultWrapper": {
+        "proxy": "0xb318d5835304C0E09a3052cAFb06C2056D2eC1CB",
+        "implementation": "0xd7c063b730f8fa4eb462dd6783e1fc21fb6c1386"
+    },
+    "ownerFacet": "0x99F10d70cfa2218c49eaE7e2c1eD8933945DF0E3",
+    "fundsFacet": "0x2cBBf02e6202DC1D4a2D47dDBB4DfD4AAF932638",
+    "accessFacet": "0x8c8925D8F99A185940C5D8130D35CeF7888F0C37",
+    "managementFacet": "0xaEf3826B28c365aD6C408433867E7289681bB15d",
+    "clientsFacet": "0x1708fdEA8D83a9Eab1B829172B3AdA8DA4ac6fCB",
+    "vaults": {
+        "USDC": "0xec02632828D431C4Cb99c933fAff995Cc0E1e20B",
+        "USDC-satellite": "0x81A5B15BdD1a3593b581d45E3783249A28035145"
+    },
+    "strategies": {},
+    "asyncFundsFacet": "0xfA7E50498E3636627449F70876702ab96bbCe7c7",
+    "cctpV2Facet": "0x47e1da86b278ce27F295479A4Dd3716c406D3ae6",
+    "yieldExtractor": {
+        "proxy": "0x567fEDb7527cb7A4A6A71652B8523Db3A418a511",
+        "implementation": "0xbbea63cb61058b5c6dd6ff9a29276978cd24d4ff"
+    }
+}

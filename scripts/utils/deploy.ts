@@ -41,6 +41,26 @@ export const deployFundsFacet = async (
         .then((r) => r.getAddress());
 };
 
+export const deployAsyncFundsFacet = async (
+    deployer: Signer,
+    swapperAddress: string,
+    merklDistributor = ethers.ZeroAddress,
+) => {
+    return ethers
+        .getContractFactory('AsyncFundsFacet', deployer)
+        .then((f) => f.deploy(swapperAddress, merklDistributor))
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+};
+
+export const deployCCTPV2Facet = async (deployer: Signer) => {
+    return ethers
+        .getContractFactory('CCTPV2Facet', deployer)
+        .then((f) => f.deploy())
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+};
+
 export const deployManagementFacet = async (deployer: Signer) => {
     return ethers
         .getContractFactory('ManagementFacet', deployer)

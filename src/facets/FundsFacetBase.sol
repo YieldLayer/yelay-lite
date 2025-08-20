@@ -269,6 +269,7 @@ contract FundsFacetBase is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, I
         emit LibEvents.Compounded(compounded);
     }
 
+    // TODO: do not accrue yield / mint yield shares on Satellite Vault
     /// @inheritdoc IFundsFacetBase
     function accrueFee() public notPaused {
         _accrueFee();
