@@ -133,12 +133,6 @@ contract CCTPV2Facet is RoleCheck, PausableCheck, ICCTPV2Facet {
     }
 
     /// @inheritdoc ICCTPV2Facet
-    function getDomain() external view returns (uint32 domain) {
-        CCTPV2Storage storage sC = _getCCTPV2Storage();
-        return sC.messageTransmitter.localDomain();
-    }
-
-    /// @inheritdoc ICCTPV2Facet
     function getTokenMessenger() external view returns (address tokenMessenger) {
         CCTPV2Storage storage sC = _getCCTPV2Storage();
         return address(sC.tokenMessenger);

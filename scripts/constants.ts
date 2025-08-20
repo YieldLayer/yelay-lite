@@ -174,3 +174,26 @@ export const ROLES = {
     PAUSER: ethers.id('PAUSER'),
     UNPAUSER: ethers.id('UNPAUSER'),
 };
+
+export const CCTP_V2 = {
+    1: {
+        DOMAIN: 0,
+        TokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+        MessageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+    },
+    146: {
+        DOMAIN: 13,
+        TokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+        MessageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+    },
+    8453: {
+        DOMAIN: 6,
+        TokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+        MessageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+    },
+    42161: {
+        DOMAIN: 3,
+        TokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+        MessageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+    },
+};

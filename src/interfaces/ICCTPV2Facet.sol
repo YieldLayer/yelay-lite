@@ -40,12 +40,6 @@ interface ICCTPV2Facet {
     function getDomainVault(uint32 destinationDomain) external view returns (address vault);
 
     /**
-     * @dev Gets the CCTP domain ID for current chain
-     * @return domain The domain ID
-     */
-    function getDomain() external view returns (uint32 domain);
-
-    /**
      * @dev Gets the TokenMessenger contract address
      * @return tokenMessenger The TokenMessenger address
      */
