@@ -17,7 +17,7 @@ import {FundsFacet} from "src/facets/FundsFacet.sol";
 import {ClientsFacet} from "src/facets/ClientsFacet.sol";
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
 import {ISwapper} from "src/interfaces/ISwapper.sol";
-import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
+import {StrategyArgs} from "src/interfaces/IFundsFacetBase.sol";
 import {ERC4626Strategy} from "src/strategies/ERC4626Strategy.sol";
 import {IMerklDistributor} from "src/interfaces/external/merkl/IMerklDistributor.sol";
 

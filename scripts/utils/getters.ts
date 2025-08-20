@@ -1,6 +1,8 @@
 import path from 'path';
 import {
     IAccessFacet__factory,
+    IAsyncFundsFacet__factory,
+    ICCTPV2Facet__factory,
     IClientsFacet__factory,
     IFundsFacet__factory,
     IManagementFacet__factory,
@@ -52,6 +54,83 @@ export const getFundsFacetSelectors = () => {
         'claimMerklRewards',
         'balanceOf',
         'uri',
+    ] as const;
+    return getFunctionSelectors(i, functions);
+};
+
+export const getFundsFacetSatelliteSelectors = () => {
+    const i = IFundsFacet__factory.createInterface();
+    const functions = [
+        'totalSupply()',
+        'totalSupply(uint256)',
+        'lastTotalAssets',
+        'underlyingBalance',
+        'underlyingAsset',
+        'yieldExtractor',
+        'swapper',
+        'merklDistributor',
+        'totalAssets',
+        'strategyAssets',
+        'strategyRewards',
+        'managedDeposit',
+        'managedWithdraw',
+        'reallocate',
+        'balanceOf',
+        'uri',
+    ] as const;
+    return getFunctionSelectors(i, functions);
+};
+
+export const getAsyncFundsFacetSelectors = () => {
+    const i = IAsyncFundsFacet__factory.createInterface();
+    const functions = [
+        'totalSupply()',
+        'totalSupply(uint256)',
+        'lastTotalAssets',
+        'lastTotalAssetsTimestamp',
+        'lastTotalAssetsUpdateInterval',
+        'setLastTotalAssetsUpdateInterval',
+        'underlyingBalance',
+        'underlyingAsset',
+        'yieldExtractor',
+        'setYieldExtractor',
+        'swapper',
+        'merklDistributor',
+        'totalAssets',
+        'strategyAssets',
+        'strategyRewards',
+        'deposit',
+        'migratePosition',
+        'managedDeposit',
+        'managedWithdraw',
+        'reallocate',
+        'swapRewards',
+        'compoundUnderlyingReward',
+        'accrueFee',
+        'claimStrategyRewards',
+        'claimMerklRewards',
+        'balanceOf',
+        'uri',
+        'requestAsyncFunds',
+        'fullfilAsyncRequest',
+        'onERC1155Received',
+        'onERC1155BatchReceived',
+    ] as const;
+    return getFunctionSelectors(i, functions);
+};
+
+export const getCCTPV2FacetSelectors = () => {
+    const i = ICCTPV2Facet__factory.createInterface();
+    const functions = [
+        'bridgeUSDC',
+        'receiveUSDC',
+        'setDomainVault',
+        'getDomainVault',
+        'getTokenMessenger',
+        'getMessageTransmitter',
+        'setCCTPContracts',
+        'setDomainMapping',
+        'getDomainForChain',
     ] as const;
     return getFunctionSelectors(i, functions);
 };

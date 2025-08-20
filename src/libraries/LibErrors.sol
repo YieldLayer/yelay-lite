@@ -217,4 +217,40 @@ library LibErrors {
      * @notice Thrown when an invalid cycle number is provided
      */
     error InvalidCycle();
+
+    error ZeroAmount();
+
+    error ZeroAddress();
+
+    error InsufficientBalance();
+
+    error InvalidRequest();
+
+    error NotSupported();
+
+    // ===================== CCTPV2Facet ================================
+    /**
+     * @dev Insufficient underlying balance for cross-chain transfer.
+     */
+    error InsufficientUnderlyingBalance();
+
+    /**
+     * @dev CCTP contracts not configured.
+     */
+    error CCTPContractsNotConfigured();
+
+    /**
+     * @dev CCTP message receive failed.
+     */
+    error CCTPMessageReceiveFailed();
+
+    /**
+     * @dev Invalid destination vault.
+     */
+    error InvalidDestinationVault();
+
+    /**
+     * @dev Zero USDC received.
+     */
+    error ZeroUSDCReceived();
 }
