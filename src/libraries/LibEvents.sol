@@ -274,11 +274,27 @@ library LibEvents {
         address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
     );
 
+    /**
+     * @dev Emitted when yield shares are transformed from yield project to regular project shares.
+     * @param user The address of the user whose yield is being transformed
+     * @param yelayLiteVault The address of the YelayLite vault
+     * @param projectId The ID of the target project receiving the transformed shares
+     * @param cycle The cycle number from which the yield is being transformed
+     * @param amount The amount of yield being transformed into regular shares
+     */
     event YieldTransformed(
         address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
     );
 
+    /**
+     * @dev Emitted when a new ERC4626Plugin is deployed by the factory.
+     * @param erc4626Plugin The address of the newly deployed ERC4626Plugin contract
+     */
     event ERC4626PluginDeployed(address indexed erc4626Plugin);
 
+    /**
+     * @dev Emitted when excess assets are skimmed from an ERC4626Plugin and deposited into the underlying vault.
+     * @param amount The amount of assets that were skimmed and deposited
+     */
     event ERC4626PluginAssetsSkimmed(uint256 amount);
 }

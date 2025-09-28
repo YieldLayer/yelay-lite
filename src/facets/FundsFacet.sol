@@ -217,6 +217,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         emit LibEvents.PositionMigrated(msg.sender, fromProjectId, toProjectId, amount);
     }
 
+    /// @inheritdoc IFundsFacet
     function transformYieldShares(uint256 projectId, uint256 shares, address receiver) external notPaused {
         require(LibClients._isProjectActive(projectId), LibErrors.PositionMigrationForbidden());
         _accrueFee();
@@ -400,24 +401,33 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         emit LibEvents.UpdateLastTotalAssets(updatedTotalAssets);
     }
 
+    /// @inheritdoc IFundsFacet
     function previewRedeem(uint256 shares) public view virtual returns (uint256) {
         return convertToAssets(shares) - WITHDRAW_MARGIN;
     }
 
+    /// @inheritdoc IFundsFacet
     function previewWithdraw(uint256 assets) public view virtual returns (uint256) {
         return convertToShares(assets + WITHDRAW_MARGIN);
     }
 
+    /// @inheritdoc IFundsFacet
     function convertToShares(uint256 assets) public view returns (uint256) {
         (uint256 newTotalAssets, uint256 feeShares) = _newTotalAssetsWithFeeShares();
         return _convertToShares(assets, totalSupply() + feeShares, newTotalAssets);
     }
 
+    /// @inheritdoc IFundsFacet
     function convertToAssets(uint256 shares) public view returns (uint256) {
         (uint256 newTotalAssets, uint256 feeShares) = _newTotalAssetsWithFeeShares();
         return _convertToAssets(shares, totalSupply() + feeShares, newTotalAssets);
     }
 
+    /**
+     * @dev Calculates the current total assets and fee shares that would be generated if fees were accrued now.
+     * @return newTotalAssets The current total assets value in the vault
+     * @return feeShares The amount of fee shares that would be minted based on generated interest.
+     */
     function _newTotalAssetsWithFeeShares() internal view returns (uint256 newTotalAssets, uint256 feeShares) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         newTotalAssets = totalAssets();

@@ -218,5 +218,10 @@ library LibErrors {
      */
     error InvalidCycle();
 
+    /**
+     * @notice Thrown when the amount of assets received by ERC4626Plugin during a withdrawal is less than the requested amount
+     * @param requested The amount of assets that were requested to be withdrawn
+     * @param received The actual amount of assets received, which is less than requested
+     */
     error WithdrawSlippageExceeded(uint256 requested, uint256 received);
 }
