@@ -78,11 +78,7 @@ library LibEvents {
         address indexed account, uint256 indexed fromProjectId, uint256 indexed toProjectId, uint256 shares
     );
 
-    /**
-     * @dev Emitted when lastTotalAssetsUpdateInterval is updated.
-     * @param newInterval The new interval for updating lastTotalAssets.
-     */
-    event UpdateLastTotalAssetsUpdateInterval(uint256 newInterval);
+    event YieldSharesTransformed(address indexed account, uint256 indexed projectId, uint256 shares);
 
     // ManagementFacet
     /**
@@ -277,4 +273,12 @@ library LibEvents {
     event YieldClaimed(
         address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
     );
+
+    event YieldTransformed(
+        address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
+    );
+
+    event ERC4626PluginDeployed(address indexed erc4626Plugin);
+
+    event ERC4626PluginAssetsSkimmed(uint256 amount);
 }

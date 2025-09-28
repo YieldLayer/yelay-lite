@@ -108,17 +108,6 @@ contract FundsFacetTest is Test {
         assertEq(yelayLiteVault.balanceOf(user, newProjectId), toDeposit / 4);
     }
 
-    function test_setLastTotalAssetsUpdateInterval() external {
-        uint64 interval = 100;
-        assertEq(yelayLiteVault.lastTotalAssetsUpdateInterval(), 0);
-        vm.expectRevert();
-        yelayLiteVault.setLastTotalAssetsUpdateInterval(interval);
-        vm.startPrank(owner);
-        yelayLiteVault.setLastTotalAssetsUpdateInterval(interval);
-        vm.stopPrank();
-        assertEq(yelayLiteVault.lastTotalAssetsUpdateInterval(), interval);
-    }
-
     function test_compoundUnderlying() external {
         uint256 underlyingAssetBefore = yelayLiteVault.underlyingBalance();
         uint256 totalAssetsBefore = yelayLiteVault.totalAssets();

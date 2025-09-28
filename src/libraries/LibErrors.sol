@@ -217,4 +217,6 @@ library LibErrors {
      * @notice Thrown when an invalid cycle number is provided
      */
     error InvalidCycle();
+
+    error WithdrawSlippageExceeded(uint256 requested, uint256 received);
 }

@@ -172,20 +172,36 @@ contract YieldExtractor is
      */
     function claim(ClaimRequest[] calldata data) external whenNotPaused {
         for (uint256 i; i < data.length; ++i) {
-            bytes32 leaf = _getLeaf(data[i], msg.sender);
-            require(!isLeafClaimed[leaf], LibErrors.ProofAlreadyClaimed(i));
-            require(_verify(data[i], leaf), LibErrors.InvalidProof(i));
-
-            isLeafClaimed[leaf] = true;
-
-            uint256 alreadyClaimed = yieldSharesClaimed[msg.sender][data[i].yelayLiteVault][data[i].projectId];
-            uint256 toClaim = data[i].yieldSharesTotal - alreadyClaimed;
-            yieldSharesClaimed[msg.sender][data[i].yelayLiteVault][data[i].projectId] = data[i].yieldSharesTotal;
+            uint256 toClaim = _processClaimRequest(data[i], i);
 
             IFundsFacet(data[i].yelayLiteVault).redeem(toClaim, YIELD_PROJECT_ID, msg.sender);
 
             emit LibEvents.YieldClaimed(msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim);
         }
+    }
+
+    function transform(ClaimRequest[] calldata data) external whenNotPaused {
+        for (uint256 i; i < data.length; ++i) {
+            uint256 toClaim = _processClaimRequest(data[i], i);
+
+            IFundsFacet(data[i].yelayLiteVault).transformYieldShares(data[i].projectId, toClaim, msg.sender);
+
+            emit LibEvents.YieldTransformed(
+                msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim
+            );
+        }
+    }
+
+    function _processClaimRequest(ClaimRequest memory data, uint256 index) internal returns (uint256 toClaim) {
+        bytes32 leaf = _getLeaf(data, msg.sender);
+        require(!isLeafClaimed[leaf], LibErrors.ProofAlreadyClaimed(index));
+        require(_verify(data, leaf), LibErrors.InvalidProof(index));
+
+        isLeafClaimed[leaf] = true;
+
+        uint256 alreadyClaimed = yieldSharesClaimed[msg.sender][data.yelayLiteVault][data.projectId];
+        toClaim = data.yieldSharesTotal - alreadyClaimed;
+        yieldSharesClaimed[msg.sender][data.yelayLiteVault][data.projectId] = data.yieldSharesTotal;
     }
 
     /**

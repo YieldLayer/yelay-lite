@@ -15,8 +15,10 @@ library LibFunds {
      */
     struct FundsStorage {
         uint192 underlyingBalance;
+        // deprecated
         uint64 lastTotalAssetsUpdateInterval;
         uint192 lastTotalAssets;
+        // deprecated
         uint64 lastTotalAssetsTimestamp;
         ERC20 underlyingAsset;
         address yieldExtractor;

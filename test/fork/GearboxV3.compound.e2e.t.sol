@@ -209,7 +209,6 @@ contract CompoundTest is Test {
         uint256 totalSupplyBefore = yelayLiteVault.totalSupply();
         uint256 totalSupply0Before = yelayLiteVault.totalSupply(0);
         uint256 lastTotalAssetsBefore = yelayLiteVault.lastTotalAssets();
-        uint256 lastTotalAssetsTimestampBefore = yelayLiteVault.lastTotalAssetsTimestamp();
         assertEq(totalSupply0Before, 0);
 
         yelayLiteVault.accrueFee();
@@ -218,6 +217,5 @@ contract CompoundTest is Test {
         assertGt(yelayLiteVault.totalSupply(), totalSupplyBefore);
         assertGt(yelayLiteVault.totalSupply(0), 0);
         assertGt(yelayLiteVault.lastTotalAssets(), lastTotalAssetsBefore);
-        assertEq(yelayLiteVault.lastTotalAssetsTimestamp(), lastTotalAssetsTimestampBefore + 10 weeks);
     }
 }

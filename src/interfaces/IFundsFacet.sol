@@ -32,25 +32,6 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
     function lastTotalAssets() external view returns (uint256);
 
     /**
-     * @dev Returns the timestamp of the last total assets update.
-     * @return The timestamp of the last total assets update.
-     */
-    function lastTotalAssetsTimestamp() external view returns (uint64);
-
-    /**
-     * @dev Returns the interval for updating the last total assets.
-     * @return The interval for updating the last total assets.
-     */
-    function lastTotalAssetsUpdateInterval() external view returns (uint64);
-
-    /**
-     * @dev Sets the interval for updating the last total assets.
-     * @dev Callable by FUNDS_OPERATOR.
-     * @param interval The new interval.
-     */
-    function setLastTotalAssetsUpdateInterval(uint64 interval) external;
-
-    /**
      * @dev Returns the underlying balance of the contract.
      * @return The underlying balance.
      */
@@ -132,6 +113,16 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
      * @param amount The amount to migrate.
      */
     function migratePosition(uint256 fromProjectId, uint256 toProjectId, uint256 amount) external;
+
+    function transformYieldShares(uint256 projectId, uint256 shares, address receiver) external;
+
+    function convertToShares(uint256 assets) external view returns (uint256);
+
+    function convertToAssets(uint256 shares) external view returns (uint256);
+
+    function previewRedeem(uint256 shares) external view returns (uint256);
+
+    function previewWithdraw(uint256 assets) external view returns (uint256);
 
     /**
      * @dev Deposits assets into a strategy.
