@@ -7,15 +7,15 @@ import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 
 contract MockProtocol {
     address public asset;
-    uint256 public assetBalance;
+    mapping(address => uint256) public assetBalance;
     uint256 public toWithdraw;
 
     constructor(address asset_) {
         asset = asset_;
     }
 
-    function setAssetBalance(uint256 value) external {
-        assetBalance = value;
+    function setAssetBalance(address user, uint256 value) external {
+        assetBalance[user] = value;
     }
 
     function setWithdraw(uint256 value) external {
@@ -33,7 +33,7 @@ contract MockProtocol {
 }
 
 contract MockStrategy is IStrategyBase {
-    MockProtocol mockProtocol;
+    MockProtocol immutable mockProtocol;
 
     constructor(address mockProtocol_) {
         mockProtocol = MockProtocol(mockProtocol_);
@@ -53,8 +53,8 @@ contract MockStrategy is IStrategyBase {
 
     function withdrawAll(bytes calldata) external returns (uint256) {}
 
-    function assetBalance(address, bytes calldata) external view returns (uint256) {
-        return mockProtocol.assetBalance();
+    function assetBalance(address yelayLiteVault, bytes calldata) external view returns (uint256) {
+        return mockProtocol.assetBalance(yelayLiteVault);
     }
 
     function onAdd(bytes calldata) external {}

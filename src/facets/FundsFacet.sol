@@ -411,7 +411,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
     /// @inheritdoc IFundsFacet
     function previewWithdraw(uint256 assets) public view virtual returns (uint256) {
-        return convertToShares(assets + WITHDRAW_MARGIN);
+        return convertToShares(assets) + WITHDRAW_MARGIN;
     }
 
     /// @inheritdoc IFundsFacet
