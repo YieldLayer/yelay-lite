@@ -68,7 +68,7 @@ library Utils {
     }
 
     function fundsFacetSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](25);
+        bytes4[] memory selectors = new bytes4[](30);
         selectors[0] = bytes4(keccak256("totalSupply()"));
         selectors[1] = bytes4(keccak256("totalSupply(uint256)"));
         selectors[2] = FundsFacet.lastTotalAssets.selector;
@@ -94,6 +94,11 @@ library Utils {
         selectors[22] = FundsFacet.claimMerklRewards.selector;
         selectors[23] = ERC1155Upgradeable.balanceOf.selector;
         selectors[24] = ERC1155Upgradeable.uri.selector;
+        selectors[25] = FundsFacet.transformYieldShares.selector;
+        selectors[26] = FundsFacet.convertToShares.selector;
+        selectors[27] = FundsFacet.convertToAssets.selector;
+        selectors[28] = FundsFacet.previewRedeem.selector;
+        selectors[29] = FundsFacet.previewWithdraw.selector;
         return selectors;
     }
 

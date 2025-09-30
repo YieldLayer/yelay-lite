@@ -9,7 +9,7 @@ import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
-import {MockStrategy} from "test/mocks/MockStrategy.sol";
+import {MockStrategy, MockProtocol} from "test/mocks/MockStrategy.sol";
 import {MockToken} from "test/mocks/MockToken.sol";
 import {Utils} from "test/Utils.sol";
 
@@ -17,9 +17,9 @@ contract ManagementFacetTest is Test {
     using Utils for address;
 
     address constant owner = address(0x01);
-    address constant mockProtocol1 = address(0x02);
-    address constant mockProtocol2 = address(0x03);
-    address constant mockProtocol3 = address(0x04);
+    address mockProtocol1;
+    address mockProtocol2;
+    address mockProtocol3;
     address constant yieldExtractor = address(0x05);
 
     IYelayLiteVault yelayLiteVault;
@@ -31,9 +31,12 @@ contract ManagementFacetTest is Test {
     MockStrategy mockStrategy3;
 
     function setUp() external {
-        mockStrategy1 = new MockStrategy(mockProtocol1, address(0));
-        mockStrategy2 = new MockStrategy(mockProtocol2, address(0));
-        mockStrategy3 = new MockStrategy(mockProtocol3, address(0));
+        mockProtocol1 = address(new MockProtocol(address(underlyingAsset)));
+        mockProtocol2 = address(new MockProtocol(address(underlyingAsset)));
+        mockProtocol3 = address(new MockProtocol(address(underlyingAsset)));
+        mockStrategy1 = new MockStrategy(mockProtocol1);
+        mockStrategy2 = new MockStrategy(mockProtocol2);
+        mockStrategy3 = new MockStrategy(mockProtocol3);
 
         vm.startPrank(owner);
         underlyingAsset = new MockToken("Y-Test", "Y-T", 18);

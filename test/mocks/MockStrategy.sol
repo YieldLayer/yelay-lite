@@ -5,48 +5,60 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 
-contract MockStrategy is IStrategyBase {
-    address mockProtocol;
-    IERC20 asset;
+contract MockProtocol {
+    address public asset;
+    uint256 public assetBalance;
+    uint256 public toWithdraw;
 
-    uint256 _assetBalance;
-    uint256 _toWithdraw;
-
-    constructor(address mockProtocol_, address asset_) {
-        mockProtocol = mockProtocol_;
-        asset = IERC20(asset_);
+    constructor(address asset_) {
+        asset = asset_;
     }
 
     function setAssetBalance(uint256 value) external {
-        _assetBalance = value;
+        assetBalance = value;
     }
 
     function setWithdraw(uint256 value) external {
-        _toWithdraw = value;
+        toWithdraw = value;
+    }
+
+    function deposit(uint256 amount) external {
+        IERC20(asset).transferFrom(msg.sender, address(this), amount);
+    }
+
+    function withdraw(uint256 amount) external returns (uint256) {
+        IERC20(asset).transfer(msg.sender, toWithdraw > 0 ? toWithdraw : amount);
+        return toWithdraw;
+    }
+}
+
+contract MockStrategy is IStrategyBase {
+    MockProtocol mockProtocol;
+
+    constructor(address mockProtocol_) {
+        mockProtocol = MockProtocol(mockProtocol_);
     }
 
     function protocol(bytes calldata) external view returns (address) {
-        return mockProtocol;
+        return address(mockProtocol);
     }
 
-    function deposit(uint256 amount, bytes calldata supplement) external {}
-
-    function withdraw(uint256 amount, bytes calldata supplement) external returns (uint256) {
-        asset.transfer(msg.sender, _toWithdraw);
-        return _toWithdraw;
+    function deposit(uint256 amount, bytes calldata) external {
+        mockProtocol.deposit(amount);
     }
 
-    function withdrawAll(bytes calldata supplement) external returns (uint256) {
-        asset.transfer(msg.sender, _toWithdraw);
-        return _toWithdraw;
+    function withdraw(uint256 amount, bytes calldata) external returns (uint256) {
+        return mockProtocol.withdraw(amount);
     }
 
-    function assetBalance(address yelayLiteVault, bytes calldata supplement) external view returns (uint256) {
-        return _assetBalance;
+    function withdrawAll(bytes calldata) external returns (uint256) {}
+
+    function assetBalance(address, bytes calldata) external view returns (uint256) {
+        return mockProtocol.assetBalance();
     }
 
-    function onAdd(bytes calldata supplement) external {}
-    function onRemove(bytes calldata supplement) external {}
-    function viewRewards(address, bytes calldata supplement) external view returns (Reward[] memory rewards) {}
-    function claimRewards(bytes calldata supplement) external {}
+    function onAdd(bytes calldata) external {}
+    function onRemove(bytes calldata) external {}
+    function viewRewards(address, bytes calldata) external view returns (Reward[] memory rewards) {}
+    function claimRewards(bytes calldata) external {}
 }

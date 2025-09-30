@@ -219,6 +219,9 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
     /// @inheritdoc IFundsFacet
     function transformYieldShares(uint256 projectId, uint256 shares, address receiver) external notPaused {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        // only YieldExtractor is holding yield shares
+        require(msg.sender == sF.yieldExtractor, LibErrors.OnlyYieldExtractor());
         require(LibClients._isProjectActive(projectId), LibErrors.PositionMigrationForbidden());
         _accrueFee();
         // only YieldExtractor is holding yield shares

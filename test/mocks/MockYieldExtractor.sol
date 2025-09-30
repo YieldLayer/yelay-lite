@@ -4,7 +4,9 @@ pragma solidity ^0.8.28;
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
 
-contract MockYieldExtractor {
+import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
+contract MockYieldExtractor is ERC1155Holder {
     uint256 constant YIELD_PROJECT_ID = 0;
 
     uint256 toClaim;

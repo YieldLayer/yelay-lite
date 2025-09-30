@@ -9,6 +9,11 @@ import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
+import {StrategyData} from "src/interfaces/IManagementFacet.sol";
+
+import {MockStrategy, MockProtocol} from "test/mocks/MockStrategy.sol";
+import {MockYieldExtractor} from "test/mocks/MockYieldExtractor.sol";
+
 import {MockToken} from "test/mocks/MockToken.sol";
 import {Utils} from "test/Utils.sol";
 
@@ -17,18 +22,24 @@ contract FundsFacetTest is Test {
 
     address constant owner = address(0x01);
     address constant user = address(0x02);
-    address constant yieldExtractor = address(0x04);
     uint256 constant projectId = 1;
 
     IYelayLiteVault yelayLiteVault;
 
     MockToken underlyingAsset;
+    MockYieldExtractor yieldExtractor;
+    MockProtocol mockProtocol;
+    MockStrategy mockStrategy;
 
     function setUp() external {
         vm.startPrank(owner);
         underlyingAsset = new MockToken("Y-Test", "Y-T", 18);
-        yelayLiteVault =
-            Utils.deployDiamond(owner, address(underlyingAsset), yieldExtractor, "https://yelay-lite-vault/{id}.json");
+        mockProtocol = new MockProtocol(address(underlyingAsset));
+        mockStrategy = new MockStrategy(address(mockProtocol));
+        yieldExtractor = new MockYieldExtractor();
+        yelayLiteVault = Utils.deployDiamond(
+            owner, address(underlyingAsset), address(yieldExtractor), "https://yelay-lite-vault/{id}.json"
+        );
         yelayLiteVault.grantRole(LibRoles.QUEUES_OPERATOR, owner);
         yelayLiteVault.grantRole(LibRoles.STRATEGY_AUTHORITY, owner);
         yelayLiteVault.grantRole(LibRoles.FUNDS_OPERATOR, owner);
@@ -36,6 +47,19 @@ contract FundsFacetTest is Test {
 
         vm.startPrank(user);
         underlyingAsset.approve(address(yelayLiteVault), type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function _addStrategy() internal {
+        vm.startPrank(owner);
+        StrategyData memory strategy = StrategyData({adapter: address(mockStrategy), supplement: "", name: ""});
+        yelayLiteVault.addStrategy(strategy);
+        yelayLiteVault.approveStrategy(0, type(uint256).max);
+        {
+            uint256[] memory queue = new uint256[](1);
+            queue[0] = 0;
+            yelayLiteVault.activateStrategy(0, queue, queue);
+        }
         vm.stopPrank();
     }
 
