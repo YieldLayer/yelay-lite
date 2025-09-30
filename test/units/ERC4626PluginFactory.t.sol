@@ -10,8 +10,8 @@ import {ERC4626Plugin} from "src/plugins/ERC4626Plugin.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
-import {MockToken} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 
 contract ERC4626PluginFactoryTest is Test {
     ERC4626PluginFactory public factory;

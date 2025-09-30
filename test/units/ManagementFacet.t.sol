@@ -9,9 +9,9 @@ import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
-import {MockStrategy} from "./MockStrategy.sol";
-import {MockToken} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockStrategy} from "test/mocks/MockStrategy.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 
 contract ManagementFacetTest is Test {
     using Utils for address;

@@ -11,7 +11,7 @@ import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {Reward} from "src/interfaces/IStrategyBase.sol";
 import {GearboxV3Strategy} from "src/strategies/GearboxV3Strategy.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
-import {MockExchange, Quote} from "../MockExchange.sol";
+import {MockExchange, Quote} from "../mocks/MockExchange.sol";
 import {Utils} from "../Utils.sol";
 import {
     DAI_ADDRESS, MAINNET_BLOCK_NUMBER, GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING, GEARBOX_TOKEN

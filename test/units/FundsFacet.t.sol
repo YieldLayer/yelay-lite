@@ -9,8 +9,8 @@ import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
-import {MockToken} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 
 contract FundsFacetTest is Test {
     using Utils for address;

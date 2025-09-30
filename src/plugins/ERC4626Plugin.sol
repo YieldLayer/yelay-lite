@@ -28,7 +28,7 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     }
 
     function initialize(string memory name, string memory symbol, address _yelayLiteVault, uint256 _projectId)
-        public
+        external
         initializer
     {
         projectId = _projectId;

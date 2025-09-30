@@ -15,8 +15,8 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
-import {MockToken} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 
 /**
  * Tree data generated using openzeppelin/merkle-tree:
