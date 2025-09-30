@@ -52,7 +52,7 @@ contract ERC4626PluginFactoryTest is Test {
         );
 
         // Deploy ERC4626Plugin implementation
-        pluginImplementation = new ERC4626Plugin(yieldExtractor);
+        pluginImplementation = new ERC4626Plugin(address(yieldExtractor));
 
         // Deploy factory with owner and implementation
         factory = new ERC4626PluginFactory(owner, address(pluginImplementation));
@@ -163,7 +163,7 @@ contract ERC4626PluginFactoryTest is Test {
 
     function test_factory_canUpgradeImplementation() public {
         // Deploy new implementation
-        ERC4626Plugin newImplementation = new ERC4626Plugin(yieldExtractor);
+        ERC4626Plugin newImplementation = new ERC4626Plugin(address(address(yieldExtractor)));
 
         // Upgrade implementation
         vm.prank(owner);
@@ -174,7 +174,7 @@ contract ERC4626PluginFactoryTest is Test {
     }
 
     function test_factory_upgradeOnlyOwner() public {
-        ERC4626Plugin newImplementation = new ERC4626Plugin(yieldExtractor);
+        ERC4626Plugin newImplementation = new ERC4626Plugin(address(address(yieldExtractor)));
 
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nonOwner));

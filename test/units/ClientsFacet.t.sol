@@ -10,7 +10,6 @@ import {ClientsFacet, ClientData} from "src/facets/ClientsFacet.sol";
 
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
-import {MockStrategy} from "test/mocks/MockStrategy.sol";
 import {MockToken} from "test/mocks/MockToken.sol";
 import {Utils} from "test/Utils.sol";
 

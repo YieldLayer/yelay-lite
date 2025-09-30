@@ -9,17 +9,15 @@ import {ERC4626Plugin} from "src/plugins/ERC4626Plugin.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
+import {MockYieldExtractor} from "test/mocks/MockYieldExtractor.sol";
 import {MockToken} from "test/mocks/MockToken.sol";
 import {Utils} from "test/Utils.sol";
 
 contract ERC4626PluginTest is Test {
     ERC4626Plugin erc4626Plugin;
-    YieldExtractor yieldExtractor;
+    MockYieldExtractor yieldExtractor;
     IYelayLiteVault yelayLiteVault;
     MockToken underlying;
-
-    address owner = address(0x1111);
-    address nonOwner = address(0x2222);
 
     string constant PLUGIN_SYMBOL = "TP";
     string constant PLUGIN_NAME = "TestPlugin";
@@ -30,21 +28,12 @@ contract ERC4626PluginTest is Test {
     function setUp() public {
         underlying = new MockToken("Underlying", "UND", 18);
 
-        yieldExtractor = YieldExtractor(
-            address(
-                new ERC1967Proxy(
-                    address(new YieldExtractor()),
-                    abi.encodeWithSelector(YieldExtractor.initialize.selector, address(this), address(this))
-                )
-            )
-        );
+        yieldExtractor = new MockYieldExtractor();
 
-        vm.startPrank(owner);
-        yelayLiteVault = Utils.deployDiamond(owner, address(underlying), address(yieldExtractor), URI);
-        vm.stopPrank();
+        yelayLiteVault = Utils.deployDiamond(address(this), address(underlying), address(yieldExtractor), URI);
 
         ERC4626PluginFactory factory =
-            new ERC4626PluginFactory(address(this), address(new ERC4626Plugin(yieldExtractor)));
+            new ERC4626PluginFactory(address(this), address(new ERC4626Plugin(address(yieldExtractor))));
 
         erc4626Plugin = factory.deploy(PLUGIN_NAME, PLUGIN_SYMBOL, address(yelayLiteVault), PROJECT_ID);
     }

@@ -23,8 +23,8 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     IYelayLiteVault public yelayLiteVault;
     uint256 public projectId;
 
-    constructor(YieldExtractor _yieldExtractor) {
-        yieldExtractor = _yieldExtractor;
+    constructor(address _yieldExtractor) {
+        yieldExtractor = YieldExtractor(_yieldExtractor);
     }
 
     function initialize(string memory name, string memory symbol, address _yelayLiteVault, uint256 _projectId)

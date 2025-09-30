@@ -31,9 +31,9 @@ contract ManagementFacetTest is Test {
     MockStrategy mockStrategy3;
 
     function setUp() external {
-        mockStrategy1 = new MockStrategy(mockProtocol1);
-        mockStrategy2 = new MockStrategy(mockProtocol2);
-        mockStrategy3 = new MockStrategy(mockProtocol3);
+        mockStrategy1 = new MockStrategy(mockProtocol1, address(0));
+        mockStrategy2 = new MockStrategy(mockProtocol2, address(0));
+        mockStrategy3 = new MockStrategy(mockProtocol3, address(0));
 
         vm.startPrank(owner);
         underlyingAsset = new MockToken("Y-Test", "Y-T", 18);
