@@ -46,6 +46,18 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
         DECIMALS_OFFSET = uint8(FixedPointMathLib.zeroFloorSub(18, IERC20Metadata(asset).decimals()));
     }
 
+    function accrue(YieldExtractor.ClaimRequest calldata data) external {
+        yieldExtractor.transform(data);
+    }
+
+    function skim() external {
+        uint256 assets = IERC20(asset()).balanceOf(address(this));
+        if (assets > 0) {
+            yelayLiteVault.deposit(assets, projectId, address(this));
+            emit LibEvents.ERC4626PluginAssetsSkimmed(assets);
+        }
+    }
+
     function deposit(uint256 assets, address receiver) public override returns (uint256) {
         uint256 shares = super.deposit(assets, receiver);
         yelayLiteVault.deposit(assets, projectId, address(this));
@@ -74,15 +86,6 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
         return assets;
     }
 
-    function previewRedeem(uint256 shares) public view override returns (uint256) {
-        uint256 yelayLiteVaultSupply = yelayLiteVault.balanceOf(address(this), projectId);
-        uint256 totalSupply = totalSupply();
-        if (shares == 0 || yelayLiteVaultSupply == 0 || totalSupply == 0) return 0;
-
-        uint256 yelayLiteShares = shares.mulDiv(yelayLiteVaultSupply, totalSupply, Math.Rounding.Floor);
-        return yelayLiteVault.previewRedeem(yelayLiteShares);
-    }
-
     function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
         uint256 maxAssets = maxWithdraw(owner);
         if (assets > maxAssets) {
@@ -102,6 +105,15 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
         return shares;
     }
 
+    function previewRedeem(uint256 shares) public view override returns (uint256) {
+        uint256 yelayLiteVaultSupply = yelayLiteVault.balanceOf(address(this), projectId);
+        uint256 totalSupply = totalSupply();
+        if (shares == 0 || yelayLiteVaultSupply == 0 || totalSupply == 0) return 0;
+
+        uint256 yelayLiteShares = shares.mulDiv(yelayLiteVaultSupply, totalSupply, Math.Rounding.Floor);
+        return yelayLiteVault.previewRedeem(yelayLiteShares);
+    }
+
     function previewWithdraw(uint256 assets) public view override returns (uint256) {
         uint256 yelayLiteVaultSupply = yelayLiteVault.balanceOf(address(this), projectId);
         uint256 totalSupply = totalSupply();
@@ -110,19 +122,6 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
         uint256 yelayLiteShares = yelayLiteVault.previewWithdraw(assets);
         uint256 shares = yelayLiteShares.mulDiv(totalSupply, yelayLiteVaultSupply, Math.Rounding.Ceil);
         return shares;
-    }
-
-    function accrue(YieldExtractor.ClaimRequest[] calldata data) external {
-        yieldExtractor.transform(data);
-        skim();
-    }
-
-    function skim() public {
-        uint256 assets = IERC20(asset()).balanceOf(address(this));
-        if (assets > 0) {
-            yelayLiteVault.deposit(assets, projectId, address(this));
-            emit LibEvents.ERC4626PluginAssetsSkimmed(assets);
-        }
     }
 
     function totalAssets() public view override returns (uint256) {

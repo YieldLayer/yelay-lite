@@ -180,16 +180,12 @@ contract YieldExtractor is
         }
     }
 
-    function transform(ClaimRequest[] calldata data) external whenNotPaused {
-        for (uint256 i; i < data.length; ++i) {
-            uint256 toClaim = _processClaimRequest(data[i], i);
+    function transform(ClaimRequest calldata data) external whenNotPaused {
+        uint256 toClaim = _processClaimRequest(data, 0);
 
-            IFundsFacet(data[i].yelayLiteVault).transformYieldShares(data[i].projectId, toClaim, msg.sender);
+        IFundsFacet(data.yelayLiteVault).transformYieldShares(data.projectId, toClaim, msg.sender);
 
-            emit LibEvents.YieldTransformed(
-                msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim
-            );
-        }
+        emit LibEvents.YieldTransformed(msg.sender, data.yelayLiteVault, data.projectId, data.cycle, toClaim);
     }
 
     function _processClaimRequest(ClaimRequest memory data, uint256 index) internal returns (uint256 toClaim) {

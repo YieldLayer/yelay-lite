@@ -19,7 +19,7 @@ contract MockYieldExtractor is ERC1155Holder {
         IFundsFacet(data[0].yelayLiteVault).redeem(toClaim, YIELD_PROJECT_ID, msg.sender);
     }
 
-    function transform(YieldExtractor.ClaimRequest[] calldata data) external {
-        IFundsFacet(data[0].yelayLiteVault).transformYieldShares(data[0].projectId, toClaim, msg.sender);
+    function transform(YieldExtractor.ClaimRequest calldata data) external {
+        IFundsFacet(data.yelayLiteVault).transformYieldShares(data.projectId, toClaim, msg.sender);
     }
 }

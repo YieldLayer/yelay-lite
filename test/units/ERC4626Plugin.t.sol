@@ -3,12 +3,18 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 
+import {ERC4626Upgradeable} from "@openzeppelin-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
+
 import {ERC4626PluginFactory} from "src/plugins/ERC4626PluginFactory.sol";
+import {YieldExtractor} from "src/YieldExtractor.sol";
+
 import {ERC4626Plugin} from "src/plugins/ERC4626Plugin.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
+import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 import {MockYieldExtractor} from "test/mocks/MockYieldExtractor.sol";
 import {MockToken} from "test/mocks/MockToken.sol";
 import {MockStrategy, MockProtocol} from "test/mocks/MockStrategy.sol";
@@ -34,7 +40,7 @@ contract ERC4626PluginTest is Test {
     address user2 = makeAddr("user2");
     address user3 = makeAddr("user3");
 
-    uint256 toDeposit = 1000e18;
+    uint256 toDeposit = 1000e6;
 
     function setUp() public {
         underlyingAsset = new MockToken("Underlying", "UND", 6);
@@ -92,6 +98,10 @@ contract ERC4626PluginTest is Test {
 
     function _toShares(uint256 amount) internal view returns (uint256) {
         return amount * 10 ** erc4626Plugin.DECIMALS_OFFSET();
+    }
+
+    function _toAssets(uint256 amount) internal view returns (uint256) {
+        return amount / (10 ** erc4626Plugin.DECIMALS_OFFSET());
     }
 
     function test_vault_setup() external view {
@@ -255,6 +265,99 @@ contract ERC4626PluginTest is Test {
             underlyingAsset.balanceOf(address(erc4626Plugin)),
             WITHDRAW_MARGIN * 2,
             "Withdrawal margin remained on plugin"
+        );
+    }
+
+    function test_skim() external {
+        vm.prank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+        vm.prank(user2);
+        erc4626Plugin.deposit(toDeposit / 2, user2);
+
+        // full withdraw
+        vm.startPrank(user2);
+        erc4626Plugin.withdraw(erc4626Plugin.maxWithdraw(user2), user2, user2);
+        vm.stopPrank();
+
+        assertEq(erc4626Plugin.totalAssets(), toDeposit + WITHDRAW_MARGIN, "Total assets");
+        assertEq(
+            underlyingAsset.balanceOf(address(erc4626Plugin)), WITHDRAW_MARGIN, "Withdrawal margin remained on plugin"
+        );
+
+        erc4626Plugin.skim();
+
+        assertEq(erc4626Plugin.totalAssets(), toDeposit + WITHDRAW_MARGIN, "Total assets");
+        assertEq(underlyingAsset.balanceOf(address(erc4626Plugin)), 0, "Plugin doesn't hold assets");
+    }
+
+    function test_redeem_ERC4626ExceededMaxRedeem() external {
+        vm.startPrank(user1);
+        uint256 shares = erc4626Plugin.deposit(toDeposit, user1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, user1, shares + 1, shares)
+        );
+        erc4626Plugin.redeem(shares + 1, user1, user1);
+    }
+
+    function test_withdraw_ERC4626ExceededMaxWithdraw() external {
+        vm.startPrank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC4626Upgradeable.ERC4626ExceededMaxWithdraw.selector, user1, toDeposit, toDeposit - WITHDRAW_MARGIN
+            )
+        );
+        erc4626Plugin.withdraw(toDeposit, user1, user1);
+    }
+
+    function test_WithdrawSlippageExceeded() external {
+        vm.startPrank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+
+        uint256 toWithdraw = toDeposit - WITHDRAW_MARGIN;
+
+        uint256 yelayLiteShares = yelayLiteVault.previewWithdraw(toWithdraw);
+
+        vm.mockCall(
+            address(yelayLiteVault),
+            abi.encodeWithSelector(IFundsFacet.redeem.selector, yelayLiteShares, PROJECT_ID, address(erc4626Plugin)),
+            abi.encode(toWithdraw - 1)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.WithdrawSlippageExceeded.selector, toWithdraw, toWithdraw - 1));
+        erc4626Plugin.withdraw(toWithdraw, user1, user1);
+    }
+
+    function test_accrue() external {
+        vm.prank(user1);
+        uint256 shares = erc4626Plugin.deposit(toDeposit, user1);
+
+        uint256 totalAssetsBefore = erc4626Plugin.totalAssets();
+
+        assertEq(totalAssetsBefore, toDeposit);
+        assertEq(erc4626Plugin.totalSupply(), shares);
+        assertEq(yelayLiteVault.totalSupply(PROJECT_ID), toDeposit);
+
+        uint256 pluginShares = yelayLiteVault.totalSupply(PROJECT_ID);
+        uint256 yieldShares = yelayLiteVault.balanceOf(address(yieldExtractor), 0);
+
+        yieldExtractor.setToClaim(yieldShares / 2);
+        erc4626Plugin.accrue(YieldExtractor.ClaimRequest(address(yelayLiteVault), PROJECT_ID, 0, 0, new bytes32[](0)));
+
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), yieldShares / 2, "Yield shares reduced");
+
+        assertEq(
+            erc4626Plugin.totalAssets(),
+            (totalAssetsBefore * (pluginShares + yieldShares / 2)) / pluginShares,
+            "Total assets increase"
+        );
+        assertEq(erc4626Plugin.totalSupply(), shares, "Total supply unchanged");
+        assertEq(
+            yelayLiteVault.totalSupply(PROJECT_ID),
+            toDeposit + yieldShares / 2,
+            "Yelay lite vault project total supply increase"
         );
     }
 }
