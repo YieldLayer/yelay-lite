@@ -370,13 +370,14 @@ contract FundsFacetTest is Test {
         uint256 sharesToRedeem = shares;
 
         assertEq(yelayLiteVault.previewRedeem(sharesToRedeem), toDeposit / 2 - WITHDRAW_MARGIN);
-        assertEq(yelayLiteVault.previewWithdraw(assetsToWithdraw), shares + WITHDRAW_MARGIN);
+        // 2 * WITHDRAW_MARGIN since the loss is 50%. 10 wei assets corresponds to 20 wei shares in this case
+        assertEq(yelayLiteVault.previewWithdraw(assetsToWithdraw), shares + 2 * WITHDRAW_MARGIN);
 
         vm.prank(owner);
         yelayLiteVault.accrueFee();
 
         // accounting remains the same after fee accrual
         assertEq(yelayLiteVault.previewRedeem(sharesToRedeem), toDeposit / 2 - WITHDRAW_MARGIN);
-        assertEq(yelayLiteVault.previewWithdraw(assetsToWithdraw), shares + WITHDRAW_MARGIN);
+        assertEq(yelayLiteVault.previewWithdraw(assetsToWithdraw), shares + 2 * WITHDRAW_MARGIN);
     }
 }
