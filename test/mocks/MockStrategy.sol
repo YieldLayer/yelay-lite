@@ -18,17 +18,28 @@ contract MockProtocol {
         assetBalance[user] = value;
     }
 
+    function increaseAssetBalance(address user, uint256 value) external {
+        assetBalance[user] += value;
+    }
+
+    function decreaseAssetBalance(address user, uint256 value) external {
+        assetBalance[user] += value;
+    }
+
     function setWithdraw(uint256 value) external {
         toWithdraw = value;
     }
 
     function deposit(uint256 amount) external {
         IERC20(asset).transferFrom(msg.sender, address(this), amount);
+        assetBalance[msg.sender] += amount;
     }
 
     function withdraw(uint256 amount) external returns (uint256) {
-        IERC20(asset).transfer(msg.sender, toWithdraw > 0 ? toWithdraw : amount);
-        return toWithdraw;
+        uint256 value = toWithdraw > 0 ? toWithdraw : amount;
+        IERC20(asset).transfer(msg.sender, value);
+        assetBalance[msg.sender] -= value;
+        return value;
     }
 }
 

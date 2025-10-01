@@ -6,7 +6,9 @@ import {ERC1155HolderUpgradeable} from
     "@openzeppelin-upgradeable/contracts/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
@@ -18,10 +20,13 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     using SafeTransferLib for ERC20;
     using Math for uint256;
 
+    uint256 constant WITHDRAW_MARGIN = 10;
     YieldExtractor public immutable yieldExtractor;
 
     IYelayLiteVault public yelayLiteVault;
     uint256 public projectId;
+
+    uint8 public DECIMALS_OFFSET;
 
     constructor(address _yieldExtractor) {
         yieldExtractor = YieldExtractor(_yieldExtractor);
@@ -38,6 +43,7 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
         __ERC1155Holder_init();
         __ERC4626_init(IERC20(asset));
         __ERC20_init(name, symbol);
+        DECIMALS_OFFSET = uint8(FixedPointMathLib.zeroFloorSub(18, IERC20Metadata(asset).decimals()));
     }
 
     function deposit(uint256 assets, address receiver) public override returns (uint256) {
@@ -69,8 +75,11 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     }
 
     function previewRedeem(uint256 shares) public view override returns (uint256) {
-        uint256 yelayLiteShares =
-            shares.mulDiv(yelayLiteVault.balanceOf(address(this), projectId), totalSupply(), Math.Rounding.Floor);
+        uint256 yelayLiteVaultSupply = yelayLiteVault.balanceOf(address(this), projectId);
+        uint256 totalSupply = totalSupply();
+        if (shares == 0 || yelayLiteVaultSupply == 0 || totalSupply == 0) return 0;
+
+        uint256 yelayLiteShares = shares.mulDiv(yelayLiteVaultSupply, totalSupply, Math.Rounding.Floor);
         return yelayLiteVault.previewRedeem(yelayLiteShares);
     }
 
@@ -94,10 +103,12 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     }
 
     function previewWithdraw(uint256 assets) public view override returns (uint256) {
+        uint256 yelayLiteVaultSupply = yelayLiteVault.balanceOf(address(this), projectId);
+        uint256 totalSupply = totalSupply();
+        if (assets == 0 || yelayLiteVaultSupply == 0 || totalSupply == 0) return 0;
+
         uint256 yelayLiteShares = yelayLiteVault.previewWithdraw(assets);
-        uint256 shares = yelayLiteShares.mulDiv(
-            totalSupply(), yelayLiteVault.balanceOf(address(this), projectId), Math.Rounding.Ceil
-        );
+        uint256 shares = yelayLiteShares.mulDiv(totalSupply, yelayLiteVaultSupply, Math.Rounding.Ceil);
         return shares;
     }
 
@@ -116,6 +127,14 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
 
     function totalAssets() public view override returns (uint256) {
         uint256 shares = yelayLiteVault.balanceOf(address(this), projectId);
-        return yelayLiteVault.convertToAssets(shares);
+        return yelayLiteVault.convertToAssets(shares) + IERC20(asset()).balanceOf(address(this));
+    }
+
+    function maxWithdraw(address owner) public view override returns (uint256) {
+        return super.maxWithdraw(owner) - WITHDRAW_MARGIN;
+    }
+
+    function _decimalsOffset() internal view override returns (uint8) {
+        return DECIMALS_OFFSET;
     }
 }
