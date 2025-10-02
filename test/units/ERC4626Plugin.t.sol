@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 
 import {ERC4626Upgradeable} from "@openzeppelin-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
@@ -41,6 +41,8 @@ contract ERC4626PluginTest is Test {
     address user3 = makeAddr("user3");
 
     uint256 toDeposit = 1000e6;
+
+    uint256 DECIMAL_OFFSET;
 
     function setUp() public {
         underlyingAsset = new MockToken("Underlying", "UND", 6);
@@ -94,14 +96,24 @@ contract ERC4626PluginTest is Test {
         // generate yield - 10%
         mockProtocol.increaseAssetBalance(address(yelayLiteVault), toDeposit / 10);
         yelayLiteVault.accrueFee();
+
+        DECIMAL_OFFSET = erc4626Plugin.DECIMALS_OFFSET();
     }
 
     function _toShares(uint256 amount) internal view returns (uint256) {
-        return amount * 10 ** erc4626Plugin.DECIMALS_OFFSET();
+        return amount * 10 ** DECIMAL_OFFSET;
     }
 
     function _toAssets(uint256 amount) internal view returns (uint256) {
-        return amount / (10 ** erc4626Plugin.DECIMALS_OFFSET());
+        return amount / (10 ** DECIMAL_OFFSET);
+    }
+
+    function _generateYield() internal returns (uint256) {
+        uint256 yieldShares = yelayLiteVault.balanceOf(address(yieldExtractor), 0);
+        uint256 yieldToGenerate = yieldShares / 2;
+        yieldExtractor.setToClaim(yieldToGenerate);
+        erc4626Plugin.accrue(YieldExtractor.ClaimRequest(address(yelayLiteVault), PROJECT_ID, 0, 0, new bytes32[](0)));
+        return yieldToGenerate;
     }
 
     function test_vault_setup() external view {
@@ -184,6 +196,45 @@ contract ERC4626PluginTest is Test {
         );
     }
 
+    function test_preview_non_empty_with_yield() external {
+        vm.prank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+        vm.prank(user2);
+        erc4626Plugin.deposit(toDeposit / 2, user2);
+
+        uint256 totalSupplyBefore = yelayLiteVault.totalSupply(PROJECT_ID);
+
+        // we already have 10% of yield shares, generate up to 50% for all holders
+        mockProtocol.increaseAssetBalance(address(yelayLiteVault), 29 * toDeposit / 10);
+        yelayLiteVault.accrueFee();
+
+        uint256 generatedShares = _generateYield();
+
+        uint256 totalSupplyAfter = yelayLiteVault.totalSupply(PROJECT_ID);
+
+        assertEq(totalSupplyBefore, generatedShares, "Generated full supply of yield");
+        assertEq(totalSupplyBefore * 2, totalSupplyAfter, "Supply has been doubled");
+
+        assertApproxEqAbs(
+            erc4626Plugin.previewDeposit(toDeposit),
+            _toShares(toDeposit) / 2,
+            // since shares are more precise there is no 100% match
+            10 ** DECIMAL_OFFSET,
+            "Would return half amount of shares"
+        );
+        assertEq(erc4626Plugin.previewMint(_toShares(toDeposit)), toDeposit * 2, "Need double amount of assets");
+        assertEq(
+            erc4626Plugin.previewRedeem(_toShares(toDeposit)),
+            toDeposit * 2 - WITHDRAW_MARGIN,
+            "Since we doubled totalAssets user should get twice as much, minus withdrawal margin"
+        );
+        assertEq(
+            erc4626Plugin.previewWithdraw(toDeposit),
+            _toShares(toDeposit + WITHDRAW_MARGIN) / 2,
+            "We need half of the shares to get the depositAmount, plus withdrawal margin"
+        );
+    }
+
     function test_convert_non_empty_without_yield() external {
         vm.prank(user1);
         erc4626Plugin.deposit(toDeposit, user1);
@@ -192,6 +243,28 @@ contract ERC4626PluginTest is Test {
 
         assertEq(erc4626Plugin.convertToAssets(_toShares(toDeposit)), toDeposit, "Return same amount of assets");
         assertEq(erc4626Plugin.convertToShares(toDeposit), _toShares(toDeposit), "Return same amount of shares");
+    }
+
+    function test_convert_non_empty_with_yield() external {
+        vm.prank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+        vm.prank(user2);
+        erc4626Plugin.deposit(toDeposit / 2, user2);
+
+        // we already have 10% of yield shares, generate up to 50% for all holders
+        mockProtocol.increaseAssetBalance(address(yelayLiteVault), 29 * toDeposit / 10);
+        yelayLiteVault.accrueFee();
+        _generateYield();
+
+        assertApproxEqAbs(
+            erc4626Plugin.convertToAssets(_toShares(toDeposit)), toDeposit * 2, 1, "Return double amount of assets"
+        );
+        assertApproxEqAbs(
+            erc4626Plugin.convertToShares(toDeposit),
+            _toShares(toDeposit) / 2,
+            10 ** DECIMAL_OFFSET,
+            "Return half amount of shares"
+        );
     }
 
     function test_deposit_redeem_without_yield() external {
@@ -225,6 +298,44 @@ contract ERC4626PluginTest is Test {
         assertEq(erc4626Plugin.balanceOf(user2), 0, "User2 shares");
         assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit / 2), "Total supply");
         assertEq(erc4626Plugin.totalAssets(), toDeposit / 2, "Total assets");
+    }
+
+    function test_deposit_redeem_with_yield() external {
+        vm.prank(user1);
+        uint256 user1Shares = erc4626Plugin.deposit(toDeposit, user1);
+        vm.prank(user2);
+        uint256 user2Shares = erc4626Plugin.deposit(toDeposit / 2, user2);
+
+        // we already have 10% of yield shares, generate up to 50% for all holders
+        mockProtocol.increaseAssetBalance(address(yelayLiteVault), 29 * toDeposit / 10);
+        yelayLiteVault.accrueFee();
+        _generateYield();
+
+        uint256 user1PreviewRedeem = erc4626Plugin.previewRedeem(user1Shares / 2);
+
+        // partial withdraw
+        vm.prank(user1);
+        uint256 user1AssetsWithdrawn = erc4626Plugin.redeem(user1Shares / 2, user1, user1);
+
+        assertEq(user1AssetsWithdrawn, user1PreviewRedeem + WITHDRAW_MARGIN, "Compare preview and actual action");
+        assertEq(underlyingAsset.balanceOf(user1), toDeposit, "Check user1 balance");
+        assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2), "User1 shares");
+        assertEq(erc4626Plugin.balanceOf(user2), _toShares(toDeposit / 2), "User2 shares");
+        assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit), "Total supply");
+        assertEq(erc4626Plugin.totalAssets(), toDeposit * 2, "Total assets");
+
+        uint256 user2PreviewRedeem = erc4626Plugin.previewRedeem(user2Shares);
+
+        // full withdraw
+        vm.prank(user2);
+        uint256 user2AssetsWithdrawn = erc4626Plugin.redeem(user2Shares, user2, user2);
+
+        assertEq(user2AssetsWithdrawn, user2PreviewRedeem + WITHDRAW_MARGIN, "Compare preview and actual action");
+        assertEq(underlyingAsset.balanceOf(user2), toDeposit * 3 / 2, "Check user2 balance");
+        assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2), "User1 shares");
+        assertEq(erc4626Plugin.balanceOf(user2), 0, "User2 shares");
+        assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit / 2), "Total supply");
+        assertEq(erc4626Plugin.totalAssets(), toDeposit, "Total assets");
     }
 
     function test_deposit_withdraw_without_yield() external {
@@ -261,6 +372,64 @@ contract ERC4626PluginTest is Test {
         assertEq(erc4626Plugin.balanceOf(user2), 0, "User2 shares");
         assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit / 2) - _toShares(WITHDRAW_MARGIN), "Total supply");
         assertEq(erc4626Plugin.totalAssets(), toDeposit / 2 + WITHDRAW_MARGIN, "Total assets");
+        assertEq(
+            underlyingAsset.balanceOf(address(erc4626Plugin)),
+            WITHDRAW_MARGIN * 2,
+            "Withdrawal margin remained on plugin"
+        );
+    }
+
+    function test_deposit_withdraw_with_yield() external {
+        vm.prank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+        vm.prank(user2);
+        erc4626Plugin.deposit(toDeposit / 2, user2);
+
+        // we already have 10% of yield shares, generate up to 50% for all holders
+        mockProtocol.increaseAssetBalance(address(yelayLiteVault), 29 * toDeposit / 10);
+        yelayLiteVault.accrueFee();
+        _generateYield();
+
+        uint256 user1PreviewWithdraw = erc4626Plugin.previewWithdraw(toDeposit / 2);
+
+        // partial withdraw
+        vm.prank(user1);
+        uint256 user1SharesBurned = erc4626Plugin.withdraw(toDeposit / 2, user1, user1);
+
+        assertEq(user1PreviewWithdraw, user1SharesBurned, "Compare preview and actual action");
+        assertEq(underlyingAsset.balanceOf(user1), toDeposit / 2, "Check user1 balance");
+        assertEq(
+            erc4626Plugin.balanceOf(user1),
+            _toShares(3 * toDeposit / 4) - _toShares(WITHDRAW_MARGIN / 2),
+            "User1 shares"
+        );
+        assertEq(erc4626Plugin.balanceOf(user2), _toShares(toDeposit / 2), "User2 shares");
+        assertEq(
+            erc4626Plugin.totalSupply(), _toShares(5 * toDeposit / 4) - _toShares(WITHDRAW_MARGIN / 2), "Total supply"
+        );
+        assertEq(erc4626Plugin.totalAssets(), 5 * toDeposit / 2, "Total assets");
+        assertEq(
+            underlyingAsset.balanceOf(address(erc4626Plugin)), WITHDRAW_MARGIN, "Withdrawal margin remained on plugin"
+        );
+
+        uint256 user2PreviewWithdraw = erc4626Plugin.previewWithdraw(toDeposit - WITHDRAW_MARGIN);
+
+        // full withdraw
+        vm.prank(user2);
+        uint256 user2SharesBurned = erc4626Plugin.withdraw(toDeposit - WITHDRAW_MARGIN, user2, user2);
+
+        assertEq(user2PreviewWithdraw, user2SharesBurned, "Compare preview and actual action");
+        assertEq(underlyingAsset.balanceOf(user2), 3 * toDeposit / 2 - WITHDRAW_MARGIN, "Check user2 balance");
+        assertEq(
+            erc4626Plugin.balanceOf(user1),
+            _toShares(3 * toDeposit / 4) - _toShares(WITHDRAW_MARGIN / 2),
+            "User1 shares"
+        );
+        assertEq(erc4626Plugin.balanceOf(user2), 0, "User2 shares");
+        assertEq(
+            erc4626Plugin.totalSupply(), _toShares(3 * toDeposit / 4) - _toShares(WITHDRAW_MARGIN / 2), "Total supply"
+        );
+        assertEq(erc4626Plugin.totalAssets(), 3 * toDeposit / 2 + WITHDRAW_MARGIN, "Total assets");
         assertEq(
             underlyingAsset.balanceOf(address(erc4626Plugin)),
             WITHDRAW_MARGIN * 2,
@@ -341,22 +510,19 @@ contract ERC4626PluginTest is Test {
         assertEq(yelayLiteVault.totalSupply(PROJECT_ID), toDeposit);
 
         uint256 pluginShares = yelayLiteVault.totalSupply(PROJECT_ID);
-        uint256 yieldShares = yelayLiteVault.balanceOf(address(yieldExtractor), 0);
+        uint256 generatedYield = _generateYield();
 
-        yieldExtractor.setToClaim(yieldShares / 2);
-        erc4626Plugin.accrue(YieldExtractor.ClaimRequest(address(yelayLiteVault), PROJECT_ID, 0, 0, new bytes32[](0)));
-
-        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), yieldShares / 2, "Yield shares reduced");
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), generatedYield, "Yield shares reduced");
 
         assertEq(
             erc4626Plugin.totalAssets(),
-            (totalAssetsBefore * (pluginShares + yieldShares / 2)) / pluginShares,
+            (totalAssetsBefore * (pluginShares + generatedYield)) / pluginShares,
             "Total assets increase"
         );
         assertEq(erc4626Plugin.totalSupply(), shares, "Total supply unchanged");
         assertEq(
             yelayLiteVault.totalSupply(PROJECT_ID),
-            toDeposit + yieldShares / 2,
+            toDeposit + generatedYield,
             "Yelay lite vault project total supply increase"
         );
     }

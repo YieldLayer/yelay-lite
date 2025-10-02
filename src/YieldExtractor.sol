@@ -180,6 +180,10 @@ contract YieldExtractor is
         }
     }
 
+    /**
+     * @notice Transform incentives to projectId shares by submitting a Merkle proof
+     * @param data Claim request
+     */
     function transform(ClaimRequest calldata data) external whenNotPaused {
         uint256 toClaim = _processClaimRequest(data, 0);
 

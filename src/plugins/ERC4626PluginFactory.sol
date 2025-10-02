@@ -7,9 +7,35 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {ERC4626Plugin} from "./ERC4626Plugin.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 
+/**
+ * @title ERC4626PluginFactory
+ * @notice Factory contract for deploying ERC4626Plugin instances using beacon proxy pattern
+ * @dev This factory uses the beacon proxy pattern to enable efficient deployment of multiple
+ *      ERC4626Plugin instances that share the same implementation. This allows for gas-efficient
+ *      deployments and streamlined upgradeability.
+ */
 contract ERC4626PluginFactory is UpgradeableBeacon {
+    // ============ Constructor ============
+
+    /**
+     * @notice Initializes the factory with the implementation and owner
+     * @param owner The address that will own this factory contract
+     * @param implementation The address of the ERC4626Plugin implementation contract
+     * @dev The implementation contract serves as the beacon for all deployed plugin instances
+     */
     constructor(address owner, address implementation) UpgradeableBeacon(implementation, owner) {}
 
+    // ============ Deployment Functions ============
+
+    /**
+     * @notice Deploys a new ERC4626Plugin instance
+     * @param name The name of the ERC20 token for the plugin
+     * @param symbol The symbol of the ERC20 token for the plugin
+     * @param yelayLiteVault The address of the YelayLiteVault contract
+     * @param projectId The project ID within the YelayLiteVault system
+     * @return plugin The deployed ERC4626Plugin instance
+     * @dev Only the owner can deploy new plugin instances
+     */
     function deploy(string memory name, string memory symbol, address yelayLiteVault, uint256 projectId)
         external
         onlyOwner
@@ -24,6 +50,16 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
         return ERC4626Plugin(erc4626Plugin);
     }
 
+    /**
+     * @notice Deploys a new ERC4626Plugin instance deterministically using CREATE2
+     * @param name The name of the ERC20 token for the plugin
+     * @param symbol The symbol of the ERC20 token for the plugin
+     * @param yelayLiteVault The address of the YelayLiteVault contract
+     * @param projectId The project ID within the YelayLiteVault system
+     * @param salt The salt for deterministic deployment
+     * @return plugin The deployed ERC4626Plugin instance
+     * @dev Only the owner can deploy new plugin instances. The salt must be unique for each deployment
+     */
     function deployDeterministically(
         string memory name,
         string memory symbol,
@@ -42,6 +78,18 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
         return ERC4626Plugin(erc4626Plugin);
     }
 
+    // ============ View Functions ============
+
+    /**
+     * @notice Predicts the address where a plugin will be deployed deterministically
+     * @param name The name of the ERC20 token for the plugin
+     * @param symbol The symbol of the ERC20 token for the plugin
+     * @param yelayLiteVault The address of the YelayLiteVault contract
+     * @param projectId The project ID within the YelayLiteVault system
+     * @param salt The salt for deterministic deployment
+     * @return predictedAddress The predicted address of the plugin
+     * @dev This function uses CREATE2 address prediction algorithm
+     */
     function predictDeterministicAddress(
         string memory name,
         string memory symbol,
@@ -73,6 +121,17 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
         );
     }
 
+    // ============ Internal Functions ============
+
+    /**
+     * @notice Encodes the initialization calldata for the ERC4626Plugin
+     * @param name The name of the ERC20 token
+     * @param symbol The symbol of the ERC20 token
+     * @param yelayLiteVault The address of the YelayLiteVault contract
+     * @param projectId The project ID within the YelayLiteVault system
+     * @return calldata The encoded initialization calldata
+     * @dev This function creates the calldata needed to initialize the deployed plugin
+     */
     function _encodeInitializationCalldata(
         string memory name,
         string memory symbol,
