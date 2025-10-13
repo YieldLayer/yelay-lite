@@ -18,7 +18,7 @@ import {ERC4626Plugin} from "src/plugins/ERC4626Plugin.sol";
 // -----------------------------------------------------------------------------
 contract ERC4626PluginV2 is ERC4626Plugin {
     constructor(address _yieldExtractor) ERC4626Plugin(_yieldExtractor) {}
-    
+
     function version() external pure returns (uint256) {
         return 2;
     }
@@ -44,53 +44,63 @@ contract ERC4626PluginFactoryMultichainTest is Test {
     ChainConfig[] public chainConfigs;
 
     function setUp() public {
-        chainConfigs.push(ChainConfig({
-            name: "mainnet",
-            rpcUrl: vm.envString("MAINNET_URL"),
-            blockNumber: 23555798,
-            vaultAddress: 0x39DAc87bE293DC855b60feDd89667364865378cc,
-            yieldExtractor: 0x226239384EB7d78Cdf279BA6Fb458E2A4945E275
-        }));
+        chainConfigs.push(
+            ChainConfig({
+                name: "mainnet",
+                rpcUrl: vm.envString("MAINNET_URL"),
+                blockNumber: 23555798,
+                vaultAddress: 0x39DAc87bE293DC855b60feDd89667364865378cc,
+                yieldExtractor: 0x226239384EB7d78Cdf279BA6Fb458E2A4945E275
+            })
+        );
 
-        chainConfigs.push(ChainConfig({
-            name: "base",
-            rpcUrl: vm.envString("BASE_URL"),
-            blockNumber: 36706133,
-            vaultAddress: 0x0c6dAf9B4e0EB49A0c80c325da82EC028Cb8118B,
-            yieldExtractor: 0x4D6A89dc55d8bACC0cbC3824BD7e44fa051c3958
-        }));
+        chainConfigs.push(
+            ChainConfig({
+                name: "base",
+                rpcUrl: vm.envString("BASE_URL"),
+                blockNumber: 36706133,
+                vaultAddress: 0x0c6dAf9B4e0EB49A0c80c325da82EC028Cb8118B,
+                yieldExtractor: 0x4D6A89dc55d8bACC0cbC3824BD7e44fa051c3958
+            })
+        );
 
-        chainConfigs.push(ChainConfig({
-            name: "arbitrum",
-            rpcUrl: vm.envString("ARBITRUM_URL"),
-            blockNumber: 388466669,
-            vaultAddress: 0x2e988479F14Ff61586F8Fd0F09E8720484Eb6030,
-            yieldExtractor: 0x79b7e90F1BAe837362DBD2c83Bd0715c2De5E47f
-        }));
+        chainConfigs.push(
+            ChainConfig({
+                name: "arbitrum",
+                rpcUrl: vm.envString("ARBITRUM_URL"),
+                blockNumber: 388466669,
+                vaultAddress: 0x2e988479F14Ff61586F8Fd0F09E8720484Eb6030,
+                yieldExtractor: 0x79b7e90F1BAe837362DBD2c83Bd0715c2De5E47f
+            })
+        );
 
-        chainConfigs.push(ChainConfig({
-            name: "avalanche",
-            rpcUrl: vm.envString("AVALANCHE_URL"),
-            blockNumber: 70146443,
-            vaultAddress: 0x90b8695EDCdEfAFA678Df6d819307573f7B1a18C,
-            yieldExtractor: 0x98732e2FEb854bAd400D4b5336f4439E7E53fe88
-        }));
+        chainConfigs.push(
+            ChainConfig({
+                name: "avalanche",
+                rpcUrl: vm.envString("AVALANCHE_URL"),
+                blockNumber: 70146443,
+                vaultAddress: 0x90b8695EDCdEfAFA678Df6d819307573f7B1a18C,
+                yieldExtractor: 0x98732e2FEb854bAd400D4b5336f4439E7E53fe88
+            })
+        );
 
-        chainConfigs.push(ChainConfig({
-            name: "sonic",
-            rpcUrl: vm.envString("SONIC_URL"),
-            blockNumber: 50212587,
-            vaultAddress: 0x56b0c5C989C65e712463278976ED26D6e07592ab,
-            yieldExtractor: 0xB84B621D3da3E5e47A1927883C685455Ad731D7C
-        }));
+        chainConfigs.push(
+            ChainConfig({
+                name: "sonic",
+                rpcUrl: vm.envString("SONIC_URL"),
+                blockNumber: 50212587,
+                vaultAddress: 0x56b0c5C989C65e712463278976ED26D6e07592ab,
+                yieldExtractor: 0xB84B621D3da3E5e47A1927883C685455Ad731D7C
+            })
+        );
     }
 
-    function _deployFactoryForChain(ChainConfig memory config) internal returns (
-        ERC4626PluginFactory factory,
-        ERC4626Plugin pluginImplementation
-    ) {
+    function _deployFactoryForChain(ChainConfig memory config)
+        internal
+        returns (ERC4626PluginFactory factory, ERC4626Plugin pluginImplementation)
+    {
         vm.createSelectFork(config.rpcUrl, config.blockNumber);
-        
+
         // Deploy dummy implementation first (deterministic)
         // Use different deployer per chain to show deterministic deployment works regardless of nonce
         address dummyDeployer = address(uint160(uint256(keccak256(abi.encodePacked("dummy", config.name)))));
@@ -99,49 +109,47 @@ contract ERC4626PluginFactoryMultichainTest is Test {
             type(ERC4626Plugin).creationCode,
             abi.encode(address(0)) // zero address for yield extractor
         );
-        
+
         vm.prank(dummyDeployer);
-        (bool success,) = DEPLOYMENT_PROXY.call(
-            abi.encodePacked(dummyImplSalt, dummyImplInitCode)
-        );
+        (bool success,) = DEPLOYMENT_PROXY.call(abi.encodePacked(dummyImplSalt, dummyImplInitCode));
         require(success, "Dummy implementation deployment failed");
-        
-        address dummyImplAddress = address(uint160(uint256(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            DEPLOYMENT_PROXY,
-            dummyImplSalt,
-            keccak256(dummyImplInitCode)
-        )))));
-        
+
+        address dummyImplAddress = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(bytes1(0xff), DEPLOYMENT_PROXY, dummyImplSalt, keccak256(dummyImplInitCode))
+                    )
+                )
+            )
+        );
+
         // Deploy factory with dummy implementation (deterministic)
         // Use different deployer per chain to show deterministic deployment works regardless of nonce
         address factoryDeployer = address(uint160(uint256(keccak256(abi.encodePacked("factory", config.name)))));
         bytes32 factorySalt = keccak256("ERC4626PluginFactory-v1.0.0");
-        bytes memory factoryInitCode = abi.encodePacked(
-            type(ERC4626PluginFactory).creationCode,
-            abi.encode(OWNER, dummyImplAddress)
-        );
-        
+        bytes memory factoryInitCode =
+            abi.encodePacked(type(ERC4626PluginFactory).creationCode, abi.encode(OWNER, dummyImplAddress));
+
         vm.prank(factoryDeployer);
-        (success,) = DEPLOYMENT_PROXY.call(
-            abi.encodePacked(factorySalt, factoryInitCode)
-        );
+        (success,) = DEPLOYMENT_PROXY.call(abi.encodePacked(factorySalt, factoryInitCode));
         require(success, "Factory deployment failed");
-        
-        address factoryAddress = address(uint160(uint256(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            DEPLOYMENT_PROXY,
-            factorySalt,
-            keccak256(factoryInitCode)
-        )))));
+
+        address factoryAddress = address(
+            uint160(
+                uint256(
+                    keccak256(abi.encodePacked(bytes1(0xff), DEPLOYMENT_PROXY, factorySalt, keccak256(factoryInitCode)))
+                )
+            )
+        );
         factory = ERC4626PluginFactory(factoryAddress);
-        
+
         // Deploy implementation normally (different addresses per chain)
         // Use different deployer per chain to get different addresses (simulate different nonce)
         address implDeployer = address(uint160(uint256(keccak256(abi.encodePacked("impl", config.name)))));
         vm.prank(implDeployer);
         pluginImplementation = new ERC4626Plugin(address(config.yieldExtractor));
-        
+
         // Upgrade factory to use the implementation
         vm.prank(OWNER);
         factory.upgradeTo(address(pluginImplementation));
@@ -150,21 +158,15 @@ contract ERC4626PluginFactoryMultichainTest is Test {
     function test_deployDeterministically_acrossAllChains() public {
         address[] memory factoryAddresses = new address[](chainConfigs.length);
         address[] memory pluginAddresses = new address[](chainConfigs.length);
-        
+
         for (uint256 i = 0; i < chainConfigs.length; i++) {
             ChainConfig memory config = chainConfigs[i];
-            (
-                ERC4626PluginFactory factory,
-            ) = _deployFactoryForChain(config);
+            (ERC4626PluginFactory factory,) = _deployFactoryForChain(config);
 
             // Test CREATE3 deployment
             vm.prank(OWNER);
             ERC4626Plugin plugin = factory.deployDeterministically(
-                PLUGIN_NAME,
-                PLUGIN_SYMBOL,
-                address(config.vaultAddress),
-                PROJECT_ID,
-                TEST_SALT
+                PLUGIN_NAME, PLUGIN_SYMBOL, address(config.vaultAddress), PROJECT_ID, TEST_SALT
             );
 
             // Verify deployment
@@ -182,7 +184,7 @@ contract ERC4626PluginFactoryMultichainTest is Test {
         for (uint256 i = 1; i < factoryAddresses.length; i++) {
             assertEq(factoryAddresses[i], factoryAddresses[0], "Factory addresses should be identical across chains");
         }
-        
+
         // Verify that all plugin deployments have the same predicted address
         for (uint256 i = 0; i < pluginAddresses.length; i++) {
             assertEq(pluginAddresses[i], pluginAddresses[0], "Plugin addresses should be identical across chains");
@@ -192,19 +194,12 @@ contract ERC4626PluginFactoryMultichainTest is Test {
     function test_upgradeTo_acrossAllChains() public {
         for (uint256 i = 0; i < chainConfigs.length; i++) {
             ChainConfig memory config = chainConfigs[i];
-            
-            (
-                ERC4626PluginFactory factory,
-                ERC4626Plugin pluginImplementation
-            ) = _deployFactoryForChain(config);
+
+            (ERC4626PluginFactory factory, ERC4626Plugin pluginImplementation) = _deployFactoryForChain(config);
 
             vm.prank(OWNER);
             ERC4626Plugin plugin = factory.deployDeterministically(
-                PLUGIN_NAME,
-                PLUGIN_SYMBOL,
-                address(config.vaultAddress),
-                PROJECT_ID,
-                TEST_SALT
+                PLUGIN_NAME, PLUGIN_SYMBOL, address(config.vaultAddress), PROJECT_ID, TEST_SALT
             );
 
             // Verify initial implementation

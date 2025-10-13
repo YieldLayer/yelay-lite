@@ -72,7 +72,7 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
             type(BeaconProxy).creationCode,
             abi.encode(address(this), _encodeInitializationCalldata(name, symbol, yelayLiteVault, projectId))
         );
-        
+
         address erc4626Plugin = CREATE3.deployDeterministic(beaconProxyBytecode, salt);
 
         emit LibEvents.ERC4626PluginDeployed(erc4626Plugin);
@@ -109,8 +109,6 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
         address yelayLiteVault,
         uint256 projectId
     ) private pure returns (bytes memory) {
-        return abi.encodeWithSelector(
-            ERC4626Plugin.initialize.selector, name, symbol, yelayLiteVault, projectId
-        );
+        return abi.encodeWithSelector(ERC4626Plugin.initialize.selector, name, symbol, yelayLiteVault, projectId);
     }
 }
