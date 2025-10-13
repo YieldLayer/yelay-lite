@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {CREATE3} from "@solady/utils/CREATE3.sol";
 
 import {ERC4626Plugin} from "./ERC4626Plugin.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
@@ -51,7 +52,7 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
     }
 
     /**
-     * @notice Deploys a new ERC4626Plugin instance deterministically using CREATE2
+     * @notice Deploys a new ERC4626Plugin instance deterministically using CREATE3
      * @param name The name of the ERC20 token for the plugin
      * @param symbol The symbol of the ERC20 token for the plugin
      * @param yelayLiteVault The address of the YelayLiteVault contract
@@ -67,11 +68,12 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
         uint256 projectId,
         bytes32 salt
     ) external onlyOwner returns (ERC4626Plugin) {
-        address erc4626Plugin = address(
-            new BeaconProxy{salt: salt}(
-                address(this), _encodeInitializationCalldata(name, symbol, yelayLiteVault, projectId)
-            )
+        bytes memory beaconProxyBytecode = abi.encodePacked(
+            type(BeaconProxy).creationCode,
+            abi.encode(address(this), _encodeInitializationCalldata(name, symbol, yelayLiteVault, projectId))
         );
+        
+        address erc4626Plugin = CREATE3.deployDeterministic(beaconProxyBytecode, salt);
 
         emit LibEvents.ERC4626PluginDeployed(erc4626Plugin);
 
@@ -82,43 +84,12 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
 
     /**
      * @notice Predicts the address where a plugin will be deployed deterministically
-     * @param name The name of the ERC20 token for the plugin
-     * @param symbol The symbol of the ERC20 token for the plugin
-     * @param yelayLiteVault The address of the YelayLiteVault contract
-     * @param projectId The project ID within the YelayLiteVault system
      * @param salt The salt for deterministic deployment
      * @return predictedAddress The predicted address of the plugin
-     * @dev This function uses CREATE2 address prediction algorithm
+     * @dev This function uses CREATE3 address prediction algorithm
      */
-    function predictDeterministicAddress(
-        string memory name,
-        string memory symbol,
-        address yelayLiteVault,
-        uint256 projectId,
-        bytes32 salt
-    ) external view returns (address) {
-        return address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            bytes1(0xff),
-                            address(this),
-                            salt,
-                            keccak256(
-                                abi.encodePacked(
-                                    type(BeaconProxy).creationCode,
-                                    abi.encode(
-                                        address(this),
-                                        _encodeInitializationCalldata(name, symbol, yelayLiteVault, projectId)
-                                    )
-                                )
-                            )
-                        )
-                    )
-                )
-            )
-        );
+    function predictDeterministicAddress(bytes32 salt) external view returns (address) {
+        return CREATE3.predictDeterministicAddress(salt);
     }
 
     // ============ Internal Functions ============
@@ -138,8 +109,8 @@ contract ERC4626PluginFactory is UpgradeableBeacon {
         address yelayLiteVault,
         uint256 projectId
     ) private pure returns (bytes memory) {
-        return abi.encodeWithSignature(
-            "initialize(string,string,address,uint256)", name, symbol, yelayLiteVault, projectId
+        return abi.encodeWithSelector(
+            ERC4626Plugin.initialize.selector, name, symbol, yelayLiteVault, projectId
         );
     }
 }

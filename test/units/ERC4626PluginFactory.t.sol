@@ -13,6 +13,18 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 import {MockToken} from "test/mocks/MockToken.sol";
 import {Utils} from "test/Utils.sol";
 
+// -----------------------------------------------------------------------------
+// A new implementation contract for upgrade testing.
+// This contract inherits from ERC4626Plugin and adds an extra function.
+// -----------------------------------------------------------------------------
+contract ERC4626PluginV2 is ERC4626Plugin {
+    constructor(address _yieldExtractor) ERC4626Plugin(_yieldExtractor) {}
+    
+    function version() external pure returns (uint256) {
+        return 2;
+    }
+}
+
 contract ERC4626PluginFactoryTest is Test {
     ERC4626PluginFactory public factory;
     ERC4626Plugin public pluginImplementation;
@@ -103,7 +115,7 @@ contract ERC4626PluginFactoryTest is Test {
     // Deterministic Deploy Function Tests
     function test_deployDeterministically_success() public {
         address predictedAddress =
-            factory.predictDeterministicAddress(PLUGIN_NAME, PLUGIN_SYMBOL, address(mockVault), PROJECT_ID, SALT);
+            factory.predictDeterministicAddress(SALT);
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
@@ -161,17 +173,52 @@ contract ERC4626PluginFactoryTest is Test {
         vm.stopPrank();
     }
 
-    function test_factory_canUpgradeImplementation() public {
-        // Deploy new implementation
-        ERC4626Plugin newImplementation = new ERC4626Plugin(address(address(yieldExtractor)));
-
-        // Upgrade implementation
+    function test_upgradeTo_canUpgrade() public {
+        vm.prank(owner);
+        ERC4626Plugin plugin = factory.deploy(PLUGIN_NAME, PLUGIN_SYMBOL, address(mockVault), PROJECT_ID);
+        
+        // Verify initial implementation
+        assertEq(factory.implementation(), address(pluginImplementation));
+        vm.expectRevert();
+        ERC4626PluginV2(address(plugin)).version();
+        
+        // Upgrade implementation to V2
+        ERC4626PluginV2 newImplementation = new ERC4626PluginV2(yieldExtractorAddress);
         vm.prank(owner);
         factory.upgradeTo(address(newImplementation));
 
-        // Check new implementation is set
+        // Check new implementation is set in factory
         assertEq(factory.implementation(), address(newImplementation));
+
+        // Verify that the plugin is now using the new implementation by calling the new function
+        // This proves that the plugin itself is using the upgraded implementation
+        uint256 version = ERC4626PluginV2(address(plugin)).version();
+        assertEq(version, 2);
     }
+
+    function test_upgradeTo_canUpgradeDeterministicDeployment() public {
+        vm.prank(owner);
+        ERC4626Plugin plugin = factory.deployDeterministically(PLUGIN_NAME, PLUGIN_SYMBOL, address(mockVault), PROJECT_ID, SALT);
+        
+        // Verify initial implementation
+        assertEq(factory.implementation(), address(pluginImplementation));
+        vm.expectRevert();
+        ERC4626PluginV2(address(plugin)).version();
+        
+        // Upgrade implementation to V2
+        ERC4626PluginV2 newImplementation = new ERC4626PluginV2(yieldExtractorAddress);
+        vm.prank(owner);
+        factory.upgradeTo(address(newImplementation));
+
+        // Check new implementation is set in factory
+        assertEq(factory.implementation(), address(newImplementation));
+        
+        // Verify that the plugin is now using the new implementation by calling the new function
+        // This proves that the plugin itself is using the upgraded implementation
+        uint256 version = ERC4626PluginV2(address(plugin)).version();
+        assertEq(version, 2);
+    }
+
 
     function test_factory_upgradeOnlyOwner() public {
         ERC4626Plugin newImplementation = new ERC4626Plugin(address(address(yieldExtractor)));
