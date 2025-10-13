@@ -33,6 +33,8 @@ jobs:
           echo "MAINNET_URL=${{ secrets.MAINNET_URL }}" >> $GITHUB_ENV
           echo "SONIC_URL=${{ secrets.SONIC_URL }}" >> $GITHUB_ENV
           echo "BASE_URL=${{ secrets.BASE_URL }}" >> $GITHUB_ENV
+          echo "ARBITRUM_URL=${{ secrets.ARBITRUM_URL }}" >> $GITHUB_ENV
+          echo "AVALANCHE_URL=${{ secrets.AVALANCHE_URL }}" >> $GITHUB_ENV
 
       - name: Run Forge fmt
         run: |
