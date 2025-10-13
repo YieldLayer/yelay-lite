@@ -91,14 +91,18 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     }
 
     /**
-     * @notice Skims any loose assets in the contract and deposits them to YelayLiteVault
+     * @notice Skims loose underlying assets held by the plugin and deposits them into YelayLiteVault.
+     * @return assets The amount of assets swept into the vault.
+     * @dev This function keeps funds productive by forwarding any unaccounted assets to YelayLiteVault
+     *      and emits an event when a positive amount is skimmed.
      */
-    function skim() external {
+    function skim() external returns (uint256) {
         uint256 assets = IERC20(asset()).balanceOf(address(this));
         if (assets > 0) {
             yelayLiteVault.deposit(assets, projectId, address(this));
             emit LibEvents.ERC4626PluginAssetsSkimmed(assets);
         }
+        return assets;
     }
 
     // ============ ERC4626 Overrides ============

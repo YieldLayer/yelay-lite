@@ -78,6 +78,12 @@ library LibEvents {
         address indexed account, uint256 indexed fromProjectId, uint256 indexed toProjectId, uint256 shares
     );
 
+    /**
+     * @dev Emitted when yield shares are transformed for an account.
+     * @param account The address whose yield shares are transformed.
+     * @param projectId The ID of the project associated with the shares.
+     * @param shares The amount of shares transformed.
+     */
     event YieldSharesTransformed(address indexed account, uint256 indexed projectId, uint256 shares);
 
     // ManagementFacet
