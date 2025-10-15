@@ -453,8 +453,9 @@ contract ERC4626PluginTest is Test {
             underlyingAsset.balanceOf(address(erc4626Plugin)), WITHDRAW_MARGIN, "Withdrawal margin remained on plugin"
         );
 
-        erc4626Plugin.skim();
+        uint256 skimmed = erc4626Plugin.skim();
 
+        assertEq(skimmed, WITHDRAW_MARGIN, "Skimmed withdraw margin");
         assertEq(erc4626Plugin.totalAssets(), toDeposit + WITHDRAW_MARGIN, "Total assets");
         assertEq(underlyingAsset.balanceOf(address(erc4626Plugin)), 0, "Plugin doesn't hold assets");
     }
