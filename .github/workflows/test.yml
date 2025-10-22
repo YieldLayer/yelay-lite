@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-  pull_request:
   workflow_dispatch:
 
 env:
@@ -23,7 +22,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: v1.3.6
 
       - name: Show Forge version
         run: |
