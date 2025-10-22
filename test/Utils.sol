@@ -16,6 +16,7 @@ import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {ClientsFacet} from "src/facets/ClientsFacet.sol";
 import {OwnerFacet} from "src/facets/OwnerFacet.sol";
+import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
 import {ISwapper, ExchangeArgs} from "src/interfaces/ISwapper.sol";
@@ -60,6 +61,7 @@ library Utils {
             SelectorsToFacet({facet: address(new ClientsFacet()), selectors: clientsFacetSelectors()});
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
+        yelayLiteVault.grantRole(LibRoles.CLIENT_MANAGER, owner);
         yelayLiteVault.createClient(owner, 999, "test");
         for (uint256 i = 1; i < 50; i++) {
             yelayLiteVault.activateProject(i);
@@ -130,7 +132,7 @@ library Utils {
     }
 
     function clientsFacetSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](8);
+        bytes4[] memory selectors = new bytes4[](9);
         selectors[0] = ClientsFacet.createClient.selector;
         selectors[1] = ClientsFacet.transferClientOwnership.selector;
         selectors[2] = ClientsFacet.activateProject.selector;
@@ -139,6 +141,7 @@ library Utils {
         selectors[5] = ClientsFacet.ownerToClientData.selector;
         selectors[6] = ClientsFacet.projectIdToClientName.selector;
         selectors[7] = ClientsFacet.projectIdActive.selector;
+        selectors[8] = ClientsFacet.activateProjectByManager.selector;
         return selectors;
     }
 

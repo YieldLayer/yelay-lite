@@ -3,12 +3,15 @@ pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
 
+import {IAccessControl} from "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 
 import {ClientsFacet, ClientData} from "src/facets/ClientsFacet.sol";
 
 import {LibErrors} from "src/libraries/LibErrors.sol";
+import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {MockStrategy} from "./MockStrategy.sol";
 import {MockToken} from "./MockToken.sol";
@@ -38,7 +41,11 @@ contract ClientsFacetTest is Test {
 
     function test_createClient() external {
         vm.startPrank(client);
-        vm.expectRevert(abi.encodeWithSelector(LibErrors.OwnableUnauthorizedAccount.selector, client));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, client, LibRoles.CLIENT_MANAGER
+            )
+        );
         yelayLiteVault.createClient(client, 1000, "");
         vm.stopPrank();
 
@@ -114,6 +121,37 @@ contract ClientsFacetTest is Test {
         yelayLiteVault.activateProject(1000);
         vm.expectRevert(abi.encodeWithSelector(LibErrors.ProjectActive.selector));
         yelayLiteVault.activateProject(1000);
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.projectIdActive(1000), true);
+        assertEq(yelayLiteVault.projectIdToClientName(1000), "client");
+    }
+
+    function test_activateProjectByManager() external {
+        vm.startPrank(owner);
+        yelayLiteVault.createClient(client, 1000, "client");
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, user, LibRoles.CLIENT_MANAGER
+            )
+        );
+        yelayLiteVault.activateProjectByManager(client, 1000);
+        vm.stopPrank();
+
+        assertEq(yelayLiteVault.projectIdActive(1000), false);
+        assertEq(yelayLiteVault.projectIdToClientName(1000), "");
+
+        vm.startPrank(owner);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.OutOfBoundProjectId.selector));
+        yelayLiteVault.activateProjectByManager(client, 123);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.OutOfBoundProjectId.selector));
+        yelayLiteVault.activateProjectByManager(client, 2000);
+        yelayLiteVault.activateProjectByManager(client, 1000);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ProjectActive.selector));
+        yelayLiteVault.activateProjectByManager(client, 1000);
         vm.stopPrank();
 
         assertEq(yelayLiteVault.projectIdActive(1000), true);
