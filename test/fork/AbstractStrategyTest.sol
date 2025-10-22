@@ -6,7 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
-import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
+import {StrategyArgs} from "src/interfaces/IFundsFacetBase.sol";
 
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";

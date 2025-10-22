@@ -7,17 +7,20 @@ import {
     IAccessControlEnumerable,
     IAccessControl
 } from "@openzeppelin/contracts/access/extensions/IAccessControlEnumerable.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {Swapper} from "src/Swapper.sol";
 
 import {FundsFacet} from "src/facets/FundsFacet.sol";
+import {AsyncFundsFacet} from "src/facets/AsyncFundsFacet.sol";
 import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {ClientsFacet} from "src/facets/ClientsFacet.sol";
 import {OwnerFacet} from "src/facets/OwnerFacet.sol";
 
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
+import {IFundsFacetBase} from "src/interfaces/IFundsFacetBase.sol";
 import {ISwapper, ExchangeArgs} from "src/interfaces/ISwapper.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {IMerklDistributor} from "src/interfaces/external/merkl/IMerklDistributor.sol";
@@ -67,34 +70,85 @@ library Utils {
         return yelayLiteVault;
     }
 
+    function upgradeToAsyncFundsFacet(IYelayLiteVault yelayLiteVault) internal {
+        SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](1);
+        selectorsToFacets[0] = SelectorsToFacet({
+            facet: address(new AsyncFundsFacet(ISwapper(yelayLiteVault.swapper()), IMerklDistributor(address(0)))),
+            selectors: asyncFundsFacetSelectors()
+        });
+        yelayLiteVault.setSelectorToFacets(selectorsToFacets);
+    }
+
+    function asyncFundsFacetSelectors() internal pure returns (bytes4[] memory) {
+        bytes4[] memory selectors = new bytes4[](38);
+        selectors[0] = bytes4(keccak256("totalSupply()"));
+        selectors[1] = bytes4(keccak256("totalSupply(uint256)"));
+        selectors[2] = IFundsFacetBase.lastTotalAssets.selector;
+        selectors[3] = IFundsFacetBase.lastTotalAssetsTimestamp.selector;
+        selectors[4] = IFundsFacetBase.lastTotalAssetsUpdateInterval.selector;
+        selectors[5] = IFundsFacetBase.setLastTotalAssetsUpdateInterval.selector;
+        selectors[6] = IFundsFacetBase.underlyingBalance.selector;
+        selectors[7] = IFundsFacetBase.underlyingAsset.selector;
+        selectors[8] = IFundsFacetBase.yieldExtractor.selector;
+        selectors[9] = IFundsFacetBase.setYieldExtractor.selector;
+        selectors[10] = IFundsFacetBase.swapper.selector;
+        selectors[11] = IFundsFacetBase.merklDistributor.selector;
+        selectors[12] = IFundsFacetBase.totalAssets.selector;
+        selectors[13] = IFundsFacetBase.strategyAssets.selector;
+        selectors[14] = IFundsFacetBase.strategyRewards.selector;
+        selectors[15] = IFundsFacetBase.deposit.selector;
+        selectors[16] = FundsFacet.redeem.selector;
+        selectors[17] = IFundsFacetBase.migratePosition.selector;
+        selectors[18] = IFundsFacetBase.managedDeposit.selector;
+        selectors[19] = IFundsFacetBase.managedWithdraw.selector;
+        selectors[20] = IFundsFacetBase.reallocate.selector;
+        selectors[21] = IFundsFacetBase.swapRewards.selector;
+        selectors[22] = IFundsFacetBase.compoundUnderlyingReward.selector;
+        selectors[23] = IFundsFacetBase.accrueFee.selector;
+        selectors[24] = IFundsFacetBase.claimStrategyRewards.selector;
+        selectors[25] = IFundsFacetBase.claimMerklRewards.selector;
+        selectors[26] = ERC1155Upgradeable.balanceOf.selector;
+        selectors[27] = ERC1155Upgradeable.uri.selector;
+        selectors[28] = ERC1155Upgradeable.safeTransferFrom.selector;
+        selectors[29] = ERC1155Upgradeable.safeBatchTransferFrom.selector;
+        selectors[30] = ERC1155Upgradeable.setApprovalForAll.selector;
+        selectors[31] = ERC1155Upgradeable.isApprovedForAll.selector;
+        selectors[32] = ERC1155Upgradeable.balanceOfBatch.selector;
+        selectors[33] = IERC1155Receiver.onERC1155Received.selector;
+        selectors[34] = IERC1155Receiver.onERC1155BatchReceived.selector;
+        selectors[35] = AsyncFundsFacet.requestAsyncFunds.selector;
+        selectors[36] = AsyncFundsFacet.fullfilAsyncRequest.selector;
+        return selectors;
+    }
+
     function fundsFacetSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](28);
         selectors[0] = bytes4(keccak256("totalSupply()"));
         selectors[1] = bytes4(keccak256("totalSupply(uint256)"));
-        selectors[2] = FundsFacet.lastTotalAssets.selector;
-        selectors[3] = FundsFacet.lastTotalAssetsTimestamp.selector;
-        selectors[4] = FundsFacet.lastTotalAssetsUpdateInterval.selector;
-        selectors[5] = FundsFacet.setLastTotalAssetsUpdateInterval.selector;
-        selectors[6] = FundsFacet.underlyingBalance.selector;
-        selectors[7] = FundsFacet.underlyingAsset.selector;
-        selectors[8] = FundsFacet.yieldExtractor.selector;
-        selectors[9] = FundsFacet.setYieldExtractor.selector;
-        selectors[10] = FundsFacet.swapper.selector;
-        selectors[11] = FundsFacet.merklDistributor.selector;
-        selectors[12] = FundsFacet.totalAssets.selector;
-        selectors[13] = FundsFacet.strategyAssets.selector;
-        selectors[14] = FundsFacet.strategyRewards.selector;
-        selectors[15] = FundsFacet.deposit.selector;
+        selectors[2] = IFundsFacetBase.lastTotalAssets.selector;
+        selectors[3] = IFundsFacetBase.lastTotalAssetsTimestamp.selector;
+        selectors[4] = IFundsFacetBase.lastTotalAssetsUpdateInterval.selector;
+        selectors[5] = IFundsFacetBase.setLastTotalAssetsUpdateInterval.selector;
+        selectors[6] = IFundsFacetBase.underlyingBalance.selector;
+        selectors[7] = IFundsFacetBase.underlyingAsset.selector;
+        selectors[8] = IFundsFacetBase.yieldExtractor.selector;
+        selectors[9] = IFundsFacetBase.setYieldExtractor.selector;
+        selectors[10] = IFundsFacetBase.swapper.selector;
+        selectors[11] = IFundsFacetBase.merklDistributor.selector;
+        selectors[12] = IFundsFacetBase.totalAssets.selector;
+        selectors[13] = IFundsFacetBase.strategyAssets.selector;
+        selectors[14] = IFundsFacetBase.strategyRewards.selector;
+        selectors[15] = IFundsFacetBase.deposit.selector;
         selectors[16] = FundsFacet.redeem.selector;
-        selectors[17] = FundsFacet.migratePosition.selector;
-        selectors[18] = FundsFacet.managedDeposit.selector;
-        selectors[19] = FundsFacet.managedWithdraw.selector;
-        selectors[20] = FundsFacet.reallocate.selector;
-        selectors[21] = FundsFacet.swapRewards.selector;
-        selectors[22] = FundsFacet.compoundUnderlyingReward.selector;
-        selectors[23] = FundsFacet.accrueFee.selector;
-        selectors[24] = FundsFacet.claimStrategyRewards.selector;
-        selectors[25] = FundsFacet.claimMerklRewards.selector;
+        selectors[17] = IFundsFacetBase.migratePosition.selector;
+        selectors[18] = IFundsFacetBase.managedDeposit.selector;
+        selectors[19] = IFundsFacetBase.managedWithdraw.selector;
+        selectors[20] = IFundsFacetBase.reallocate.selector;
+        selectors[21] = IFundsFacetBase.swapRewards.selector;
+        selectors[22] = IFundsFacetBase.compoundUnderlyingReward.selector;
+        selectors[23] = IFundsFacetBase.accrueFee.selector;
+        selectors[24] = IFundsFacetBase.claimStrategyRewards.selector;
+        selectors[25] = IFundsFacetBase.claimMerklRewards.selector;
         selectors[26] = ERC1155Upgradeable.balanceOf.selector;
         selectors[27] = ERC1155Upgradeable.uri.selector;
         return selectors;
