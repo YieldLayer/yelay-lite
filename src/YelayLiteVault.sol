@@ -28,7 +28,9 @@ contract YelayLiteVault is Proxy, Multicall {
         s.selectorToFacet[IOwnerFacet.pendingOwner.selector] = _ownerFacet;
         s.selectorToFacet[IOwnerFacet.transferOwnership.selector] = _ownerFacet;
         s.selectorToFacet[IOwnerFacet.acceptOwnership.selector] = _ownerFacet;
-        s.selectorToFacet[IOwnerFacet.setSelectorToFacets.selector] = _ownerFacet;
+        s.selectorToFacet[IOwnerFacet.addSelectors.selector] = _ownerFacet;
+        s.selectorToFacet[IOwnerFacet.updateSelectors.selector] = _ownerFacet;
+        s.selectorToFacet[IOwnerFacet.removeSelectors.selector] = _ownerFacet;
         s.selectorToFacet[IOwnerFacet.selectorToFacet.selector] = _ownerFacet;
 
         // set Multicall selector

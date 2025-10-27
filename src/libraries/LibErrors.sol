@@ -15,6 +15,10 @@ library LibErrors {
      */
     error InvalidSelector(bytes4 selector);
 
+    error SelectorCollision(address facet, bytes4 selector);
+    error SelectorNotSet(bytes4 selector);
+    error ForbiddenOwnerSelector(bytes4 selector);
+
     // ===================== ClientsFacet ================================
     /**
      * @dev The owner address is already used by some client.

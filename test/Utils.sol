@@ -59,7 +59,7 @@ library Utils {
         selectorsToFacets[2] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
         selectorsToFacets[3] =
             SelectorsToFacet({facet: address(new ClientsFacet()), selectors: clientsFacetSelectors()});
-        yelayLiteVault.setSelectorToFacets(selectorsToFacets);
+        yelayLiteVault.addSelectors(selectorsToFacets);
 
         yelayLiteVault.grantRole(LibRoles.CLIENT_MANAGER, owner);
         yelayLiteVault.createClient(owner, 999, "test");
