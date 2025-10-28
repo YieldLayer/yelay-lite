@@ -25,3 +25,7 @@ docs/
 
 # Soldeer
 /dependencies
+
+# Test Coverage files
+lcov.info
+coverage

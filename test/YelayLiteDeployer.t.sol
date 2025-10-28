@@ -10,6 +10,7 @@ import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/Own
 import {ERC1155Upgradeable} from "@openzeppelin-upgradeable/contracts/token/ERC1155/ERC1155Upgradeable.sol";
 
 import {YelayLiteDeployer} from "src/YelayLiteDeployer.sol";
+import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {FundsFacet} from "src/facets/FundsFacet.sol";
 import {OwnerFacet} from "src/facets/OwnerFacet.sol";
@@ -85,6 +86,10 @@ contract YelayLiteDeployerTest is Test {
         assertEq(vaultAddress, expectedVault);
 
         IYelayLiteVault vault = IYelayLiteVault(vaultAddress);
+        vm.expectRevert(LibErrors.AlreadyInitialized.selector);
+        YelayLiteVault(payable(address(vault))).initialize(
+            deployerOwner, ownerFacetAddr, underlying, yieldExtractor, uri, facets, payloads
+        );
         assertEq(vault.owner(), deployerOwner);
         assertEq(vault.underlyingAsset(), underlying);
         assertEq(vault.yieldExtractor(), yieldExtractor);
