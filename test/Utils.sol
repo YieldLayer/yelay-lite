@@ -45,9 +45,11 @@ library Utils {
 
         OwnerFacet ownerFacet = new OwnerFacet();
 
-        IYelayLiteVault yelayLiteVault = IYelayLiteVault(
-            address(new YelayLiteVault(owner, address(ownerFacet), underlyingAsset, yieldExtractor, uri))
+        YelayLiteVault vault = new YelayLiteVault();
+        vault.initialize(
+            owner, address(ownerFacet), underlyingAsset, yieldExtractor, uri, new address[](0), new bytes[](0)
         );
+        IYelayLiteVault yelayLiteVault = IYelayLiteVault(address(vault));
 
         SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](4);
         selectorsToFacets[0] = SelectorsToFacet({
