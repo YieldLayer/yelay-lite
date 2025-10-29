@@ -231,4 +231,9 @@ library LibErrors {
      * @param received The actual amount of assets received, which is less than requested
      */
     error WithdrawSlippageExceeded(uint256 requested, uint256 received);
+
+    /**
+     * @notice Thrown when the amount of assets or shares is zero
+     */
+    error ZeroValue();
 }

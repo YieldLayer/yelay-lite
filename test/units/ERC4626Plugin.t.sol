@@ -27,6 +27,7 @@ contract ERC4626PluginTest is Test {
     MockToken underlyingAsset;
     MockProtocol mockProtocol;
     MockStrategy mockStrategy;
+    ERC4626PluginFactory factory;
 
     string constant PLUGIN_SYMBOL = "TP";
     string constant PLUGIN_NAME = "TestPlugin";
@@ -51,8 +52,7 @@ contract ERC4626PluginTest is Test {
 
         yelayLiteVault = Utils.deployDiamond(address(this), address(underlyingAsset), address(yieldExtractor), URI);
 
-        ERC4626PluginFactory factory =
-            new ERC4626PluginFactory(address(this), address(new ERC4626Plugin(address(yieldExtractor))));
+        factory = new ERC4626PluginFactory(address(this), address(new ERC4626Plugin(address(yieldExtractor))));
 
         erc4626Plugin = factory.deploy(PLUGIN_NAME, PLUGIN_SYMBOL, address(yelayLiteVault), PROJECT_ID);
 
@@ -127,10 +127,22 @@ contract ERC4626PluginTest is Test {
     }
 
     function test_preview_empty_plugin() external view {
-        assertEq(erc4626Plugin.previewDeposit(toDeposit), _toShares(toDeposit), "Return same amount of shares");
-        assertEq(erc4626Plugin.previewMint(_toShares(toDeposit)), toDeposit, "Return same amount of assets");
-        assertEq(erc4626Plugin.previewRedeem(_toShares(toDeposit)), 0, "Zero assets");
-        assertEq(erc4626Plugin.previewWithdraw(toDeposit), 0, "Zero shares");
+        assertEq(
+            erc4626Plugin.previewDeposit(toDeposit),
+            _toShares(toDeposit),
+            "previewDeposit: Return same amount of shares"
+        );
+        assertEq(
+            erc4626Plugin.previewMint(_toShares(toDeposit)), toDeposit, "previewMint: Return same amount of assets"
+        );
+        assertEq(
+            erc4626Plugin.previewRedeem(_toShares(toDeposit)), toDeposit, "previewRedeem: Return same amount of assets"
+        );
+        assertEq(
+            erc4626Plugin.previewWithdraw(toDeposit),
+            _toShares(toDeposit),
+            "previewWithdraw: Return same amount of shares"
+        );
     }
 
     function test_convert_empty_plugin() external view {
@@ -184,16 +196,8 @@ contract ERC4626PluginTest is Test {
 
         assertEq(erc4626Plugin.previewDeposit(toDeposit), _toShares(toDeposit), "Return same amount of shares");
         assertEq(erc4626Plugin.previewMint(_toShares(toDeposit)), toDeposit, "Return same amount of assets");
-        assertEq(
-            erc4626Plugin.previewRedeem(_toShares(toDeposit)),
-            toDeposit - WITHDRAW_MARGIN,
-            "Almost the same amount of assets, minus withdrawal margin"
-        );
-        assertEq(
-            erc4626Plugin.previewWithdraw(toDeposit),
-            _toShares(toDeposit) + _toShares(WITHDRAW_MARGIN),
-            "Almost the same amount of shares, plus withdrawal margin"
-        );
+        assertEq(erc4626Plugin.previewRedeem(_toShares(toDeposit)), toDeposit, "Almost the same amount of assets");
+        assertEq(erc4626Plugin.previewWithdraw(toDeposit), _toShares(toDeposit), "Almost the same amount of shares");
     }
 
     function test_preview_non_empty_with_yield() external {
@@ -223,15 +227,17 @@ contract ERC4626PluginTest is Test {
             "Would return half amount of shares"
         );
         assertEq(erc4626Plugin.previewMint(_toShares(toDeposit)), toDeposit * 2, "Need double amount of assets");
-        assertEq(
+        assertApproxEqAbs(
             erc4626Plugin.previewRedeem(_toShares(toDeposit)),
-            toDeposit * 2 - WITHDRAW_MARGIN,
-            "Since we doubled totalAssets user should get twice as much, minus withdrawal margin"
+            toDeposit * 2,
+            1,
+            "Since we doubled totalAssets user should get twice as much"
         );
-        assertEq(
+        assertApproxEqAbs(
             erc4626Plugin.previewWithdraw(toDeposit),
-            _toShares(toDeposit + WITHDRAW_MARGIN) / 2,
-            "We need half of the shares to get the depositAmount, plus withdrawal margin"
+            _toShares(toDeposit) / 2,
+            1e12,
+            "We need half of the shares to get the depositAmount"
         );
     }
 
@@ -279,7 +285,7 @@ contract ERC4626PluginTest is Test {
         vm.prank(user1);
         uint256 user1AssetsWithdrawn = erc4626Plugin.redeem(user1Shares / 2, user1, user1);
 
-        assertEq(user1AssetsWithdrawn, user1PreviewRedeem + WITHDRAW_MARGIN, "Compare preview and actual action");
+        assertEq(user1AssetsWithdrawn, user1PreviewRedeem, "Compare preview and actual action");
         assertEq(underlyingAsset.balanceOf(user1), toDeposit / 2, "Check user1 balance");
         assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2), "User1 shares");
         assertEq(erc4626Plugin.balanceOf(user2), _toShares(toDeposit / 2), "User2 shares");
@@ -292,7 +298,7 @@ contract ERC4626PluginTest is Test {
         vm.prank(user2);
         uint256 user2AssetsWithdrawn = erc4626Plugin.redeem(user2Shares, user2, user2);
 
-        assertEq(user2AssetsWithdrawn, user2PreviewRedeem + WITHDRAW_MARGIN, "Compare preview and actual action");
+        assertEq(user2AssetsWithdrawn, user2PreviewRedeem, "Compare preview and actual action");
         assertEq(underlyingAsset.balanceOf(user2), toDeposit, "Check user2 balance");
         assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2), "User1 shares");
         assertEq(erc4626Plugin.balanceOf(user2), 0, "User2 shares");
@@ -317,12 +323,12 @@ contract ERC4626PluginTest is Test {
         vm.prank(user1);
         uint256 user1AssetsWithdrawn = erc4626Plugin.redeem(user1Shares / 2, user1, user1);
 
-        assertEq(user1AssetsWithdrawn, user1PreviewRedeem + WITHDRAW_MARGIN, "Compare preview and actual action");
-        assertEq(underlyingAsset.balanceOf(user1), toDeposit, "Check user1 balance");
+        assertEq(user1AssetsWithdrawn, user1PreviewRedeem, "Compare preview and actual action");
+        assertApproxEqAbs(underlyingAsset.balanceOf(user1), toDeposit, 1, "Check user1 balance");
         assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2), "User1 shares");
         assertEq(erc4626Plugin.balanceOf(user2), _toShares(toDeposit / 2), "User2 shares");
         assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit), "Total supply");
-        assertEq(erc4626Plugin.totalAssets(), toDeposit * 2, "Total assets");
+        assertApproxEqAbs(erc4626Plugin.totalAssets(), toDeposit * 2, 1, "Total assets");
 
         uint256 user2PreviewRedeem = erc4626Plugin.previewRedeem(user2Shares);
 
@@ -330,12 +336,12 @@ contract ERC4626PluginTest is Test {
         vm.prank(user2);
         uint256 user2AssetsWithdrawn = erc4626Plugin.redeem(user2Shares, user2, user2);
 
-        assertEq(user2AssetsWithdrawn, user2PreviewRedeem + WITHDRAW_MARGIN, "Compare preview and actual action");
+        assertEq(user2AssetsWithdrawn, user2PreviewRedeem, "Compare preview and actual action");
         assertEq(underlyingAsset.balanceOf(user2), toDeposit * 3 / 2, "Check user2 balance");
         assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2), "User1 shares");
         assertEq(erc4626Plugin.balanceOf(user2), 0, "User2 shares");
         assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit / 2), "Total supply");
-        assertEq(erc4626Plugin.totalAssets(), toDeposit, "Total assets");
+        assertApproxEqAbs(erc4626Plugin.totalAssets(), toDeposit, 1, "Total assets");
     }
 
     function test_deposit_withdraw_without_yield() external {
@@ -352,26 +358,26 @@ contract ERC4626PluginTest is Test {
 
         assertEq(user1PreviewWithdraw, user1SharesBurned, "Compare preview and actual action");
         assertEq(underlyingAsset.balanceOf(user1), toDeposit / 2, "Check user1 balance");
-        assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2) - _toShares(WITHDRAW_MARGIN), "User1 shares");
+        assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2), "User1 shares");
         assertEq(erc4626Plugin.balanceOf(user2), _toShares(toDeposit / 2), "User2 shares");
-        assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit) - _toShares(WITHDRAW_MARGIN), "Total supply");
+        assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit), "Total supply");
         assertEq(erc4626Plugin.totalAssets(), toDeposit, "Total assets");
         assertEq(
             underlyingAsset.balanceOf(address(erc4626Plugin)), WITHDRAW_MARGIN, "Withdrawal margin remained on plugin"
         );
 
-        uint256 user2PreviewWithdraw = erc4626Plugin.previewWithdraw(toDeposit / 2 - WITHDRAW_MARGIN);
+        uint256 user2PreviewWithdraw = erc4626Plugin.previewWithdraw(toDeposit / 2);
 
         // full withdraw
         vm.prank(user2);
-        uint256 user2SharesBurned = erc4626Plugin.withdraw(toDeposit / 2 - WITHDRAW_MARGIN, user2, user2);
+        uint256 user2SharesBurned = erc4626Plugin.withdraw(toDeposit / 2, user2, user2);
 
         assertEq(user2PreviewWithdraw, user2SharesBurned, "Compare preview and actual action");
-        assertEq(underlyingAsset.balanceOf(user2), toDeposit - WITHDRAW_MARGIN, "Check user2 balance");
-        assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2) - _toShares(WITHDRAW_MARGIN), "User1 shares");
+        assertEq(underlyingAsset.balanceOf(user2), toDeposit, "Check user2 balance");
+        assertEq(erc4626Plugin.balanceOf(user1), _toShares(toDeposit / 2), "User1 shares");
         assertEq(erc4626Plugin.balanceOf(user2), 0, "User2 shares");
-        assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit / 2) - _toShares(WITHDRAW_MARGIN), "Total supply");
-        assertEq(erc4626Plugin.totalAssets(), toDeposit / 2 + WITHDRAW_MARGIN, "Total assets");
+        assertEq(erc4626Plugin.totalSupply(), _toShares(toDeposit / 2), "Total supply");
+        assertEq(erc4626Plugin.totalAssets(), toDeposit / 2, "Total assets");
         assertEq(
             underlyingAsset.balanceOf(address(erc4626Plugin)),
             WITHDRAW_MARGIN * 2,
@@ -398,38 +404,30 @@ contract ERC4626PluginTest is Test {
 
         assertEq(user1PreviewWithdraw, user1SharesBurned, "Compare preview and actual action");
         assertEq(underlyingAsset.balanceOf(user1), toDeposit / 2, "Check user1 balance");
-        assertEq(
-            erc4626Plugin.balanceOf(user1),
-            _toShares(3 * toDeposit / 4) - _toShares(WITHDRAW_MARGIN / 2),
-            "User1 shares"
-        );
+        assertApproxEqAbs(erc4626Plugin.balanceOf(user1), _toShares(3 * toDeposit / 4), 1e11, "User1 shares");
         assertEq(erc4626Plugin.balanceOf(user2), _toShares(toDeposit / 2), "User2 shares");
-        assertEq(
-            erc4626Plugin.totalSupply(), _toShares(5 * toDeposit / 4) - _toShares(WITHDRAW_MARGIN / 2), "Total supply"
-        );
+        assertApproxEqAbs(erc4626Plugin.totalSupply(), _toShares(5 * toDeposit / 4), 1e11, "Total supply");
         assertEq(erc4626Plugin.totalAssets(), 5 * toDeposit / 2, "Total assets");
         assertEq(
             underlyingAsset.balanceOf(address(erc4626Plugin)), WITHDRAW_MARGIN, "Withdrawal margin remained on plugin"
         );
 
-        uint256 user2PreviewWithdraw = erc4626Plugin.previewWithdraw(toDeposit - WITHDRAW_MARGIN);
+        uint256 user2MaxWithdraw = erc4626Plugin.maxWithdraw(user2);
+
+        assertApproxEqAbs(user2MaxWithdraw, toDeposit, 1);
+
+        uint256 user2PreviewWithdraw = erc4626Plugin.previewWithdraw(user2MaxWithdraw);
 
         // full withdraw
         vm.prank(user2);
-        uint256 user2SharesBurned = erc4626Plugin.withdraw(toDeposit - WITHDRAW_MARGIN, user2, user2);
+        uint256 user2SharesBurned = erc4626Plugin.withdraw(user2MaxWithdraw, user2, user2);
 
         assertEq(user2PreviewWithdraw, user2SharesBurned, "Compare preview and actual action");
-        assertEq(underlyingAsset.balanceOf(user2), 3 * toDeposit / 2 - WITHDRAW_MARGIN, "Check user2 balance");
-        assertEq(
-            erc4626Plugin.balanceOf(user1),
-            _toShares(3 * toDeposit / 4) - _toShares(WITHDRAW_MARGIN / 2),
-            "User1 shares"
-        );
-        assertEq(erc4626Plugin.balanceOf(user2), 0, "User2 shares");
-        assertEq(
-            erc4626Plugin.totalSupply(), _toShares(3 * toDeposit / 4) - _toShares(WITHDRAW_MARGIN / 2), "Total supply"
-        );
-        assertEq(erc4626Plugin.totalAssets(), 3 * toDeposit / 2 + WITHDRAW_MARGIN, "Total assets");
+        assertApproxEqAbs(underlyingAsset.balanceOf(user2), 3 * toDeposit / 2, 1, "Check user2 balance");
+        assertApproxEqAbs(erc4626Plugin.balanceOf(user1), _toShares(3 * toDeposit / 4), 1e11, "User1 shares");
+        assertApproxEqAbs(erc4626Plugin.balanceOf(user2), 0, 1e12, "User2 shares");
+        assertApproxEqAbs(erc4626Plugin.totalSupply(), _toShares(3 * toDeposit / 4), 3e11, "Total supply");
+        assertApproxEqAbs(erc4626Plugin.totalAssets(), 3 * toDeposit / 2, 1, "Total assets");
         assertEq(
             underlyingAsset.balanceOf(address(erc4626Plugin)),
             WITHDRAW_MARGIN * 2,
@@ -445,10 +443,14 @@ contract ERC4626PluginTest is Test {
 
         // full withdraw
         vm.startPrank(user2);
-        erc4626Plugin.withdraw(erc4626Plugin.maxWithdraw(user2), user2, user2);
+        uint256 user2MaxWithdraw = erc4626Plugin.maxWithdraw(user2);
+        uint256 sharesBurnt = erc4626Plugin.withdraw(user2MaxWithdraw, user2, user2);
         vm.stopPrank();
 
-        assertEq(erc4626Plugin.totalAssets(), toDeposit + WITHDRAW_MARGIN, "Total assets");
+        assertEq(toDeposit / 2, user2MaxWithdraw, "User2 has withdrawn his funds");
+        assertEq(_toShares(toDeposit / 2), sharesBurnt, "User2 has withdrawn his funds");
+
+        assertEq(erc4626Plugin.totalAssets(), toDeposit, "Total assets");
         assertEq(
             underlyingAsset.balanceOf(address(erc4626Plugin)), WITHDRAW_MARGIN, "Withdrawal margin remained on plugin"
         );
@@ -456,8 +458,70 @@ contract ERC4626PluginTest is Test {
         uint256 skimmed = erc4626Plugin.skim();
 
         assertEq(skimmed, WITHDRAW_MARGIN, "Skimmed withdraw margin");
-        assertEq(erc4626Plugin.totalAssets(), toDeposit + WITHDRAW_MARGIN, "Total assets");
+        assertEq(erc4626Plugin.totalAssets(), toDeposit, "Total assets");
         assertEq(underlyingAsset.balanceOf(address(erc4626Plugin)), 0, "Plugin doesn't hold assets");
+    }
+
+    function test_deposit_zero_assets_reverts() external {
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ZeroValue.selector));
+        erc4626Plugin.deposit(0, user1);
+        vm.stopPrank();
+    }
+
+    function test_deposit_zero_shares_reverts() external {
+        uint256 largeLooseBalance = 1e30;
+        deal(address(underlyingAsset), address(erc4626Plugin), largeLooseBalance);
+
+        assertEq(erc4626Plugin.previewDeposit(1), 0, "previewDeposit should round to zero shares");
+
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ZeroValue.selector));
+        erc4626Plugin.deposit(1, user1);
+        vm.stopPrank();
+    }
+
+    function test_mint_zero_shares_reverts() external {
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ZeroValue.selector));
+        erc4626Plugin.mint(0, user1);
+        vm.stopPrank();
+    }
+
+    function test_redeem_zero_shares_reverts() external {
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ZeroValue.selector));
+        erc4626Plugin.redeem(0, user1, user1);
+        vm.stopPrank();
+    }
+
+    function test_redeem_zero_assets_reverts() external {
+        vm.startPrank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+        vm.stopPrank();
+
+        uint256 pluginShares = yelayLiteVault.balanceOf(address(erc4626Plugin), PROJECT_ID);
+        vm.mockCall(
+            address(yelayLiteVault),
+            abi.encodeWithSelector(IFundsFacet.convertToAssets.selector, pluginShares),
+            abi.encode(uint256(0))
+        );
+
+        assertEq(erc4626Plugin.previewRedeem(1), 0, "previewRedeem should round to zero assets");
+
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ZeroValue.selector));
+        erc4626Plugin.redeem(1, user1, user1);
+        vm.stopPrank();
+
+        vm.clearMockedCalls();
+    }
+
+    function test_withdraw_zero_assets_reverts() external {
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ZeroValue.selector));
+        erc4626Plugin.withdraw(0, user1, user1);
+        vm.stopPrank();
     }
 
     function test_redeem_ERC4626ExceededMaxRedeem() external {
@@ -474,12 +538,14 @@ contract ERC4626PluginTest is Test {
         vm.startPrank(user1);
         erc4626Plugin.deposit(toDeposit, user1);
 
+        uint256 maxWithdraw = erc4626Plugin.maxWithdraw(user1);
+
         vm.expectRevert(
             abi.encodeWithSelector(
-                ERC4626Upgradeable.ERC4626ExceededMaxWithdraw.selector, user1, toDeposit, toDeposit - WITHDRAW_MARGIN
+                ERC4626Upgradeable.ERC4626ExceededMaxWithdraw.selector, user1, maxWithdraw + 1, maxWithdraw
             )
         );
-        erc4626Plugin.withdraw(toDeposit, user1, user1);
+        erc4626Plugin.withdraw(maxWithdraw + 1, user1, user1);
     }
 
     function test_WithdrawSlippageExceeded() external {
@@ -498,6 +564,27 @@ contract ERC4626PluginTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(LibErrors.WithdrawSlippageExceeded.selector, toWithdraw, toWithdraw - 1));
         erc4626Plugin.withdraw(toWithdraw, user1, user1);
+    }
+
+    function test_last_withdraw() external {
+        vm.prank(user1);
+        uint256 user1Shares = erc4626Plugin.deposit(toDeposit, user1);
+        vm.prank(user2);
+        uint256 user2Shares = erc4626Plugin.deposit(toDeposit, user2);
+
+        vm.startPrank(user1);
+        uint256 user1MaxWithdraw = erc4626Plugin.maxWithdraw(user1);
+        uint256 user1Burnt = erc4626Plugin.withdraw(user1MaxWithdraw, user1, user1);
+        assertEq(user1Burnt, user1Shares, "User1 burnt");
+        assertEq(user1MaxWithdraw, toDeposit, "User1 withdrawn");
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        uint256 user2MaxWithdraw = erc4626Plugin.maxWithdraw(user2);
+        uint256 user2Burnt = erc4626Plugin.withdraw(user2MaxWithdraw, user2, user2);
+        assertEq(user2Burnt, user2Shares, "User2 burnt");
+        assertEq(user2MaxWithdraw, toDeposit, "User2 withdrawn");
+        vm.stopPrank();
     }
 
     function test_accrue() external {
@@ -527,4 +614,65 @@ contract ERC4626PluginTest is Test {
             "Yelay lite vault project total supply increase"
         );
     }
+
+    function test_withdraw_within_margin() external {
+        uint256 reducedMargin = 7;
+
+        vm.startPrank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+
+        uint256 toWithdraw = toDeposit / 2;
+
+        // return withing margin but less then requested
+        mockProtocol.setWithdraw(toWithdraw + reducedMargin);
+
+        uint256 userBalanceBefore = underlyingAsset.balanceOf(user1);
+        erc4626Plugin.withdraw(toWithdraw, user1, user1);
+        uint256 userBalanceAfter = underlyingAsset.balanceOf(user1);
+        assertEq(userBalanceAfter - toWithdraw, userBalanceBefore, "User has withdrawn what was requested");
+
+        assertEq(
+            underlyingAsset.balanceOf(address(erc4626Plugin)),
+            reducedMargin,
+            "Reduced margin is remained on erc4626Plugin"
+        );
+        assertEq(erc4626Plugin.totalAssets(), toDeposit / 2 - WITHDRAW_MARGIN + reducedMargin, "Total assets");
+    }
+
+    // function test_donation_attack() external {
+    //     uint256 OFFSET = 0;
+    //     uint256 amount = 1e18;
+    //     uint256 donation = amount * (1 + 10 ** OFFSET);
+
+    //     MockToken WETH = new MockToken("WETH", "WETH", 18);
+
+    //     IYelayLiteVault vault = Utils.deployDiamond(address(this), address(WETH), address(yieldExtractor), URI);
+
+    //     ERC4626Plugin plugin = factory.deploy("WETH TEST", "T_WETH", address(vault), PROJECT_ID);
+
+    //     address attacker = makeAddr("attacker");
+    //     deal(address(WETH), attacker, 100 * amount);
+
+    //     vm.startPrank(attacker);
+    //     WETH.approve(address(plugin), type(uint256).max);
+    //     WETH.approve(address(vault), type(uint256).max);
+    //     plugin.mint(1, attacker);
+    //     vault.deposit(donation, PROJECT_ID, address(plugin));
+    //     vm.stopPrank();
+
+    //     deal(address(WETH), user1, amount);
+
+    //     vm.startPrank(user1);
+    //     WETH.approve(address(plugin), type(uint256).max);
+
+    //     uint256 received = plugin.deposit(amount, user1);
+    //     assertEq(received, 0, "User lost funds");
+    //     vm.stopPrank();
+
+    //     vm.startPrank(attacker);
+    //     uint256 taken = plugin.redeem(1, attacker, attacker);
+    //     assertEq(taken, 1 + 3 * amount / 2);
+    //     assertLt(taken, donation);
+    //     vm.stopPrank();
+    // }
 }
