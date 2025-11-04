@@ -203,10 +203,12 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
         // for last withdrawal preview might be bigger than actual balance
         uint256 toRedeem = FixedPointMathLib.min(preview, balance);
 
-        uint256 assetsReceived = yelayLiteVault.redeem(toRedeem, projectId, address(this));
         uint256 assetsBalance = IERC20(asset()).balanceOf(address(this));
+        uint256 assetsReceived = yelayLiteVault.redeem(toRedeem, projectId, address(this));
 
-        require(assetsReceived + assetsBalance >= assets, LibErrors.WithdrawSlippageExceeded(assets, assetsReceived));
+        uint256 assetsAvailable = assetsBalance + assetsReceived;
+
+        require(assetsAvailable >= assets, LibErrors.WithdrawSlippageExceeded(assets, assetsAvailable));
     }
 
     /**
