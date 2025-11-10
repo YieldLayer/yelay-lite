@@ -226,9 +226,14 @@ library LibErrors {
     // ===================== ERC4626Plugin ================================
 
     /**
-     * @notice Thrown when the amount of assets received by ERC4626Plugin during a withdrawal is less than the requested amount
+     * @notice Thrown when the amount of assets during a withdrawal is less than the requested amount
      * @param requested The amount of assets that were requested to be withdrawn
-     * @param received The actual amount of assets received, which is less than requested
+     * @param actual The actual amount of assets available, which is less than requested
      */
-    error WithdrawSlippageExceeded(uint256 requested, uint256 received);
+    error WithdrawSlippageExceeded(uint256 requested, uint256 actual);
+
+    /**
+     * @notice Thrown when the amount of assets or shares is zero
+     */
+    error ZeroValue();
 }

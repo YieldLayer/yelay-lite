@@ -8,7 +8,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
-import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
@@ -23,13 +22,9 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
  *      shares that represent their proportional ownership of the underlying vault.
  */
 contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
-    using SafeTransferLib for ERC20;
     using Math for uint256;
 
     // ============ Constants ============
-
-    /// @notice Margin applied to withdrawals on YelayLiteVault
-    uint256 private constant WITHDRAW_MARGIN = 10;
 
     /// @notice The yield extractor contract used for yield accrual
     YieldExtractor public immutable yieldExtractor;
@@ -115,7 +110,9 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
      * @dev Overrides the standard deposit function to also deposit assets to YelayLiteVault
      */
     function deposit(uint256 assets, address receiver) public override returns (uint256) {
+        require(assets > 0, LibErrors.ZeroValue());
         uint256 shares = super.deposit(assets, receiver);
+        require(shares > 0, LibErrors.ZeroValue());
         yelayLiteVault.deposit(assets, projectId, address(this));
         return shares;
     }
@@ -128,7 +125,9 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
      * @dev Overrides the standard mint function to also deposit assets to YelayLiteVault
      */
     function mint(uint256 shares, address receiver) public override returns (uint256) {
+        require(shares > 0, LibErrors.ZeroValue());
         uint256 assets = super.mint(shares, receiver);
+        require(assets > 0, LibErrors.ZeroValue());
         yelayLiteVault.deposit(assets, projectId, address(this));
         return assets;
     }
@@ -142,15 +141,15 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
      * @dev Redeems shares by withdrawing from YelayLiteVault and transferring assets to receiver
      */
     function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
+        require(shares > 0, LibErrors.ZeroValue());
+
         uint256 maxShares = maxRedeem(owner);
-        if (shares > maxShares) {
-            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-        }
+        require(shares <= maxShares, ERC4626ExceededMaxRedeem(owner, shares, maxShares));
 
-        uint256 yelayLiteShares =
-            shares.mulDiv(yelayLiteVault.balanceOf(address(this), projectId), totalSupply(), Math.Rounding.Floor);
+        uint256 assets = previewRedeem(shares);
+        require(assets > 0, LibErrors.ZeroValue());
 
-        uint256 assets = yelayLiteVault.redeem(yelayLiteShares, projectId, address(this));
+        _withdraw(assets);
 
         _withdraw(_msgSender(), receiver, owner, assets, shares);
 
@@ -166,18 +165,15 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
      * @dev Withdraws assets with slippage protection to ensure minimum asset amount is received
      */
     function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
+        require(assets > 0, LibErrors.ZeroValue());
+
         uint256 maxAssets = maxWithdraw(owner);
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
-        }
-        uint256 yelayLiteShares = yelayLiteVault.previewWithdraw(assets);
-        uint256 shares = yelayLiteShares.mulDiv(
-            totalSupply(), yelayLiteVault.balanceOf(address(this), projectId), Math.Rounding.Ceil
-        );
+        require(assets <= maxAssets, ERC4626ExceededMaxWithdraw(owner, assets, maxAssets));
 
-        uint256 assetsReceived = yelayLiteVault.redeem(yelayLiteShares, projectId, address(this));
+        uint256 shares = previewWithdraw(assets);
+        require(shares > 0, LibErrors.ZeroValue());
 
-        require(assetsReceived >= assets, LibErrors.WithdrawSlippageExceeded(assets, assetsReceived));
+        _withdraw(assets);
 
         _withdraw(_msgSender(), receiver, owner, assets, shares);
 
@@ -185,35 +181,6 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     }
 
     // ============ View Functions ============
-
-    /**
-     * @notice Preview the amount of assets that would be received for redeeming shares
-     * @param shares The amount of shares to redeem
-     * @return assets The amount of assets that would be received
-     */
-    function previewRedeem(uint256 shares) public view override returns (uint256) {
-        uint256 yelayLiteVaultSupply = yelayLiteVault.balanceOf(address(this), projectId);
-        uint256 totalSupply = totalSupply();
-        if (shares == 0 || yelayLiteVaultSupply == 0 || totalSupply == 0) return 0;
-
-        uint256 yelayLiteShares = shares.mulDiv(yelayLiteVaultSupply, totalSupply, Math.Rounding.Floor);
-        return yelayLiteVault.previewRedeem(yelayLiteShares);
-    }
-
-    /**
-     * @notice Preview the amount of shares required to withdraw the specified assets
-     * @param assets The amount of assets to withdraw
-     * @return shares The amount of shares required
-     */
-    function previewWithdraw(uint256 assets) public view override returns (uint256) {
-        uint256 yelayLiteVaultSupply = yelayLiteVault.balanceOf(address(this), projectId);
-        uint256 totalSupply = totalSupply();
-        if (assets == 0 || yelayLiteVaultSupply == 0 || totalSupply == 0) return 0;
-
-        uint256 yelayLiteShares = yelayLiteVault.previewWithdraw(assets);
-        uint256 shares = yelayLiteShares.mulDiv(totalSupply, yelayLiteVaultSupply, Math.Rounding.Ceil);
-        return shares;
-    }
 
     /**
      * @notice Returns the total amount of assets managed by this vault
@@ -225,17 +192,24 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
         return yelayLiteVault.convertToAssets(shares) + IERC20(asset()).balanceOf(address(this));
     }
 
-    /**
-     * @notice Returns the maximum amount of assets that can be withdrawn by the owner
-     * @param owner The address of the owner
-     * @return assets The maximum amount of assets that can be withdrawn
-     * @dev Applies a WITHDRAW_MARGIN from YelayLiteVault
-     */
-    function maxWithdraw(address owner) public view override returns (uint256) {
-        return super.maxWithdraw(owner) - WITHDRAW_MARGIN;
-    }
-
     // ============ Internal Functions ============
+
+    /**
+     * @dev Withdraws from YelayLiteVault
+     */
+    function _withdraw(uint256 assets) internal {
+        uint256 preview = yelayLiteVault.previewWithdraw(assets);
+        uint256 balance = yelayLiteVault.balanceOf(address(this), projectId);
+        // for last withdrawal preview might be bigger than actual balance
+        uint256 toRedeem = FixedPointMathLib.min(preview, balance);
+
+        uint256 assetsBalance = IERC20(asset()).balanceOf(address(this));
+        uint256 assetsReceived = yelayLiteVault.redeem(toRedeem, projectId, address(this));
+
+        uint256 assetsAvailable = assetsBalance + assetsReceived;
+
+        require(assetsAvailable >= assets, LibErrors.WithdrawSlippageExceeded(assets, assetsAvailable));
+    }
 
     /**
      * @notice Returns the decimal offset for proper scaling
