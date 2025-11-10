@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC4626Upgradeable} from "@openzeppelin-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC1155HolderUpgradeable} from
     "@openzeppelin-upgradeable/contracts/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
@@ -68,7 +69,7 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
         projectId = _projectId;
         yelayLiteVault = IYelayLiteVault(_yelayLiteVault);
         address asset = yelayLiteVault.underlyingAsset();
-        IERC20(asset).approve(address(yelayLiteVault), type(uint256).max);
+        SafeERC20.forceApprove(IERC20(asset), address(yelayLiteVault), type(uint256).max);
         __ERC1155Holder_init();
         __ERC4626_init(IERC20(asset));
         __ERC20_init(name, symbol);
