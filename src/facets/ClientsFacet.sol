@@ -3,21 +3,24 @@ pragma solidity ^0.8.28;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
+import {RoleCheck} from "src/abstract/RoleCheck.sol";
 import {PausableCheck} from "src/abstract/PausableCheck.sol";
 import {IClientsFacet} from "src/interfaces/IClientsFacet.sol";
-import {LibOwner} from "src/libraries/LibOwner.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
+import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibClients, ClientData} from "src/libraries/LibClients.sol";
 
 /**
  * @title ClientsFacet
  * @dev Contract that provides functionality to manage clients and allow them to manage their projects.
  */
-contract ClientsFacet is PausableCheck, IClientsFacet {
+contract ClientsFacet is PausableCheck, RoleCheck, IClientsFacet {
     /// @inheritdoc IClientsFacet
-    function createClient(address clientOwner, uint128 reservedProjects, bytes32 clientName) external {
-        LibOwner.onlyOwner();
+    function createClient(address clientOwner, uint128 reservedProjects, bytes32 clientName)
+        external
+        onlyRole(LibRoles.CLIENT_MANAGER)
+    {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
         require(clientStorage.ownerToClientData[clientOwner].minProjectId == 0, LibErrors.ClientOwnerReserved());
         require(reservedProjects > 0, LibErrors.ReservedProjectsIsZero());
@@ -45,8 +48,21 @@ contract ClientsFacet is PausableCheck, IClientsFacet {
 
     /// @inheritdoc IClientsFacet
     function activateProject(uint256 projectId) external notPaused {
+        _activateProject(msg.sender, projectId);
+    }
+
+    /// @inheritdoc IClientsFacet
+    function activateProjectByManager(address client, uint256 projectId)
+        external
+        notPaused
+        onlyRole(LibRoles.CLIENT_MANAGER)
+    {
+        _activateProject(client, projectId);
+    }
+
+    function _activateProject(address client, uint256 projectId) internal {
         LibClients.ClientsStorage storage clientStorage = LibClients._getClientsStorage();
-        ClientData memory clientData = clientStorage.ownerToClientData[msg.sender];
+        ClientData memory clientData = clientStorage.ownerToClientData[client];
         require(clientData.minProjectId > 0, LibErrors.NotClientOwner());
         require(
             clientData.minProjectId <= projectId && clientData.maxProjectId >= projectId,

@@ -170,6 +170,12 @@ library LibEvents {
      */
     event SelectorToFacetSet(bytes4 indexed selector, address indexed facet);
 
+    event SelectorAdded(bytes4 indexed selector, address indexed facet);
+    event SelectorUpdated(bytes4 indexed selector, address indexed facet);
+    event SelectorRemoved(bytes4 indexed selector);
+
+    event YelayLiteVaultDeployed(address yelayLiteVault);
+
     // AccessFacet
     /**
      * @dev Emitted when a method is paused or unpaused.

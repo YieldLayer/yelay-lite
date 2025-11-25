@@ -19,11 +19,9 @@ interface IOwnerFacet {
      */
     function pendingOwner() external view returns (address);
 
-    /**
-     * @dev Sets the mapping of function selectors to facet addresses.
-     * @param arr An array of SelectorsToFacet structs containing the selectors and their corresponding facet addresses.
-     */
-    function setSelectorToFacets(SelectorsToFacet[] calldata arr) external;
+    function addSelectors(SelectorsToFacet[] calldata arr) external;
+    function updateSelectors(SelectorsToFacet[] calldata arr) external;
+    function removeSelectors(bytes4[] calldata selectors) external;
 
     /**
      * @dev Returns the facet address for a given function selector.

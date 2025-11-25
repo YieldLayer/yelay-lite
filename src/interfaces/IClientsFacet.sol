@@ -25,6 +25,13 @@ interface IClientsFacet {
     function activateProject(uint256 projectId) external;
 
     /**
+     * @dev Activates a project for the client.
+     * @param client address.
+     * @param projectId The ID of the project to activate.
+     */
+    function activateProjectByManager(address client, uint256 projectId) external;
+
+    /**
      * @dev Returns the last project ID.
      * @return The last project ID.
      */

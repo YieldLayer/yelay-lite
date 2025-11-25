@@ -18,6 +18,7 @@ All yield earned by the vault will be extracted to a designated smart contract (
 
 The YelayLiteVault is a managed vault where specific roles govern its operation:
 
+- CLIENT_MANAGER: Creates clients and allocates ID ranges to them, can activate projects on behalf of clients.
 - STRATEGY_AUTHORITY: Responsible for adding and removing strategies within the vault.
 - QUEUES_OPERATOR: Configures the deposit and withdrawal queues based on the existing strategies. These queues define the ordered list of strategies with which users will interact first.
 - FUNDS_OPERATOR: Handles reallocations, reward claims to optimize fund management.
