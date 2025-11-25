@@ -70,38 +70,38 @@ export const deployFacets = async (
     return { ownerFacet, fundsFacet, managementFacet, accessFacet, clientsFacet };
 };
 
-export const prepareSetSelectorFacets = async ({
-    yelayLiteVault,
-    fundsFacet,
-    managementFacet,
-    accessFacet,
-    clientsFacet,
-}: {
-    yelayLiteVault: IYelayLiteVault;
-    fundsFacet: string;
-    managementFacet: string;
-    accessFacet: string;
-    clientsFacet: string;
-}) => {
-    return yelayLiteVault.setSelectorToFacets.populateTransaction([
-        {
-            facet: fundsFacet,
-            selectors: Object.keys(getFundsFacetSelectors()),
-        },
-        {
-            facet: managementFacet,
-            selectors: Object.keys(getManagementFacetSelectors()),
-        },
-        {
-            facet: accessFacet,
-            selectors: Object.keys(getAccessFacetSelectors()),
-        },
-        {
-            facet: clientsFacet,
-            selectors: Object.keys(getClientFacetSelectors()),
-        },
-    ]);
-};
+// export const prepareSetSelectorFacets = async ({
+//     yelayLiteVault,
+//     fundsFacet,
+//     managementFacet,
+//     accessFacet,
+//     clientsFacet,
+// }: {
+//     yelayLiteVault: IYelayLiteVault;
+//     fundsFacet: string;
+//     managementFacet: string;
+//     accessFacet: string;
+//     clientsFacet: string;
+// }) => {
+//     return yelayLiteVault.setSelectorToFacets.populateTransaction([
+//         {
+//             facet: fundsFacet,
+//             selectors: Object.keys(getFundsFacetSelectors()),
+//         },
+//         {
+//             facet: managementFacet,
+//             selectors: Object.keys(getManagementFacetSelectors()),
+//         },
+//         {
+//             facet: accessFacet,
+//             selectors: Object.keys(getAccessFacetSelectors()),
+//         },
+//         {
+//             facet: clientsFacet,
+//             selectors: Object.keys(getClientFacetSelectors()),
+//         },
+//     ]);
+// };
 
 export const deployInfra = async (
     deployer: Signer,
@@ -260,39 +260,39 @@ export const deployGearboxV3Strategy = async (deployer: Signer, gearToken: strin
         .then((r) => r.getAddress());
 };
 
-export const deployVault = async (
-    deployer: Signer,
-    contracts: any,
-    deployArgs: { underlyingAsset: string; yieldExtractor: string; uri: string },
-    assetSymbol: string,
-    deploymentPath: string,
-) => {
-    const deployerAddress = await deployer.getAddress();
-    const yelayLiteVault = await ethers
-        .getContractFactory('YelayLiteVault', deployer)
-        .then((f) =>
-            f.deploy(
-                deployerAddress,
-                contracts.ownerFacet,
-                deployArgs.underlyingAsset,
-                deployArgs.yieldExtractor,
-                deployArgs.uri,
-            ),
-        )
-        .then(async (c) => {
-            const d = await c.waitForDeployment();
-            const tx = await ethers.provider.getTransaction(d.deploymentTransaction()!.hash);
-            console.log(`Vault: ${await c.getAddress()}`);
-            console.log(`Vault creation blocknumber: ${tx?.blockNumber}`);
-            const block = await ethers.provider.getBlock(tx!.blockNumber!);
-            console.log(`Timestamp: ${block?.timestamp}`);
-            return d.getAddress();
-        })
-        .then((a) => IYelayLiteVault__factory.connect(a, deployer));
+// export const deployVault = async (
+//     deployer: Signer,
+//     contracts: any,
+//     deployArgs: { underlyingAsset: string; yieldExtractor: string; uri: string },
+//     assetSymbol: string,
+//     deploymentPath: string,
+// ) => {
+//     const deployerAddress = await deployer.getAddress();
+//     const yelayLiteVault = await ethers
+//         .getContractFactory('YelayLiteVault', deployer)
+//         .then((f) =>
+//             f.deploy(
+//                 deployerAddress,
+//                 contracts.ownerFacet,
+//                 deployArgs.underlyingAsset,
+//                 deployArgs.yieldExtractor,
+//                 deployArgs.uri,
+//             ),
+//         )
+//         .then(async (c) => {
+//             const d = await c.waitForDeployment();
+//             const tx = await ethers.provider.getTransaction(d.deploymentTransaction()!.hash);
+//             console.log(`Vault: ${await c.getAddress()}`);
+//             console.log(`Vault creation blocknumber: ${tx?.blockNumber}`);
+//             const block = await ethers.provider.getBlock(tx!.blockNumber!);
+//             console.log(`Timestamp: ${block?.timestamp}`);
+//             return d.getAddress();
+//         })
+//         .then((a) => IYelayLiteVault__factory.connect(a, deployer));
 
-    contracts.vaults[assetSymbol] = await yelayLiteVault.getAddress();
-    fs.writeFileSync(deploymentPath, JSON.stringify(contracts, null, 4) + '\n');
-};
+//     contracts.vaults[assetSymbol] = await yelayLiteVault.getAddress();
+//     fs.writeFileSync(deploymentPath, JSON.stringify(contracts, null, 4) + '\n');
+// };
 
 export const deployDepositLockPlugin = async (deployer: Signer) => {
     const chainId = Number((await deployer.provider!.getNetwork()).chainId);
@@ -355,4 +355,62 @@ export const deployYieldExtractor = async (deployer: Signer) => {
     };
 
     fs.writeFileSync(contractsPath, JSON.stringify(contracts, null, 4) + '\n');
+};
+
+export const deployDeterministic = async (
+    deployer: Signer,
+    deploymentProxy: string,
+    salt: string,
+    initCode: string,
+): Promise<string> => {
+    const data = ethers.concat([salt, initCode]);
+    const tx = await deployer.sendTransaction({
+        to: deploymentProxy,
+        data: data,
+    });
+    const receipt = await tx.wait();
+    if (!receipt) {
+        throw new Error('Transaction failed');
+    }
+
+    return receipt.contractAddress!;
+};
+
+export const deployERC4626PluginFactory = async (
+    deployer: Signer,
+    yieldExtractor: string,
+    factorySalt: string,
+    chainId: number,
+    testing: boolean,
+): Promise<{ factory: string; implementation: string }> => {
+    const DEPLOYMENT_PROXY = '0x4e59b44847b379578588920ca78fbf26c0b4956c';
+    const owner = getExpectedAddresses(chainId, testing).owner;
+
+    // Deploy ERC4626Plugin implementation deterministically
+    console.log('Deploying ERC4626Plugin implementation...');
+    const ERC4626Plugin = await ethers.getContractFactory('ERC4626Plugin', deployer);
+    const pluginImplementation = await ERC4626Plugin.deploy(yieldExtractor);
+    await pluginImplementation.waitForDeployment();
+    const implementationAddress = await pluginImplementation.getAddress();
+    console.log('ERC4626Plugin implementation deployed at:', implementationAddress);
+
+    // Deploy ERC4626PluginFactory deterministically
+    console.log('Deploying ERC4626PluginFactory...');
+    const FactoryFactory = await ethers.getContractFactory('ERC4626PluginFactory', deployer);
+    const factoryInitCode = ethers.concat([
+        FactoryFactory.bytecode,
+        ethers.AbiCoder.defaultAbiCoder().encode(
+            ['address', 'address'],
+            [owner, implementationAddress],
+        ),
+    ]);
+
+    const factoryAddress = await deployDeterministic(
+        deployer,
+        DEPLOYMENT_PROXY,
+        factorySalt,
+        factoryInitCode,
+    );
+    console.log('ERC4626PluginFactory deployed at:', factoryAddress);
+    return { factory: factoryAddress, implementation: implementationAddress };
 };
