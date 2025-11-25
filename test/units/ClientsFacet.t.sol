@@ -13,9 +13,8 @@ import {ClientsFacet, ClientData} from "src/facets/ClientsFacet.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 
-import {MockStrategy} from "./MockStrategy.sol";
-import {MockToken} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 
 contract ClientsFacetTest is Test {
     using Utils for address;

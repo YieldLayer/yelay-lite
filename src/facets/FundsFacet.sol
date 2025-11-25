@@ -65,25 +65,6 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /// @inheritdoc IFundsFacet
-    function lastTotalAssetsTimestamp() external view returns (uint64) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        return sF.lastTotalAssetsTimestamp;
-    }
-
-    /// @inheritdoc IFundsFacet
-    function lastTotalAssetsUpdateInterval() external view returns (uint64) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        return sF.lastTotalAssetsUpdateInterval;
-    }
-
-    /// @inheritdoc IFundsFacet
-    function setLastTotalAssetsUpdateInterval(uint64 interval) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
-        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        sF.lastTotalAssetsUpdateInterval = interval;
-        emit LibEvents.UpdateLastTotalAssetsUpdateInterval(interval);
-    }
-
-    /// @inheritdoc IFundsFacet
     function underlyingBalance() external view returns (uint256) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         return sF.underlyingBalance;
@@ -148,13 +129,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         require(LibClients._isProjectActive(projectId), LibErrors.ProjectInactive());
 
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
-        uint256 newTotalAssets;
-        if (sF.lastTotalAssetsTimestamp + sF.lastTotalAssetsUpdateInterval < block.timestamp) {
-            newTotalAssets = _mintFee(sF);
-            sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
-        } else {
-            newTotalAssets = sF.lastTotalAssets;
-        }
+        uint256 newTotalAssets = _mintFee(sF);
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
         shares = _convertToShares(assets, totalSupply(), newTotalAssets);
@@ -243,6 +218,19 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /// @inheritdoc IFundsFacet
+    function transformYieldShares(uint256 projectId, uint256 shares, address receiver) external notPaused {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        // only YieldExtractor is holding yield shares
+        require(msg.sender == sF.yieldExtractor, LibErrors.OnlyYieldExtractor());
+        require(LibClients._isProjectActive(projectId), LibErrors.PositionMigrationForbidden());
+        _accrueFee();
+        // only YieldExtractor is holding yield shares
+        _burn(msg.sender, YIELD_PROJECT_ID, shares);
+        _mint(receiver, projectId, shares, "");
+        emit LibEvents.YieldSharesTransformed(receiver, projectId, shares);
+    }
+
+    /// @inheritdoc IFundsFacet
     function managedDeposit(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) notPaused {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
@@ -323,7 +311,6 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         uint256 newTotalAssets = _mintFee(sF);
         _updateLastTotalAssets(sF, newTotalAssets);
-        sF.lastTotalAssetsTimestamp = SafeCast.toUint64(block.timestamp);
     }
 
     /// @inheritdoc IFundsFacet
@@ -415,6 +402,41 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     function _updateLastTotalAssets(LibFunds.FundsStorage storage sF, uint256 updatedTotalAssets) internal {
         sF.lastTotalAssets = SafeCast.toUint192(updatedTotalAssets);
         emit LibEvents.UpdateLastTotalAssets(updatedTotalAssets);
+    }
+
+    /// @inheritdoc IFundsFacet
+    function previewRedeem(uint256 shares) public view virtual returns (uint256) {
+        return convertToAssets(shares) - WITHDRAW_MARGIN;
+    }
+
+    /// @inheritdoc IFundsFacet
+    function previewWithdraw(uint256 assets) public view virtual returns (uint256) {
+        return convertToShares(assets + WITHDRAW_MARGIN);
+    }
+
+    /// @inheritdoc IFundsFacet
+    function convertToShares(uint256 assets) public view returns (uint256) {
+        (uint256 newTotalAssets, uint256 feeShares) = _newTotalAssetsWithFeeShares();
+        return _convertToShares(assets, totalSupply() + feeShares, newTotalAssets);
+    }
+
+    /// @inheritdoc IFundsFacet
+    function convertToAssets(uint256 shares) public view returns (uint256) {
+        (uint256 newTotalAssets, uint256 feeShares) = _newTotalAssetsWithFeeShares();
+        return _convertToAssets(shares, totalSupply() + feeShares, newTotalAssets);
+    }
+
+    /**
+     * @dev Calculates the current total assets and fee shares that would be generated if fees were accrued now.
+     * @return newTotalAssets The current total assets value in the vault
+     * @return feeShares The amount of fee shares that would be minted based on generated interest.
+     */
+    function _newTotalAssetsWithFeeShares() internal view returns (uint256 newTotalAssets, uint256 feeShares) {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        newTotalAssets = totalAssets();
+        uint256 totalInterest = FixedPointMathLib.zeroFloorSub(newTotalAssets, sF.lastTotalAssets);
+        feeShares = _convertToShares(totalInterest, totalSupply(), sF.lastTotalAssets);
+        return (newTotalAssets, feeShares);
     }
 
     /**

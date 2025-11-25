@@ -15,8 +15,8 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
-import {MockToken} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 
 /**
  * Tree data generated using openzeppelin/merkle-tree:
@@ -389,6 +389,40 @@ contract YieldExtractorTest is Test {
         yieldExtractor.claim(payload);
 
         assertEq(token.balanceOf(user), yieldTotal0);
+    }
+
+    function test_transform_success() public {
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = proof0;
+
+        uint256 yieldSharesBefore = mockVault0.totalSupply(0);
+        uint256 sharesBefore = mockVault0.totalSupply(projectId);
+        uint256 userSharesBefore = mockVault0.balanceOf(user, projectId);
+
+        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+            yelayLiteVault: address(mockVault0),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldTotal0,
+            proof: proof
+        });
+        vm.startPrank(yieldPublisher);
+        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0, address(mockVault0));
+        vm.stopPrank();
+
+        vm.prank(user);
+        vm.expectEmit(true, true, true, true);
+        emit LibEvents.YieldTransformed(user, data.yelayLiteVault, data.projectId, data.cycle, data.yieldSharesTotal);
+        yieldExtractor.transform(data);
+
+        uint256 yieldSharesAfter = mockVault0.totalSupply(0);
+        uint256 sharesAfter = mockVault0.totalSupply(projectId);
+        uint256 userSharesAfter = mockVault0.balanceOf(user, projectId);
+
+        assertEq(yieldSharesBefore - yieldTotal0, yieldSharesAfter);
+        assertEq(sharesBefore + yieldTotal0, sharesAfter);
+        assertEq(userSharesBefore + yieldTotal0, userSharesAfter);
     }
 
     function test_claim_twoCycles() public {

@@ -7,8 +7,8 @@ import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
-import {MockToken, ERC20} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockToken, ERC20} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 
 contract YelayLiteVaultTest is Test {
     address constant owner = address(0x01);
