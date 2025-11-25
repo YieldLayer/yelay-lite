@@ -22,7 +22,7 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 
-import {MockToken} from "./MockToken.sol";
+import {MockToken} from "../test/mocks/MockToken.sol";
 import {Swapper} from "src/Swapper.sol";
 
 contract YelayLiteDeployerTest is Test {
