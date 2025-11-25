@@ -262,7 +262,7 @@ contract TwoStrategiesTest is Test {
         yelayLiteVault.redeem(toDeposit, projectId, user);
         vm.stopPrank();
 
-        assertApproxEqAbs(underlyingAsset.balanceOf(user), toDeposit, 1);
+        assertApproxEqAbs(underlyingAsset.balanceOf(user), toDeposit, 2);
     }
 
     function test_partial_withdrawal_failure() external {

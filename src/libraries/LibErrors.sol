@@ -87,6 +87,11 @@ library LibErrors {
      */
     error TotalAssetsLoss();
 
+    /**
+     * @dev Caller can be only YieldExtractor
+     */
+    error OnlyYieldExtractor();
+
     // ===================== SwapWrapper ================================
     /**
      * @dev The token is not WETH.
@@ -217,4 +222,18 @@ library LibErrors {
      * @notice Thrown when an invalid cycle number is provided
      */
     error InvalidCycle();
+
+    // ===================== ERC4626Plugin ================================
+
+    /**
+     * @notice Thrown when the amount of assets during a withdrawal is less than the requested amount
+     * @param requested The amount of assets that were requested to be withdrawn
+     * @param actual The actual amount of assets available, which is less than requested
+     */
+    error WithdrawSlippageExceeded(uint256 requested, uint256 actual);
+
+    /**
+     * @notice Thrown when the amount of assets or shares is zero
+     */
+    error ZeroValue();
 }
