@@ -1,6 +1,10 @@
 import { ethers } from 'hardhat';
-import arbContracts from '../deployments/arbitrum.json';
-import avaxContracts from '../deployments/avalanche.json';
+import baseContracts from '../deployments/base-production.json';
+import baseTestContracts from '../deployments/base-testing.json';
+import mainnetContracts from '../deployments/mainnet.json';
+import sonicContracts from '../deployments/sonic.json';
+import arbitrumContracts from '../deployments/arbitrum.json';
+import avalancheContracts from '../deployments/avalanche.json';
 
 export const ADDRESSES = {
     8453: {
@@ -110,9 +114,9 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
         if (test) {
             return {
                 owner: ADDRESSES[chainId].OWNER,
-                yieldExtractor: ADDRESSES[chainId].OPERATOR,
+                yieldExtractor: baseTestContracts.yieldExtractor.proxy,
                 oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
-                strategyAuthority: [ADDRESSES[chainId].OPERATOR],
+                strategyAuthority: [ADDRESSES[chainId].OWNER],
                 fundsOperator: [ADDRESSES[chainId].OPERATOR],
                 queueOperator: [ADDRESSES[chainId].OPERATOR],
                 swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
@@ -123,7 +127,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
         }
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: ADDRESSES[chainId].OWNER,
+            yieldExtractor: baseContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OPERATOR],
@@ -136,7 +140,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
     } else if (chainId === 1) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: ADDRESSES[chainId].OWNER,
+            yieldExtractor: mainnetContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OPERATOR],
@@ -149,7 +153,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
     } else if (chainId === 146) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: ADDRESSES[chainId].OWNER,
+            yieldExtractor: sonicContracts.yieldExtractor.proxy,
             oneInchRouter: ethers.ZeroAddress,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OPERATOR],
@@ -162,7 +166,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
     } else if (chainId === 42161) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: arbContracts.yieldExtractor.proxy,
+            yieldExtractor: arbitrumContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
@@ -175,7 +179,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
     } else if (chainId === 43114) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: avaxContracts.yieldExtractor.proxy,
+            yieldExtractor: avalancheContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
