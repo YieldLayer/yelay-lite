@@ -12,6 +12,7 @@ import { isTesting } from '../utils/common';
 
 async function main() {
     const factorySalt = ''; //TODO set
+    const dummyImplementationSalt = ''; //TODO set
     const merklDistributor = ''; //TODO set
 
     const [deployer] = await ethers.getSigners();
@@ -81,10 +82,11 @@ async function main() {
             deployer,
             deploymentData.yieldExtractor.proxy,
             ethers.keccak256(ethers.toUtf8Bytes(factorySalt)),
+            ethers.keccak256(ethers.toUtf8Bytes(dummyImplementationSalt)),
             chainId,
             testing,
         );
-    deploymentData.erc4626PluginFactory = {
+    deploymentData.erc4626Plugin = {
         factory: factoryAddress,
         implementation: implementationAddress,
     };

@@ -1,17 +1,10 @@
 import type { Signer } from 'ethers';
 import fs from 'fs';
 import { ethers, upgrades } from 'hardhat';
-import { IYelayLiteVault, IYelayLiteVault__factory } from '../../typechain-types';
+import { ERC4626PluginFactory__factory } from '../../typechain-types';
 import { getExpectedAddresses, IMPLEMENTATION_STORAGE_SLOT } from '../constants';
 import { isTesting } from './common';
-import {
-    getAccessFacetSelectors,
-    getClientFacetSelectors,
-    getContracts,
-    getContractsPath,
-    getFundsFacetSelectors,
-    getManagementFacetSelectors,
-} from './getters';
+import { getContracts, getContractsPath } from './getters';
 
 export const deployAccessFacet = async (deployer: Signer) => {
     return ethers
@@ -363,6 +356,27 @@ export const deployDeterministic = async (
     salt: string,
     initCode: string,
 ): Promise<string> => {
+    // Ensure salt is exactly 32 bytes (bytes32)
+    const saltBytes = ethers.getBytes(salt);
+    if (saltBytes.length !== 32) {
+        throw new Error(`Salt must be exactly 32 bytes, got ${saltBytes.length} bytes`);
+    }
+
+    // Compute CREATE2 address: keccak256(0xff || deployer || salt || keccak256(initCode))[12:]
+    // Formula matches Solidity: keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, keccak256(initCode)))
+    const initCodeHash = ethers.keccak256(initCode);
+    const deploymentProxyAddress = ethers.getAddress(deploymentProxy); // Ensure checksummed address
+
+    // Use solidityPacked to match abi.encodePacked semantics (addresses are 20 bytes, not padded)
+    const addressBytes = ethers.keccak256(
+        ethers.solidityPacked(
+            ['bytes1', 'address', 'bytes32', 'bytes32'],
+            ['0xff', deploymentProxyAddress, salt, initCodeHash],
+        ),
+    );
+    // Take last 20 bytes (40 hex chars) for the address
+    const computedAddress = ethers.getAddress('0x' + addressBytes.slice(-40));
+
     const data = ethers.concat([salt, initCode]);
     const tx = await deployer.sendTransaction({
         to: deploymentProxy,
@@ -372,36 +386,47 @@ export const deployDeterministic = async (
     if (!receipt) {
         throw new Error('Transaction failed');
     }
-
-    return receipt.contractAddress!;
+    return computedAddress;
 };
 
 export const deployERC4626PluginFactory = async (
     deployer: Signer,
     yieldExtractor: string,
     factorySalt: string,
+    dummyImplementationSalt: string,
     chainId: number,
     testing: boolean,
 ): Promise<{ factory: string; implementation: string }> => {
     const DEPLOYMENT_PROXY = '0x4e59b44847b379578588920ca78fbf26c0b4956c';
     const owner = getExpectedAddresses(chainId, testing).owner;
 
-    // Deploy ERC4626Plugin implementation deterministically
-    console.log('Deploying ERC4626Plugin implementation...');
+    // Deploy dummy ERC4626Plugin implementation with address(0) for yieldExtractor
+    // This ensures the factory deploys to the same address across all chains
+    console.log('Deploying dummy ERC4626Plugin implementation deterministically...');
     const ERC4626Plugin = await ethers.getContractFactory('ERC4626Plugin', deployer);
-    const pluginImplementation = await ERC4626Plugin.deploy(yieldExtractor);
-    await pluginImplementation.waitForDeployment();
-    const implementationAddress = await pluginImplementation.getAddress();
-    console.log('ERC4626Plugin implementation deployed at:', implementationAddress);
+    const dummyImplementationInitCode = ethers.concat([
+        ERC4626Plugin.bytecode,
+        ethers.AbiCoder.defaultAbiCoder().encode(['address'], [ethers.ZeroAddress]),
+    ]);
 
-    // Deploy ERC4626PluginFactory deterministically
+    const dummyImplementationAddress = await deployDeterministic(
+        deployer,
+        DEPLOYMENT_PROXY,
+        dummyImplementationSalt,
+        dummyImplementationInitCode,
+    );
+    console.log('Dummy ERC4626Plugin implementation deployed at:', dummyImplementationAddress);
+
+    // Deploy ERC4626PluginFactory deterministically with dummy implementation
+    // Use deployer as initial owner so we can upgrade, then transfer to expected owner
+    const deployerAddress = await deployer.getAddress();
     console.log('Deploying ERC4626PluginFactory...');
     const FactoryFactory = await ethers.getContractFactory('ERC4626PluginFactory', deployer);
     const factoryInitCode = ethers.concat([
         FactoryFactory.bytecode,
         ethers.AbiCoder.defaultAbiCoder().encode(
             ['address', 'address'],
-            [owner, implementationAddress],
+            [deployerAddress, dummyImplementationAddress],
         ),
     ]);
 
@@ -412,5 +437,30 @@ export const deployERC4626PluginFactory = async (
         factoryInitCode,
     );
     console.log('ERC4626PluginFactory deployed at:', factoryAddress);
-    return { factory: factoryAddress, implementation: implementationAddress };
+
+    // Deploy real ERC4626Plugin implementation with actual yieldExtractor
+    // This can be different address for each chain
+    console.log('Deploying real ERC4626Plugin implementation with yieldExtractor...');
+    const realImplementation = await ERC4626Plugin.deploy(yieldExtractor);
+    await realImplementation.waitForDeployment();
+    const realImplementationAddress = await realImplementation.getAddress();
+    console.log('Real ERC4626Plugin implementation deployed at:', realImplementationAddress);
+
+    // Wait 10 seconds (next transaction was throwing error without this)
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+
+    // Upgrade factory to use the real implementation (deployer is owner)
+    console.log('Upgrading factory to use real implementation...');
+    const factory = ERC4626PluginFactory__factory.connect(factoryAddress, deployer);
+    const upgradeTx = await factory.upgradeTo(realImplementationAddress);
+    await upgradeTx.wait();
+    console.log('Factory upgraded successfully');
+
+    // Transfer ownership to expected owner
+    console.log('Transferring factory ownership to expected owner...');
+    const transferTx = await factory.transferOwnership(owner);
+    await transferTx.wait();
+    console.log('Factory ownership transferred successfully');
+
+    return { factory: factoryAddress, implementation: realImplementationAddress };
 };
