@@ -49,6 +49,11 @@ export const getFundsFacetSelectors = () => {
         'claimMerklRewards',
         'balanceOf',
         'uri',
+        'transformYieldShares',
+        'previewRedeem',
+        'previewWithdraw',
+        'convertToShares',
+        'convertToAssets',
     ] as const;
     return getFunctionSelectors(i, functions);
 };
@@ -93,6 +98,7 @@ export const getClientFacetSelectors = () => {
         'createClient',
         'transferClientOwnership',
         'activateProject',
+        'activateProjectByManager',
         'lastProjectId',
         'isClientNameTaken',
         'ownerToClientData',
@@ -109,7 +115,9 @@ export const getOwnerFacetSelectors = () => {
         'pendingOwner',
         'transferOwnership',
         'acceptOwnership',
-        'setSelectorToFacets',
+        'addSelectors',
+        'removeSelectors',
+        'updateSelectors',
         'selectorToFacet',
     ] as const;
     return getFunctionSelectors(i, functions);
