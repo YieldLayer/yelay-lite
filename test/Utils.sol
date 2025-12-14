@@ -18,6 +18,8 @@ import {ManagementFacet} from "src/facets/ManagementFacet.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {ClientsFacet} from "src/facets/ClientsFacet.sol";
 import {OwnerFacet} from "src/facets/OwnerFacet.sol";
+import {DecentralStrategyFacet} from "src/facets/DecentralStrategyFacet.sol";
+
 
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
 import {IFundsFacetBase} from "src/interfaces/IFundsFacetBase.sol";
@@ -58,9 +60,13 @@ library Utils {
         });
         selectorsToFacets[1] =
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: managementFacetSelectors()});
-        selectorsToFacets[2] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
+        selectorsToFacets[2] = 
+            SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
         selectorsToFacets[3] =
             SelectorsToFacet({facet: address(new ClientsFacet()), selectors: clientsFacetSelectors()});
+//        selectorsToFacets[4] = 
+//            SelectorsToFacet({facet: address(new DecentralStrategyFacet()),selectors: decentralStrategySelectors()});
+
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
         yelayLiteVault.createClient(owner, 999, "test");
@@ -75,6 +81,15 @@ library Utils {
         selectorsToFacets[0] = SelectorsToFacet({
             facet: address(new AsyncFundsFacet(ISwapper(yelayLiteVault.swapper()), IMerklDistributor(address(0)))),
             selectors: asyncFundsFacetSelectors()
+        });
+        yelayLiteVault.setSelectorToFacets(selectorsToFacets);
+    }
+
+    function upgradeToDecentralStrategyFacet(IYelayLiteVault yelayLiteVault) internal {
+        SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](1);
+        selectorsToFacets[0] = SelectorsToFacet({
+            facet: address(new DecentralStrategyFacet()),
+            selectors: decentralStrategySelectors()
         });
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
     }
@@ -171,7 +186,7 @@ library Utils {
     }
 
     function _accessFacetSelectors() private pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](8);
+        bytes4[] memory selectors = new bytes4[](9);
         selectors[0] = AccessFacet.grantRole.selector;
         selectors[1] = AccessFacet.revokeRole.selector;
         selectors[2] = AccessFacet.checkRole.selector;
@@ -180,6 +195,7 @@ library Utils {
         selectors[5] = IAccessControl.hasRole.selector;
         selectors[6] = AccessFacet.setPaused.selector;
         selectors[7] = AccessFacet.selectorToPaused.selector;
+        selectors[8] = bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
         return selectors;
     }
 
@@ -195,6 +211,18 @@ library Utils {
         selectors[7] = ClientsFacet.projectIdActive.selector;
         return selectors;
     }
+
+    function decentralStrategySelectors() internal pure returns (bytes4[] memory) {
+        bytes4[] memory selectors = new bytes4[](7);
+        selectors[0] = DecentralStrategyFacet.decentralDeposit.selector;
+        selectors[1] = DecentralStrategyFacet.requestDecentralYield.selector;
+        selectors[2] = DecentralStrategyFacet.finalizeDecentralYield.selector;
+        selectors[3] = DecentralStrategyFacet.requestDecentralPrincipal.selector;
+        selectors[4] = DecentralStrategyFacet.finalizeDecentralPrincipal.selector;
+        selectors[5] = DecentralStrategyFacet.decentralPosition.selector;
+        selectors[6] = DecentralStrategyFacet.totalAssets.selector;
+        return selectors;
+    }    
 
     function addExchange(IYelayLiteVault yelayLiteVault, address exchange) internal {
         ISwapper swapper = ISwapper(yelayLiteVault.swapper());
