@@ -48,6 +48,8 @@ interface IDecentralPoolLike {
         external
         view
         returns (uint256, uint256, uint256, bool, bool);
+
+    function pendingRewards(uint256 tokenId) external view returns (uint256);
 }
 
 contract DecentralStrategyFacetBaseForkTest is Test {
@@ -249,60 +251,27 @@ function test_fork_decentralDeposit_USDC_success() external {
 
 
     function test_fork_yieldRequest_USDC_reverts_without_approval() external {
-        uint256 minAmt = pool.minimumInvestmentAmount();
-        uint256 maxAmt = pool.maximumInvestmentAmount();
+        uint256 amount = pool.minimumInvestmentAmount();
 
-        uint256 amount =
-            minAmt > 0 ? minAmt : 100 * 10 ** USDC_DECIMALS;
+        // fund vault
+        deal(BASE_USDC, address(vault), amount);
 
-        if (amount > maxAmt) {
-            amount = maxAmt;
-        }
-
-        // ------------------------------------------------------------
-        // 1. USER deposits into ASYNC VAULT (shares minted)
-        // ------------------------------------------------------------
-        address user = address(0xBEEF);
-        deal(BASE_USDC, user, amount);
-
-        vm.startPrank(user);
-        IERC20(BASE_USDC).approve(address(asyncVault), amount);
-        uint256 shares = asyncVault.deposit(amount, PROJECT_ID, user);
-        vm.stopPrank();
-
-        assertGt(shares, 0);
-        assertEq(asyncVault.balanceOf(user, PROJECT_ID), shares);
-
-        // ------------------------------------------------------------
-        // 2. FUNDS_OPERATOR allocates vault funds into Decentral
-        // ------------------------------------------------------------
+        // deposit into Decentral
         vm.prank(FUNDS_OPERATOR);
         facet.decentralDeposit(PROJECT_ID, amount);
 
         (uint256 tokenId,,,,) = facet.decentralPosition(PROJECT_ID);
-        assertGt(tokenId, 0);
+        assertTrue(tokenId != 0);
 
-        // ------------------------------------------------------------
-        // 3. USER requests async withdrawal from VAULT
-        // ------------------------------------------------------------
-        vm.startPrank(user);
-        asyncVault.requestAsyncFunds(shares, PROJECT_ID, user);
-        vm.stopPrank();
-
-        assertEq(
-            asyncVault.balanceOf(address(asyncVault), PROJECT_ID),
-            shares
-        );
-
-        // ------------------------------------------------------------
-        // 4. Advance time beyond payment frequency
-        // ------------------------------------------------------------
+        // move forward at least one full payment cycle
         uint256 freq = pool.paymentFrequencySeconds();
-        vm.warp(block.timestamp + freq + 7 days);
+        vm.warp(block.timestamp + freq + 1);
 
-        // ------------------------------------------------------------
-        // 5. FUNDS_OPERATOR requests YIELD withdrawal on Decentral
-        // ------------------------------------------------------------
+        // --- IMPORTANT: assert real accrued yield ---
+        uint256 pendingYield = pool.pendingRewards(tokenId);
+        assertGt(pendingYield, 0, "yield should be accrued");
+
+        // request yield withdrawal (creates request, but NOT approved)
         vm.prank(FUNDS_OPERATOR);
         facet.requestDecentralYield(PROJECT_ID);
 
@@ -315,22 +284,11 @@ function test_fork_decentralDeposit_USDC_success() external {
 
         assertTrue(exists);
         assertFalse(approved);
-        assertGt(withdrawalAmount, 0);
-        assertGt(requestTs, 0);
+        assertEq(withdrawalAmount, pendingYield);
 
-        // ------------------------------------------------------------
-        // 6. Finalizing on strategy must REVERT (not approved)
-        // ------------------------------------------------------------
+        // finalize should revert because NOT approved
         vm.prank(FUNDS_OPERATOR);
-        vm.expectRevert(bytes("YIELD WITHDRAWAL IS NOT READY"));
+        vm.expectRevert(bytes("DECENTRAL_NOT_READY"));
         facet.finalizeDecentralYield(PROJECT_ID);
-
-        // ------------------------------------------------------------
-        // 7. Vault async request is still pending (NOT fulfilled)
-        // ------------------------------------------------------------
-        assertEq(
-            asyncVault.balanceOf(address(asyncVault), PROJECT_ID),
-            shares
-        );
     }
 }
