@@ -33,6 +33,11 @@ interface IDecentralPool{
 
     function poolToken() external view returns (address);
 
+    function approveYieldWithdrawal(uint256 tokenId) external;
+    function batchApproveYieldWithdrawals(uint256[] calldata tokenIds) external;
+    function approvePrincipalWithdrawal(uint256 tokenId) external;
+    function batchApprovePrincipalWithdrawals(uint256[] calldata tokenIds) external;
+
     function minimumInvestmentAmount() external view returns (uint256);
     function maximumInvestmentAmount() external view returns (uint256);
     function paymentFrequencySeconds() external view returns (uint256);

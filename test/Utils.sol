@@ -219,7 +219,7 @@ library Utils {
         selectors[2] = DecentralStrategyFacet.finalizeDecentralYield.selector;
         selectors[3] = DecentralStrategyFacet.requestDecentralPrincipal.selector;
         selectors[4] = DecentralStrategyFacet.finalizeDecentralPrincipal.selector;
-        selectors[5] = DecentralStrategyFacet.decentralPosition.selector;
+        selectors[5] = DecentralStrategyFacet.decentralPositions.selector;
         selectors[6] = DecentralStrategyFacet.totalAssets.selector;
         return selectors;
     }    

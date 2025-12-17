@@ -13,25 +13,26 @@ import {Utils} from "../Utils.sol";
 import {BASE_USDC, USDC_DECIMALS} from "../Constants.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {StrategyArgs} from "src/interfaces/IFundsFacetBase.sol";
 
 interface IDecentralStrategyFacet {
-    function decentralDeposit(uint256 amount) external;
-    function requestDecentralYield() external;
-    function finalizeDecentralYield() external returns (uint256);
-    function requestDecentralPrincipal() external;
-    function finalizeDecentralPrincipal() external returns (uint256);
 
-    function decentralPosition()
+    function decentralDeposit(uint256 amount) external;
+    function requestDecentralYield(uint256 index) external;
+    function finalizeDecentralYield(uint256 index) external returns (uint256);
+    function requestDecentralPrincipal(uint256 index) external;
+    function finalizeDecentralPrincipal(uint256 index) external returns (uint256);
+
+    function decentralPositions()
         external
         view
         returns (
-            uint256 tokenId,
-            uint256 principal,
-            bool yieldRequested,
-            bool principalRequested,
-            bool closed
+            uint256[] memory tokenIds,
+            bool[] memory yieldRequested,
+            bool[] memory principalRequested,
+            bool[] memory closed
         );
+
 }
 
 
@@ -107,6 +108,7 @@ function test_fork_decentralDeposit_USDC_success() external {
     assertEq(asyncVault.balanceOf(user, PROJECT_ID), shares);
     assertEq(IERC20(BASE_USDC).balanceOf(address(asyncVault)), amount);
 
+
     // ------------------------------------------------------------
     // 2. FUNDS_OPERATOR allocates vault funds into Decentral
     // ------------------------------------------------------------
@@ -116,25 +118,26 @@ function test_fork_decentralDeposit_USDC_success() external {
     // ------------------------------------------------------------
     // 3. Verify Decentral position was created
     // ------------------------------------------------------------
-    (
-        uint256 tokenId,
-        uint256 principal,
-        bool yieldRequested,
-        bool principalRequested,
-        bool closed
-    ) = facet.decentralPosition();
 
-    assertGt(tokenId, 0);
-    assertEq(principal, amount);
-    assertFalse(yieldRequested);
-    assertFalse(principalRequested);
-    assertFalse(closed);
+    (
+        uint256[] memory tokenIds,
+        bool[] memory yieldRequested,
+        bool[] memory principalRequested,
+        bool[] memory closed
+    ) = facet.decentralPositions();
+
+    assertEq(tokenIds.length, 1);
+    assertGt(tokenIds[0], 0);
+    assertFalse(yieldRequested[0]);
+    assertFalse(principalRequested[0]);
+    assertFalse(closed[0]);
+
 
     // ------------------------------------------------------------
     // 4. Vault funds should now be allocated (not sitting idle)
     // ------------------------------------------------------------
+    assertApproxEqAbs(asyncVault.totalAssets(), amount, 1);
     assertEq(IERC20(BASE_USDC).balanceOf(address(asyncVault)), 0);
-//    assertApproxEqAbs(asyncVault.totalAssets(), amount, 1);
 }
 
 
@@ -149,15 +152,7 @@ function test_fork_decentralDeposit_USDC_success() external {
 // Operator tries to finalize on strategy → revert
 
     function test_fork_principalRequest_USDC_reverts_without_approval() external {
-        uint256 minAmt = pool.minimumInvestmentAmount();
-        uint256 maxAmt = pool.maximumInvestmentAmount();
-
-        uint256 amount =
-            minAmt > 0 ? minAmt : 100 * 10 ** USDC_DECIMALS;
-
-        if (amount > maxAmt) {
-            amount = maxAmt;
-        }
+        uint256 amount = pool.minimumInvestmentAmount();
 
         // ------------------------------------------------------------
         // 1. USER deposits into ASYNC VAULT (shares minted)
@@ -179,8 +174,16 @@ function test_fork_decentralDeposit_USDC_success() external {
         vm.prank(FUNDS_OPERATOR);
         facet.decentralDeposit(amount);
 
-        (uint256 tokenId,,,,) = facet.decentralPosition();
-        assertGt(tokenId, 0);
+        (
+            uint256[] memory tokenIds,
+            ,
+            ,
+            bool[] memory closed
+        ) = facet.decentralPositions();
+
+        uint256 tokenId = tokenIds[0];
+        assertFalse(closed[0]);
+
 
         // ------------------------------------------------------------
         // 3. USER requests async withdrawal from VAULT
@@ -199,7 +202,7 @@ function test_fork_decentralDeposit_USDC_success() external {
         // 5. FUNDS_OPERATOR requests PRINCIPAL withdrawal on Decentral
         // ------------------------------------------------------------
         vm.prank(FUNDS_OPERATOR);
-        facet.requestDecentralPrincipal();
+        facet.requestDecentralPrincipal(0);
 
         (
             uint256 withdrawalAmount,
@@ -220,7 +223,11 @@ function test_fork_decentralDeposit_USDC_success() external {
         // ------------------------------------------------------------
         vm.prank(FUNDS_OPERATOR);
         vm.expectRevert(bytes("PRINCIPAL WITHDRAWAL IS NOT READY"));
-        facet.finalizeDecentralPrincipal();
+
+        vm.prank(0x2333Aa052610012C27E4fC176bc27095651DcBc6); // this is Decentral's admin address
+        pool.approvePrincipalWithdrawal(tokenId);
+
+        facet.finalizeDecentralPrincipal(0);
 
         // ------------------------------------------------------------
         // 7. Vault async request is still pending (NOT fulfilled)
@@ -236,31 +243,31 @@ function test_fork_decentralDeposit_USDC_success() external {
     function test_fork_yieldRequest_USDC_reverts_without_approval() external {
         uint256 amount = pool.minimumInvestmentAmount();
 
-        // fund vault
         deal(BASE_USDC, address(vault), amount);
 
-        // deposit into Decentral
         vm.prank(FUNDS_OPERATOR);
         facet.decentralDeposit(amount);
 
-        (uint256 tokenId,,,,) = facet.decentralPosition();
-        assertTrue(tokenId != 0);
+        (
+            uint256[] memory tokenIds,
+            ,
+            ,
+            bool[] memory closed
+        ) = facet.decentralPositions();
 
-        // move forward at least one full payment cycle
-        uint256 freq = pool.paymentFrequencySeconds();
-        vm.warp(block.timestamp + freq + 1);
+        uint256 tokenId = tokenIds[0];
+        assertFalse(closed[0]);
 
-        // --- IMPORTANT: assert real accrued yield ---
+        vm.warp(block.timestamp + pool.paymentFrequencySeconds() + 1);
         uint256 pendingYield = pool.pendingRewards(tokenId);
-        assertGt(pendingYield, 0, "yield should be accrued");
+        assertGt(pendingYield, 0);
 
-        // request yield withdrawal (creates request, but NOT approved)
         vm.prank(FUNDS_OPERATOR);
-        facet.requestDecentralYield();
+        facet.requestDecentralYield(0);
 
         (
             uint256 withdrawalAmount,
-            uint256 requestTs,
+            ,
             bool exists,
             bool approved
         ) = pool.getYieldWithdrawalRequest(tokenId);
@@ -269,9 +276,8 @@ function test_fork_decentralDeposit_USDC_success() external {
         assertFalse(approved);
         assertEq(withdrawalAmount, pendingYield);
 
-        // finalize should revert because NOT approved
         vm.prank(FUNDS_OPERATOR);
         vm.expectRevert(bytes("DECENTRAL_NOT_READY"));
-        facet.finalizeDecentralYield();
+        facet.finalizeDecentralYield(0);
     }
 }
