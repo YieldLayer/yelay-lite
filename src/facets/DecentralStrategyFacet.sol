@@ -6,42 +6,14 @@ import {ERC20, SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
+import {IDecentralPool} from "src/interfaces/external/decentral/IDecentralPool.sol";
+
 
 /*//////////////////////////////////////////////////////////////
                         DECENTRAL INTERFACES
 //////////////////////////////////////////////////////////////*/
 
-interface IDecentralPool {
-    function deposit(uint256 amount) external returns (uint256 tokenId);
 
-    function requestYieldWithdrawal(uint256 tokenId) external;
-    function executeYieldWithdrawal(uint256 tokenId) external;
-
-    function requestPrincipalWithdrawal(uint256 tokenId) external;
-    function executePrincipalWithdrawal(uint256 tokenId) external;
-
-    function getYieldWithdrawalRequest(uint256 tokenId)
-        external
-        view
-        returns (uint256 amount, uint256 requestTimestamp, bool exists, bool approved);
-
-    function getPrincipalWithdrawalRequest(uint256 tokenId)
-        external
-        view
-        returns (
-            uint256 amount,
-            uint256 requestTimestamp,
-            uint256 availableTimestamp,
-            bool exists,
-            bool approved
-        );
-
-    function stablecoinAddress() external view returns (address);
-
-    function pendingRewards(uint256 tokenId) external view returns (uint256);
-
-    function poolToken() external view returns (address);
-}
 
 interface IPoolToken {
     function getTokenInfo(uint256 tokenId)

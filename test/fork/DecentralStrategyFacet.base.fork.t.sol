@@ -7,6 +7,7 @@ import {IAccessControl} from "@openzeppelin-upgradeable/contracts/access/AccessC
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {IYelayLiteVaultAsync} from "src/interfaces/IYelayLiteVaultAsync.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
+import {IDecentralPool} from "src/interfaces/external/decentral/IDecentralPool.sol";
 
 import {Utils} from "../Utils.sol";
 import {BASE_USDC, USDC_DECIMALS} from "../Constants.sol";
@@ -33,24 +34,6 @@ interface IDecentralStrategyFacet {
         );
 }
 
-interface IDecentralPoolLike {
-    function minimumInvestmentAmount() external view returns (uint256);
-    function maximumInvestmentAmount() external view returns (uint256);
-    function paymentFrequencySeconds() external view returns (uint256);
-    function minimumInvestmentPeriodSeconds() external view returns (uint256);
-
-    function getYieldWithdrawalRequest(uint256 tokenId)
-        external
-        view
-        returns (uint256, uint256, bool, bool);
-
-    function getPrincipalWithdrawalRequest(uint256 tokenId)
-        external
-        view
-        returns (uint256, uint256, uint256, bool, bool);
-
-    function pendingRewards(uint256 tokenId) external view returns (uint256);
-}
 
 contract DecentralStrategyFacetBaseForkTest is Test {
     using Utils for address;
@@ -67,14 +50,14 @@ contract DecentralStrategyFacetBaseForkTest is Test {
     IYelayLiteVault vault;
     IYelayLiteVaultAsync asyncVault;
     IDecentralStrategyFacet facet;
-    IDecentralPoolLike pool;
+    IDecentralPool pool;
 
     function setUp() external {
         string memory rpc = vm.envString("BASE_URL");
         require(bytes(rpc).length > 0, "set BASE_URL");
         vm.createSelectFork(rpc);
 
-        pool = IDecentralPoolLike(DECENTRAL_POOL);
+        pool = IDecentralPool(DECENTRAL_POOL);
 
         vm.startPrank(OWNER);
 
