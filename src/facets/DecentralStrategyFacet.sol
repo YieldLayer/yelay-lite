@@ -40,23 +40,19 @@ interface IDecentralPool {
 
     function pendingRewards(uint256 tokenId) external view returns (uint256);
 
-    /// Pool exposes the NFT contract that is the source of truth for principal (and other accounting fields).
     function poolToken() external view returns (address);
 }
 
-/// PoolToken / position NFT interface (authoritative principal).
-/// NOTE: Adjust return tuple if PoolToken.getTokenInfo() differs in your deployed version.
-/// We only need the first value (principal).
 interface IPoolToken {
     function getTokenInfo(uint256 tokenId)
         external
         view
         returns (
             uint256 principal,
-            uint256 /*createdAt*/,
-            uint256 /*rewardDebt*/,
-            uint256 /*reserved*/,
-            uint256 /*reserved*/
+            uint256,
+            uint256,
+            uint256,
+            uint256
         );
 }
 
@@ -65,24 +61,24 @@ interface IPoolToken {
 //////////////////////////////////////////////////////////////*/
 
 library LibAsyncDecentral {
-    bytes32 internal constant STORAGE_POSITION = keccak256("yelay.async.decentral.storage");
+    bytes32 internal constant STORAGE_POSITION =
+        keccak256("yelay.async.decentral.storage");
 
     struct Position {
         uint256 tokenId;
 
-        // Cache only (fallback/analytics). NOT source of truth.
+        // Cached principal (NOT authoritative)
         uint256 cachedPrincipal;
 
         bool yieldRequested;
         bool principalRequested;
 
-        // Local workflow flag. Must never be used to zero out economic value.
-        // Only set true once authoritative principal is zero (best-effort).
+        // Workflow flag only
         bool closed;
     }
 
     struct Storage {
-        mapping(uint256 => Position) positions; // projectId => position
+        Position position;
     }
 
     function store() internal pure returns (Storage storage s) {
@@ -100,7 +96,6 @@ library LibAsyncDecentral {
 contract DecentralStrategyFacet is AccessFacet {
     using SafeTransferLib for ERC20;
 
-    /// Base Decentral pool on the target chain.
     IDecentralPool public constant DECENTRAL_POOL =
         IDecentralPool(0x6fC42888f157A772968CaB5B95A4e42a38C07fD0);
 
@@ -124,25 +119,26 @@ contract DecentralStrategyFacet is AccessFacet {
                             DEPOSIT
     //////////////////////////////////////////////////////////////*/
 
-    function decentralDeposit(uint256 projectId, uint256 amount) external onlyRole(LibRoles.FUNDS_OPERATOR) {
+    function decentralDeposit(uint256 amount)
+        external
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+    {
         if (amount == 0) revert LibErrors.ZeroAmount();
 
-        LibAsyncDecentral.Position storage p = LibAsyncDecentral.store().positions[projectId];
+        LibAsyncDecentral.Position storage p =
+            LibAsyncDecentral.store().position;
 
-        // One NFT per projectId; must be closed (or never created) to deposit again.
         if (p.tokenId != 0 && !p.closed) revert("DECENTRAL_INVALID_STATE");
 
         ERC20 stable = _stable();
 
-        // Safer approve pattern for non-standard ERC20s.
         stable.safeApprove(address(DECENTRAL_POOL), 0);
         stable.safeApprove(address(DECENTRAL_POOL), amount);
 
         uint256 tokenId = DECENTRAL_POOL.deposit(amount);
 
-        // Reset state machine.
         p.tokenId = tokenId;
-        p.cachedPrincipal = amount; // cache only
+        p.cachedPrincipal = amount;
         p.yieldRequested = false;
         p.principalRequested = false;
         p.closed = false;
@@ -152,8 +148,12 @@ contract DecentralStrategyFacet is AccessFacet {
                         YIELD WITHDRAWAL (ASYNC)
     //////////////////////////////////////////////////////////////*/
 
-    function requestDecentralYield(uint256 projectId) external onlyRole(LibRoles.FUNDS_OPERATOR) {
-        LibAsyncDecentral.Position storage p = LibAsyncDecentral.store().positions[projectId];
+    function requestDecentralYield()
+        external
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+    {
+        LibAsyncDecentral.Position storage p =
+            LibAsyncDecentral.store().position;
 
         if (p.tokenId == 0 || p.yieldRequested) revert("DECENTRAL_INVALID_STATE");
 
@@ -161,23 +161,27 @@ contract DecentralStrategyFacet is AccessFacet {
         p.yieldRequested = true;
     }
 
-    function finalizeDecentralYield(uint256 projectId)
+    function finalizeDecentralYield()
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
         returns (uint256 received)
     {
-        LibAsyncDecentral.Position storage p = LibAsyncDecentral.store().positions[projectId];
+        LibAsyncDecentral.Position storage p =
+            LibAsyncDecentral.store().position;
 
         if (p.tokenId == 0 || !p.yieldRequested) revert("DECENTRAL_INVALID_STATE");
 
-        (, , bool exists, bool approved) = DECENTRAL_POOL.getYieldWithdrawalRequest(p.tokenId);
+        (, , bool exists, bool approved) =
+            DECENTRAL_POOL.getYieldWithdrawalRequest(p.tokenId);
+
         if (!exists || !approved) revert("DECENTRAL_NOT_READY");
 
         ERC20 stable = _stable();
         uint256 balBefore = stable.balanceOf(address(this));
-        DECENTRAL_POOL.executeYieldWithdrawal(p.tokenId);
-        received = stable.balanceOf(address(this)) - balBefore;
 
+        DECENTRAL_POOL.executeYieldWithdrawal(p.tokenId);
+
+        received = stable.balanceOf(address(this)) - balBefore;
         p.yieldRequested = false;
     }
 
@@ -185,8 +189,12 @@ contract DecentralStrategyFacet is AccessFacet {
                     PRINCIPAL WITHDRAWAL (ASYNC)
     //////////////////////////////////////////////////////////////*/
 
-    function requestDecentralPrincipal(uint256 projectId) external onlyRole(LibRoles.FUNDS_OPERATOR) {
-        LibAsyncDecentral.Position storage p = LibAsyncDecentral.store().positions[projectId];
+    function requestDecentralPrincipal()
+        external
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+    {
+        LibAsyncDecentral.Position storage p =
+            LibAsyncDecentral.store().position;
 
         if (p.tokenId == 0 || p.principalRequested) revert("DECENTRAL_INVALID_STATE");
 
@@ -194,32 +202,32 @@ contract DecentralStrategyFacet is AccessFacet {
         p.principalRequested = true;
     }
 
-    /// @dev Returns received amount and remaining principal (authoritative).
-    /// Remaining principal can be > 0 due to partial redemptions, losses, or fees applied to principal.
-    function finalizeDecentralPrincipal(uint256 projectId)
+    function finalizeDecentralPrincipal()
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
         returns (uint256 received, uint256 remainingPrincipal)
     {
-        LibAsyncDecentral.Position storage p = LibAsyncDecentral.store().positions[projectId];
+        LibAsyncDecentral.Position storage p =
+            LibAsyncDecentral.store().position;
 
         if (p.tokenId == 0 || !p.principalRequested) revert("DECENTRAL_INVALID_STATE");
 
-        (, , uint256 availableTs, bool exists, bool approved) = DECENTRAL_POOL.getPrincipalWithdrawalRequest(p.tokenId);
+        (, , uint256 availableTs, bool exists, bool approved) =
+            DECENTRAL_POOL.getPrincipalWithdrawalRequest(p.tokenId);
 
         if (!exists || !approved) revert("DECENTRAL_NOT_READY");
         if (block.timestamp < availableTs) revert("DECENTRAL_NOT_READY");
 
         ERC20 stable = _stable();
         uint256 balBefore = stable.balanceOf(address(this));
+
         DECENTRAL_POOL.executePrincipalWithdrawal(p.tokenId);
+
         received = stable.balanceOf(address(this)) - balBefore;
 
-        // Re-sync principal from the authoritative NFT after execution.
         remainingPrincipal = _authoritativePrincipal(p.tokenId);
         p.cachedPrincipal = remainingPrincipal;
 
-        // Mark closed only when principal is fully gone.
         if (remainingPrincipal == 0) {
             p.closed = true;
         }
@@ -231,28 +239,38 @@ contract DecentralStrategyFacet is AccessFacet {
                             VIEW
     //////////////////////////////////////////////////////////////*/
 
-    function decentralPosition(uint256 projectId) external view returns (LibAsyncDecentral.Position memory) {
-        return LibAsyncDecentral.store().positions[projectId];
+    function decentralPosition()
+        external
+        view
+        returns (LibAsyncDecentral.Position memory)
+    {
+        return LibAsyncDecentral.store().position;
     }
 
-    /// @dev Aligns with FundsFacetBase.totalAssets: report economic value, not workflow state.
-    /// Principal is sourced from PoolToken (authoritative), yield from pool.pendingRewards.
-    function totalAssets(uint256 projectId) external view returns (uint256 assets) {
-        LibAsyncDecentral.Position memory p = LibAsyncDecentral.store().positions[projectId];
+    function totalAssets()
+        external
+        view
+        returns (uint256 assets)
+    {
+        LibAsyncDecentral.Position memory p =
+            LibAsyncDecentral.store().position;
 
         if (p.tokenId == 0) return 0;
 
         uint256 principal;
         uint256 pendingYield;
 
-        // Do not brick view if external call fails; fall back to cached principal.
-        try _poolToken().getTokenInfo(p.tokenId) returns (uint256 pr, uint256, uint256, uint256, uint256) {
+        try _poolToken().getTokenInfo(p.tokenId)
+            returns (uint256 pr, uint256, uint256, uint256, uint256)
+        {
             principal = pr;
         } catch {
             principal = p.cachedPrincipal;
         }
 
-        try DECENTRAL_POOL.pendingRewards(p.tokenId) returns (uint256 y) {
+        try DECENTRAL_POOL.pendingRewards(p.tokenId)
+            returns (uint256 y)
+        {
             pendingYield = y;
         } catch {
             pendingYield = 0;
