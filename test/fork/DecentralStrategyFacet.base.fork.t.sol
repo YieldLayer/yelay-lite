@@ -317,7 +317,7 @@ function test_fork_principal_request_finalization_success() external {
     console2.log("user requests async withdrawal from vault");
 
     vm.startPrank(user);
-    asyncVault.requestAsyncFunds(shares, PROJECT_ID, user);
+    uint256 requestAsyncId = asyncVault.requestAsyncFunds(shares, PROJECT_ID, user);
     vm.stopPrank();
 
 
@@ -410,9 +410,59 @@ function test_fork_principal_request_finalization_success() external {
         shares
     );
 
-    console2.log("=== test completed successfully ===");
+    // ------------------------------------------------------------
+    // 9. Vault fulfills async withdrawal request
+    // ------------------------------------------------------------
+    console2.log("fulfilling async withdrawal request");
 
-    // Money is now back in the vault. The last step is to execute withdrawal from the vault
+    uint256 userBalanceBefore =
+        IERC20(BASE_USDC).balanceOf(user);
+
+    console2.log(
+        "user USDC balance before fulfill:",
+        userBalanceBefore
+    );
+
+    vm.prank(FUNDS_OPERATOR);
+    uint256 fulfilledAmount = asyncVault.fullfilAsyncRequest(requestAsyncId);
+
+    {
+    console2.log("fulfilledAmount:", fulfilledAmount);
+    assertGt(fulfilledAmount, 0);
+    }
+
+    // ------------------------------------------------------------
+    // 10. Final assertions
+    // ------------------------------------------------------------
+
+
+/*    {
+    uint256 userBalanceAfter =
+        IERC20(BASE_USDC).balanceOf(user);
+
+    console2.log(
+        "user USDC balance after fulfill:",
+        userBalanceAfter
+    );
+    
+    // User received funds
+    assertGt(userBalanceAfter, userBalanceBefore);
+    }*/
+
+    // Escrowed shares are gone
+    assertEq(
+        asyncVault.balanceOf(address(asyncVault), PROJECT_ID),
+        0
+    );
+
+/*    // User no longer holds shares
+    assertEq(
+        asyncVault.balanceOf(user, PROJECT_ID),
+        0
+    ); */
+
+    console2.log("=== async withdrawal fully completed ===");
+
 }
 
 
