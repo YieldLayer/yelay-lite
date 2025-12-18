@@ -107,13 +107,15 @@ contract DecentralStrategyFacet is AccessFacet {
 
         ERC20 stable = _stable();
 
-        require(address(stable) == DECENTRAL_POOL.stablecoinAddress(), "DECENTRAL_WRONG_STABLE");
+        IDecentralPool pool = IDecentralPool(DECENTRAL_POOL);
+
+        require(address(stable) == pool.stablecoinAddress(), "DECENTRAL_WRONG_STABLE");
         require(stable.balanceOf(address(this)) >= amount, "VAULT_HAS_NO_FUNDS");
 
-        stable.safeApprove(address(DECENTRAL_POOL), 0);
-        stable.safeApprove(address(DECENTRAL_POOL), amount);
+        stable.safeApprove(address(pool), 0);
+        stable.safeApprove(address(pool), amount);
 
-        uint256 tokenId = DECENTRAL_POOL.deposit(amount);
+        uint256 tokenId = pool.deposit(amount);
 
         LibAsyncDecentral.store().positions.push(
             LibAsyncDecentral.NFTPosition({
@@ -130,7 +132,7 @@ contract DecentralStrategyFacet is AccessFacet {
     //////////////////////////////////////////////////////////////*/
 
 
-    function requestDecentralYield(uint256 index)
+    function requestDecentralYieldWithdrawal(uint256 index)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
     {
@@ -139,7 +141,7 @@ contract DecentralStrategyFacet is AccessFacet {
 
         if (p.closed || p.yieldRequested) revert("DECENTRAL_INVALID_STATE");
 
-        console2.log("DecentralStrategyFacet.finalizeDecentralYield for:", p.tokenId);
+        console2.log("DecentralStrategyFacet.finalizeDecentralYieldWithdrawal for:", p.tokenId);
 
         DECENTRAL_POOL.requestYieldWithdrawal(p.tokenId);
         p.yieldRequested = true;
@@ -147,7 +149,7 @@ contract DecentralStrategyFacet is AccessFacet {
 
 
 
-    function finalizeDecentralYield(uint256 index)
+    function finalizeDecentralYieldWithdrawal(uint256 index)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
         returns (uint256 received)
@@ -161,7 +163,7 @@ contract DecentralStrategyFacet is AccessFacet {
 
         if (!exists || !approved) revert("DECENTRAL_NOT_READY");
 
-        console2.log("DecentralStrategyFacet.finalizeDecentralYield for:", p.tokenId);
+        console2.log("DecentralStrategyFacet.finalizeDecentralYieldWithdrawal for:", p.tokenId);
 
         ERC20 stable = _stable();
         uint256 balBefore = stable.balanceOf(address(this));
@@ -180,7 +182,7 @@ contract DecentralStrategyFacet is AccessFacet {
     //////////////////////////////////////////////////////////////*/
 
 
-    function requestDecentralPrincipal(uint256 index)
+    function requestDecentralPrincipalWithdrawal(uint256 index)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
     {
@@ -190,7 +192,7 @@ contract DecentralStrategyFacet is AccessFacet {
 
         if (p.closed || p.principalRequested) revert("DECENTRAL_INVALID_STATE");
 
-        console2.log("DecentralStrategyFacet.requestDecentralPrincipal for:", p.tokenId);
+        console2.log("DecentralStrategyFacet.requestDecentralPrincipalWithdrawal for:", p.tokenId);
       
         DECENTRAL_POOL.requestPrincipalWithdrawal(p.tokenId);
         p.principalRequested = true;
@@ -198,7 +200,7 @@ contract DecentralStrategyFacet is AccessFacet {
 
 
 
-    function finalizeDecentralPrincipal(uint256 index)
+    function finalizeDecentralPrincipalWithdrawal(uint256 index)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
         returns (uint256 received)
@@ -208,7 +210,7 @@ contract DecentralStrategyFacet is AccessFacet {
             LibAsyncDecentral.store().positions[index];
         if (p.closed || !p.principalRequested) revert("DECENTRAL_INVALID_STATE");
 
-        console2.log("DecentralStrategyFacet.finalizeDecentralPrincipal for:", p.tokenId);
+        console2.log("DecentralStrategyFacet.finalizeDecentralPrincipalWithdrawal for:", p.tokenId);
 
         (
             uint256 withdrawalAmount,

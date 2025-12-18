@@ -35,15 +35,15 @@ interface IDecentralStrategyFacet {
     // -------------------------
     function decentralDeposit(uint256 amount) external;
 
-    function requestDecentralYield(uint256 index) external;
+    function requestDecentralYieldWithdrawal(uint256 index) external;
 
-    function finalizeDecentralYield(uint256 index)
+    function finalizeDecentralYieldWithdrawal(uint256 index)
         external
         returns (uint256 received);
 
-    function requestDecentralPrincipal(uint256 index) external;
+    function requestDecentralPrincipalWithdrawal(uint256 index) external;
 
-    function finalizeDecentralPrincipal(uint256 index)
+    function finalizeDecentralPrincipalWithdrawal(uint256 index)
         external
         returns (uint256 received);
 
@@ -316,7 +316,7 @@ function test_fork_principal_request_finalization_success() external {
     uint256 minPeriod = pool.minimumInvestmentPeriodSeconds();
     console2.log("minimumInvestmentPeriodSeconds:", minPeriod);
 
-    // move 120 days from now to be sure
+    // move 120 days from now to be sure that request will be approved. 
     vm.warp(block.timestamp + (minPeriod * 2 ));
     console2.log("time warped to:", block.timestamp);
 
@@ -326,7 +326,8 @@ function test_fork_principal_request_finalization_success() external {
     console2.log("requesting principal withdrawal on Decentral");
 
     vm.prank(FUNDS_OPERATOR);
-    facet.requestDecentralPrincipal(0);
+    // pass position nr to withdraw. the logic to calculate which exactly position to withdraw and in what amount should be on the FE/SDK side.
+    facet.requestDecentralPrincipalWithdrawal(0);
 
     // ------------------------------------------------------------
     // 6. Approver approves & FUNDS_OPERATOR finalizes withdrawal
@@ -372,7 +373,7 @@ function test_fork_principal_request_finalization_success() external {
     vm.warp(block.timestamp + (60 * 2 * 60));
 
     vm.prank(FUNDS_OPERATOR);
-    uint256 received = facet.finalizeDecentralPrincipal(0);
+    uint256 received = facet.finalizeDecentralPrincipalWithdrawal(0);
 
     console2.log("principal received:", received);
     assertGt(received, 0);
@@ -438,7 +439,7 @@ function test_fork_principal_request_finalization_success() external {
         assertGt(pendingYield, 0);
 
         vm.prank(FUNDS_OPERATOR);
-        facet.requestDecentralYield(0);
+        facet.requestDecentralYieldWithdrawal(0);
 
         (
             uint256 withdrawalAmount,
@@ -453,6 +454,6 @@ function test_fork_principal_request_finalization_success() external {
 
         vm.prank(FUNDS_OPERATOR);
         vm.expectRevert(bytes("DECENTRAL_NOT_READY"));
-        facet.finalizeDecentralYield(0);
+        facet.finalizeDecentralYieldWithdrawal(0);
     } */
 }

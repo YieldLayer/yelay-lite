@@ -215,10 +215,10 @@ library Utils {
     function decentralStrategySelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](7);
         selectors[0] = DecentralStrategyFacet.decentralDeposit.selector;
-        selectors[1] = DecentralStrategyFacet.requestDecentralYield.selector;
-        selectors[2] = DecentralStrategyFacet.finalizeDecentralYield.selector;
-        selectors[3] = DecentralStrategyFacet.requestDecentralPrincipal.selector;
-        selectors[4] = DecentralStrategyFacet.finalizeDecentralPrincipal.selector;
+        selectors[1] = DecentralStrategyFacet.requestDecentralYieldWithdrawal.selector;
+        selectors[2] = DecentralStrategyFacet.finalizeDecentralYieldWithdrawal.selector;
+        selectors[3] = DecentralStrategyFacet.requestDecentralPrincipalWithdrawal.selector;
+        selectors[4] = DecentralStrategyFacet.finalizeDecentralPrincipalWithdrawal.selector;
         selectors[5] = DecentralStrategyFacet.decentralPositions.selector;
         selectors[6] = DecentralStrategyFacet.totalAssets.selector;
         return selectors;
