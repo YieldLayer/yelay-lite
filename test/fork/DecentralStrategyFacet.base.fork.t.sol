@@ -233,15 +233,13 @@ function test_fork_decentralDeposit_USDC_success() external {
 }
 
 
-// Flow for this test
+
 // User deposits into async vault → gets shares
 // Operator allocates funds from vault into Decentral
 // User requests async withdrawal from vault (requestAsyncFunds)
 // Operator requests principal withdrawal on Decentral
-// Assert:
-// - withdrawal request exists
-// - not approved
-// Operator tries to finalize on strategy → revert
+// Approver approves principal withdrawal
+// Operator tries to finalize on strategy → success
 
 
 function test_fork_principal_request_finalization_success() external {
@@ -302,16 +300,7 @@ function test_fork_principal_request_finalization_success() external {
     assertFalse(positions[0].principalRequested);
 
     // ------------------------------------------------------------
-    // 3. USER requests async withdrawal from VAULT
-    // ------------------------------------------------------------
-    console2.log("user requests async withdrawal from vault");
-
-    vm.startPrank(user);
-    asyncVault.requestAsyncFunds(shares, PROJECT_ID, user);
-    vm.stopPrank();
-
-    // ------------------------------------------------------------
-    // 4. Advance time beyond minimum investment period
+    // 3. Advance time beyond minimum investment period
     // ------------------------------------------------------------
     uint256 minPeriod = pool.minimumInvestmentPeriodSeconds();
     console2.log("minimumInvestmentPeriodSeconds:", minPeriod);
@@ -319,6 +308,17 @@ function test_fork_principal_request_finalization_success() external {
     // move 120 days from now to be sure that request will be approved. 
     vm.warp(block.timestamp + (minPeriod * 2 ));
     console2.log("time warped to:", block.timestamp);
+
+
+    // ------------------------------------------------------------
+    // 4. USER requests async withdrawal from VAULT
+    // ------------------------------------------------------------
+    console2.log("user requests async withdrawal from vault");
+
+    vm.startPrank(user);
+    asyncVault.requestAsyncFunds(shares, PROJECT_ID, user);
+    vm.stopPrank();
+
 
     // ------------------------------------------------------------
     // 5. FUNDS_OPERATOR requests PRINCIPAL withdrawal on Decentral
