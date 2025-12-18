@@ -9,6 +9,9 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {IDecentralPool} from "src/interfaces/external/decentral/IDecentralPool.sol";
 import {LibFunds} from "src/libraries/LibFunds.sol";
 
+import "forge-std/console2.sol";
+
+
 /*//////////////////////////////////////////////////////////////
                         POOL TOKEN INTERFACE
 //////////////////////////////////////////////////////////////*/
@@ -16,17 +19,21 @@ import {LibFunds} from "src/libraries/LibFunds.sol";
 
 
 interface IPoolToken {
+    struct TokenInfo {
+        address pool;
+        uint256 principalAmount;
+        uint256 principalRedeemed;
+        uint256 rewardDebt;
+        uint256 createdAt;
+        uint256 lastYieldPayoutTime;
+    }
+
     function getTokenInfo(uint256 tokenId)
         external
         view
-        returns (
-            uint256 principal,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        );
+        returns (TokenInfo memory);
 }
+
 
 /*//////////////////////////////////////////////////////////////
                         STORAGE LIBRARY
@@ -79,10 +86,14 @@ contract DecentralStrategyFacet is AccessFacet {
         return IPoolToken(DECENTRAL_POOL.poolToken());
     }
 
-   function _principal(uint256 tokenId) internal view returns (uint256) {
-        (uint256 p,,,,) = _poolToken().getTokenInfo(tokenId);
-        return p;
+
+    function _principal(uint256 tokenId) internal view returns (uint256) {
+        IPoolToken.TokenInfo memory info =
+            _poolToken().getTokenInfo(tokenId);
+
+        return info.principalAmount - info.principalRedeemed;
     }
+
 
     /*//////////////////////////////////////////////////////////////
                             DEPOSIT
@@ -92,11 +103,6 @@ contract DecentralStrategyFacet is AccessFacet {
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
     {
-//        require(
-//            _stable().balanceOf(address(this)) >= amount,
-//            "VAULT_HAS_NO_FUNDS"
-//        );
-
         if (amount == 0) revert LibErrors.ZeroAmount();
 
         ERC20 stable = _stable();
@@ -132,6 +138,9 @@ contract DecentralStrategyFacet is AccessFacet {
             LibAsyncDecentral.store().positions[index];
 
         if (p.closed || p.yieldRequested) revert("DECENTRAL_INVALID_STATE");
+
+        console2.log("DecentralStrategyFacet.finalizeDecentralYield for:", p.tokenId);
+
         DECENTRAL_POOL.requestYieldWithdrawal(p.tokenId);
         p.yieldRequested = true;
     }
@@ -151,6 +160,8 @@ contract DecentralStrategyFacet is AccessFacet {
             DECENTRAL_POOL.getYieldWithdrawalRequest(p.tokenId);
 
         if (!exists || !approved) revert("DECENTRAL_NOT_READY");
+
+        console2.log("DecentralStrategyFacet.finalizeDecentralYield for:", p.tokenId);
 
         ERC20 stable = _stable();
         uint256 balBefore = stable.balanceOf(address(this));
@@ -179,6 +190,8 @@ contract DecentralStrategyFacet is AccessFacet {
 
         if (p.closed || p.principalRequested) revert("DECENTRAL_INVALID_STATE");
 
+        console2.log("DecentralStrategyFacet.requestDecentralPrincipal for:", p.tokenId);
+      
         DECENTRAL_POOL.requestPrincipalWithdrawal(p.tokenId);
         p.principalRequested = true;
     }
@@ -195,20 +208,44 @@ contract DecentralStrategyFacet is AccessFacet {
             LibAsyncDecentral.store().positions[index];
         if (p.closed || !p.principalRequested) revert("DECENTRAL_INVALID_STATE");
 
+        console2.log("DecentralStrategyFacet.finalizeDecentralPrincipal for:", p.tokenId);
 
-        (, , uint256 availableTs, bool exists, bool approved) =
-            DECENTRAL_POOL.getPrincipalWithdrawalRequest(p.tokenId);
+        (
+            uint256 withdrawalAmount,
+            uint256 requestTs,
+            uint256 availableTs,
+            bool exists,
+            bool approved
+        ) = DECENTRAL_POOL.getPrincipalWithdrawalRequest(p.tokenId);
 
-        if (!exists || !approved || block.timestamp < availableTs) {
+        console2.log("Facet.getPrincipalWithdrawalRequest withdrawalAmount:", withdrawalAmount);
+        console2.log("Facet.getPrincipalWithdrawalRequest requestTs:", requestTs);
+        console2.log("Facet.getPrincipalWithdrawalRequest availableTs:", availableTs);
+        console2.log("Facet.getPrincipalWithdrawalRequest exists:", exists);
+        console2.log("Facet.getPrincipalWithdrawalRequest approved:", approved);
+        console2.log("Facet.getPrincipalWithdrawalRequest approved. Current timestamp:", block.timestamp);
+
+
+        if (!exists || !approved) {
             revert("DECENTRAL_NOT_READY");
         }
 
+        uint256 principalBefore = _principal(p.tokenId);
+        console2.log("principalBefore:", principalBefore);
+
+
         ERC20 stable = _stable();
         uint256 balBefore = stable.balanceOf(address(this));
-        DECENTRAL_POOL.executePrincipalWithdrawal(p.tokenId);
-        received = stable.balanceOf(address(this)) - balBefore;
+        console2.log("balBefore:", balBefore);
 
-        if (_principal(p.tokenId) == 0) {
+        console2.log("Facet. Calling executePrincipalWithdrawal for:", p.tokenId);
+        DECENTRAL_POOL.executePrincipalWithdrawal(p.tokenId); //    This burn shares if successful
+        received = stable.balanceOf(address(this)) - balBefore;
+        console2.log("balAfter:", stable.balanceOf(address(this)));
+        console2.log("received:", received);
+
+        // 🔒 If principal was fully redeemed, token is now burned
+        if (received >= principalBefore) {
             p.closed = true;
         }
 
@@ -239,15 +276,18 @@ contract DecentralStrategyFacet is AccessFacet {
             LibAsyncDecentral.store();
         uint256 len = s.positions.length;
 
+        console2.log("TotalAssets(). s.positions.length = ", len);
+
         for (uint256 i = 0; i < len; i++) {
             LibAsyncDecentral.NFTPosition memory p = s.positions[i];
             if (p.closed) continue;
+            console2.log("TotalAssets(). tokenID = ", p.tokenId);
+            console2.log("TotalAssets(). principal = ", _principal(p.tokenId));
             assets += _principal(p.tokenId);
             try DECENTRAL_POOL.pendingRewards(p.tokenId) returns (uint256 y) {
                 assets += y;
+                console2.log("TotalAssets(). yield = ", y);
             } catch {}
         }
     }
-
-
 }

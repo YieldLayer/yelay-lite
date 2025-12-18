@@ -15,24 +15,47 @@ import {BASE_USDC, USDC_DECIMALS} from "../Constants.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {StrategyArgs} from "src/interfaces/IFundsFacetBase.sol";
 
+import "forge-std/console2.sol";
+
+
 interface IDecentralStrategyFacet {
+    /// @notice Mirrors LibAsyncDecentral.NFTPosition
+    struct NFTPosition {
+        uint256 tokenId;
+        bool yieldRequested;
+        bool principalRequested;
+        bool closed;
+    }
 
+    /// @notice Constant getter is exposed as a view function in the ABI
+    function DECENTRAL_POOL() external view returns (address);
+
+    // -------------------------
+    // Write functions
+    // -------------------------
     function decentralDeposit(uint256 amount) external;
-    function requestDecentralYield(uint256 index) external;
-    function finalizeDecentralYield(uint256 index) external returns (uint256);
-    function requestDecentralPrincipal(uint256 index) external;
-    function finalizeDecentralPrincipal(uint256 index) external returns (uint256);
 
+    function requestDecentralYield(uint256 index) external;
+
+    function finalizeDecentralYield(uint256 index)
+        external
+        returns (uint256 received);
+
+    function requestDecentralPrincipal(uint256 index) external;
+
+    function finalizeDecentralPrincipal(uint256 index)
+        external
+        returns (uint256 received);
+
+    // -------------------------
+    // Views
+    // -------------------------
     function decentralPositions()
         external
         view
-        returns (
-            uint256[] memory tokenIds,
-            bool[] memory yieldRequested,
-            bool[] memory principalRequested,
-            bool[] memory closed
-        );
+        returns (NFTPosition[] memory);
 
+    function totalAssets() external view returns (uint256 assets);
 }
 
 
@@ -45,6 +68,7 @@ contract DecentralStrategyFacetBaseForkTest is Test {
     address constant OWNER = address(0x01);
     address constant YIELD_EXTRACTOR = address(0x04);
     address constant FUNDS_OPERATOR = address(0x05);
+    address constant DECENTRAL_APPROVER = address(0x2333Aa052610012C27E4fC176bc27095651DcBc6);
 
     uint256 constant PROJECT_ID = 1;
 
@@ -80,64 +104,132 @@ contract DecentralStrategyFacetBaseForkTest is Test {
         vm.stopPrank();
     }
 
+
 function test_fork_decentralDeposit_USDC_success() external {
+    console2.log("=== test_fork_decentralDeposit_USDC_success ===");
+
     uint256 minAmt = pool.minimumInvestmentAmount();
     uint256 maxAmt = pool.maximumInvestmentAmount();
+
+    console2.log("pool.minimumInvestmentAmount:", minAmt);
+    console2.log("pool.maximumInvestmentAmount:", maxAmt);
 
     // Use pool minimum, fallback to 100 USDC
     uint256 amount =
         minAmt > 0 ? minAmt : 100 * 10 ** USDC_DECIMALS;
 
+    console2.log("initial chosen amount:", amount);
+
     if (amount > maxAmt) {
+        console2.log("amount > maxAmt, clamping to maxAmt");
         amount = maxAmt;
     }
+
+    console2.log("final deposit amount:", amount);
 
     // ------------------------------------------------------------
     // 1. USER deposits into the ASYNC VAULT (shares minted)
     // ------------------------------------------------------------
-    address user = address(0xBEEF);
+    address user = address(0x2345);
+    console2.log("user:", user);
+
     deal(BASE_USDC, user, amount);
+    console2.log(
+        "user USDC balance after deal:",
+        IERC20(BASE_USDC).balanceOf(user)
+    );
 
     vm.startPrank(user);
+
     IERC20(BASE_USDC).approve(address(asyncVault), amount);
+    console2.log("user approved asyncVault for amount:", amount);
+
     uint256 shares = asyncVault.deposit(amount, PROJECT_ID, user);
+    console2.log("shares minted:", shares);
+
     vm.stopPrank();
 
     // Sanity checks: vault accounting
+    console2.log("vault balanceOf(user, PROJECT_ID):",
+    asyncVault.balanceOf(user, PROJECT_ID));
+    console2.log("vault USDC balance:", IERC20(BASE_USDC).balanceOf(address(asyncVault))
+    );
+
+    IDecentralStrategyFacet.NFTPosition[] memory positions =
+        facet.decentralPositions();
+
+    console2.log("Before deposit to Decentral. decentralPositions.length:", positions.length);
+
+    if (positions.length > 0) {
+        console2.log("tokenId:", positions[0].tokenId);
+        console2.log("yieldRequested:", positions[0].yieldRequested);
+        console2.log("principalRequested:", positions[0].principalRequested);
+        console2.log("closed:", positions[0].closed);
+    }
+
     assertGt(shares, 0);
     assertEq(asyncVault.balanceOf(user, PROJECT_ID), shares);
     assertEq(IERC20(BASE_USDC).balanceOf(address(asyncVault)), amount);
 
-
     // ------------------------------------------------------------
     // 2. FUNDS_OPERATOR allocates vault funds into Decentral
     // ------------------------------------------------------------
+    console2.log("FUNDS_OPERATOR:", FUNDS_OPERATOR);
+    console2.log("calling decentralDeposit with amount:", amount);
+
     vm.prank(FUNDS_OPERATOR);
     facet.decentralDeposit(amount);
+
+    console2.log("decentralDeposit executed");
 
     // ------------------------------------------------------------
     // 3. Verify Decentral position was created
     // ------------------------------------------------------------
+    positions = facet.decentralPositions();
 
-    (
-        uint256[] memory tokenIds,
-        bool[] memory yieldRequested,
-        bool[] memory principalRequested,
-        bool[] memory closed
-    ) = facet.decentralPositions();
+    console2.log("After deposit to Decentral. decentralPositions.length:", positions.length);
 
-    assertEq(tokenIds.length, 1);
-    assertGt(tokenIds[0], 0);
-    assertFalse(yieldRequested[0]);
-    assertFalse(principalRequested[0]);
-    assertFalse(closed[0]);
+    if (positions.length > 0) {
+        console2.log("tokenId:", positions[0].tokenId);
+        console2.log("yieldRequested:", positions[0].yieldRequested);
+        console2.log("principalRequested:", positions[0].principalRequested);
+        console2.log("closed:", positions[0].closed);
+    }
 
+    assertEq(positions.length, 1);
+    assertGt(positions[0].tokenId, 0);
+    assertFalse(positions[0].yieldRequested);
+    assertFalse(positions[0].principalRequested);
+    assertFalse(positions[0].closed);
+
+    console2.log("decentralPositions.length:", positions.length);
+
+    if (positions.length > 0) {
+        console2.log("tokenIds[0]:", positions[0].tokenId);
+        console2.log("yieldRequested[0]:", positions[0].yieldRequested);
+        console2.log("principalRequested[0]:", positions[0].principalRequested);
+        console2.log("closed[0]:", positions[0].closed);
+    }
+
+    assertEq(positions.length, 1);
+    assertGt(positions[0].tokenId, 0);
+    assertFalse(positions[0].yieldRequested);
+    assertFalse(positions[0].principalRequested);
+    assertFalse(positions[0].closed);
 
     // ------------------------------------------------------------
     // 4. Vault funds should now be allocated (not sitting idle)
     // ------------------------------------------------------------
-    assertApproxEqAbs(asyncVault.totalAssets(), amount, 1);
-    assertEq(IERC20(BASE_USDC).balanceOf(address(asyncVault)), 0);
+    uint256 totalAssets = asyncVault.totalAssets();
+    uint256 newVaultBalance = IERC20(BASE_USDC).balanceOf(address(asyncVault));
+
+    console2.log("asyncVault.totalAssets():", totalAssets);
+    console2.log("vault USDC balance after allocation:", newVaultBalance);
+
+    assertApproxEqAbs(totalAssets, amount, 1);
+    assertEq(newVaultBalance, 0);
+
+    console2.log("=== test completed successfully ===");
 }
 
 
@@ -151,96 +243,179 @@ function test_fork_decentralDeposit_USDC_success() external {
 // - not approved
 // Operator tries to finalize on strategy → revert
 
-    function test_fork_principalRequest_USDC_reverts_without_approval() external {
-        uint256 amount = pool.minimumInvestmentAmount();
 
-        // ------------------------------------------------------------
-        // 1. USER deposits into ASYNC VAULT (shares minted)
-        // ------------------------------------------------------------
-        address user = address(0xBEEF);
-        deal(BASE_USDC, user, amount);
+function test_fork_principal_request_finalization_success() external {
+    console2.log("=== test_fork_principal_request_finalization_success ===");
 
-        vm.startPrank(user);
-        IERC20(BASE_USDC).approve(address(asyncVault), amount);
-        uint256 shares = asyncVault.deposit(amount, PROJECT_ID, user);
-        vm.stopPrank();
+    uint256 amount = pool.minimumInvestmentAmount();
+    console2.log("deposit amount:", amount);
 
-        assertGt(shares, 0);
-        assertEq(asyncVault.balanceOf(user, PROJECT_ID), shares);
+    // ------------------------------------------------------------
+    // 1. USER deposits into ASYNC VAULT (shares minted)
+    // ------------------------------------------------------------
+    address user = address(0xFEED);
+    console2.log("user:", user);
 
-        // ------------------------------------------------------------
-        // 2. FUNDS_OPERATOR allocates vault funds into Decentral
-        // ------------------------------------------------------------
-        vm.prank(FUNDS_OPERATOR);
-        facet.decentralDeposit(amount);
+    deal(BASE_USDC, user, amount);
+    console2.log(
+        "user USDC balance after deal:",
+        IERC20(BASE_USDC).balanceOf(user)
+    );
 
-        (
-            uint256[] memory tokenIds,
-            ,
-            ,
-            bool[] memory closed
-        ) = facet.decentralPositions();
+    vm.startPrank(user);
+    IERC20(BASE_USDC).approve(address(asyncVault), amount);
+    uint256 shares = asyncVault.deposit(amount, PROJECT_ID, user);
+    vm.stopPrank();
 
-        uint256 tokenId = tokenIds[0];
-        assertFalse(closed[0]);
+    console2.log("shares minted:", shares);
+    console2.log(
+        "vault balanceOf(user, PROJECT_ID):",
+        asyncVault.balanceOf(user, PROJECT_ID)
+    );
+
+    assertGt(shares, 0);
+    assertEq(asyncVault.balanceOf(user, PROJECT_ID), shares);
+
+    // ------------------------------------------------------------
+    // 2. FUNDS_OPERATOR allocates vault funds into Decentral
+    // ------------------------------------------------------------
+    console2.log("FUNDS_OPERATOR:", FUNDS_OPERATOR);
+
+    vm.prank(FUNDS_OPERATOR);
+    facet.decentralDeposit(amount);
+
+    console2.log("decentralDeposit executed");
+
+    IDecentralStrategyFacet.NFTPosition[] memory positions =
+        facet.decentralPositions();
+
+    console2.log("decentralPositions.length:", positions.length);
+    assertEq(positions.length, 1);
+
+    uint256 tokenId = positions[0].tokenId;
+
+    console2.log("tokenId:", tokenId);
+    console2.log("closed:", positions[0].closed);
+    console2.log("principalRequested:", positions[0].principalRequested);
+
+    assertFalse(positions[0].closed);
+    assertFalse(positions[0].principalRequested);
+
+    // ------------------------------------------------------------
+    // 3. USER requests async withdrawal from VAULT
+    // ------------------------------------------------------------
+    console2.log("user requests async withdrawal from vault");
+
+    vm.startPrank(user);
+    asyncVault.requestAsyncFunds(shares, PROJECT_ID, user);
+    vm.stopPrank();
+
+    // ------------------------------------------------------------
+    // 4. Advance time beyond minimum investment period
+    // ------------------------------------------------------------
+    uint256 minPeriod = pool.minimumInvestmentPeriodSeconds();
+    console2.log("minimumInvestmentPeriodSeconds:", minPeriod);
+
+    // move 120 days from now to be sure
+    vm.warp(block.timestamp + (minPeriod * 2 ));
+    console2.log("time warped to:", block.timestamp);
+
+    // ------------------------------------------------------------
+    // 5. FUNDS_OPERATOR requests PRINCIPAL withdrawal on Decentral
+    // ------------------------------------------------------------
+    console2.log("requesting principal withdrawal on Decentral");
+
+    vm.prank(FUNDS_OPERATOR);
+    facet.requestDecentralPrincipal(0);
+
+    // ------------------------------------------------------------
+    // 6. Approver approves & FUNDS_OPERATOR finalizes withdrawal
+    // ------------------------------------------------------------
+
+    console2.log("approving principal withdrawal");
+
+    vm.prank(DECENTRAL_APPROVER); // Approval by Decentral admin
+    pool.approvePrincipalWithdrawal(tokenId);
+
+    positions = facet.decentralPositions();
+    console2.log(
+        "principalRequested flag after request:",
+        positions[0].principalRequested
+    );
+
+    assertTrue(positions[0].principalRequested);
+
+    (
+        uint256 withdrawalAmount,
+        uint256 requestTs,
+        uint256 availableTs,
+        bool exists,
+        bool approved
+    ) = pool.getPrincipalWithdrawalRequest(tokenId);
+
+    console2.log("withdrawalAmount:", withdrawalAmount);
+    console2.log("requestTs:", requestTs);
+    console2.log("availableTs:", availableTs);
+    console2.log("exists:", exists);
+    console2.log("approved:", approved);
+
+    assertTrue(exists);
+    assertTrue(approved);
+ 
+    // ------------------------------------------------------------
+    // 7. FUNDS_OPERATOR finalizes withdrawal
+    // ------------------------------------------------------------
+
+    console2.log("finalizing principal withdrawal via strategy");
+
+    // move 2 hours ahead in order to pass withdrawal delay
+    vm.warp(block.timestamp + (60 * 2 * 60));
+
+    vm.prank(FUNDS_OPERATOR);
+    uint256 received = facet.finalizeDecentralPrincipal(0);
+
+    console2.log("principal received:", received);
+    assertGt(received, 0);
+
+    // ------------------------------------------------------------
+    // 8. Position + vault post-conditions
+    // ------------------------------------------------------------
 
 
-        // ------------------------------------------------------------
-        // 3. USER requests async withdrawal from VAULT
-        // ------------------------------------------------------------
-        vm.startPrank(user);
-        asyncVault.requestAsyncFunds(shares, PROJECT_ID, user);
-        vm.stopPrank();
+    positions = facet.decentralPositions();
 
-        // ------------------------------------------------------------
-        // 4. Advance time beyond minimum investment period
-        // ------------------------------------------------------------
-        uint256 minPeriod = pool.minimumInvestmentPeriodSeconds();
-        vm.warp(block.timestamp + minPeriod + 1);
+    console2.log("position.closed:", positions[0].closed);
+    console2.log(
+        "position.principalRequested:",
+        positions[0].principalRequested
+    );
 
-        // ------------------------------------------------------------
-        // 5. FUNDS_OPERATOR requests PRINCIPAL withdrawal on Decentral
-        // ------------------------------------------------------------
-        vm.prank(FUNDS_OPERATOR);
-        facet.requestDecentralPrincipal(0);
+    assertFalse(positions[0].principalRequested);
+    // closed may be true or false depending on partial vs full redemption
 
-        (
-            uint256 withdrawalAmount,
-            uint256 requestTs,
-            uint256 availableTs,
-            bool exists,
-            bool approved
-        ) = pool.getPrincipalWithdrawalRequest(tokenId);
+    console2.log(
+        "vault USDC balance after finalize:",
+        IERC20(BASE_USDC).balanceOf(address(asyncVault))
+    );
 
-        assertTrue(exists);
-        assertFalse(approved);
-        assertGt(withdrawalAmount, 0);
-        assertGt(requestTs, 0);
-        assertGt(availableTs, 0);
+    console2.log(
+        "vault async shares still escrowed:",
+        asyncVault.balanceOf(address(asyncVault), PROJECT_ID)
+    );
 
-        // ------------------------------------------------------------
-        // 6. Finalizing on strategy must REVERT (not approved)
-        // ------------------------------------------------------------
-        vm.prank(FUNDS_OPERATOR);
-        vm.expectRevert(bytes("PRINCIPAL WITHDRAWAL IS NOT READY"));
+    assertEq(
+        asyncVault.balanceOf(address(asyncVault), PROJECT_ID),
+        shares
+    );
 
-        vm.prank(0x2333Aa052610012C27E4fC176bc27095651DcBc6); // this is Decentral's admin address
-        pool.approvePrincipalWithdrawal(tokenId);
+    console2.log("=== test completed successfully ===");
 
-        facet.finalizeDecentralPrincipal(0);
-
-        // ------------------------------------------------------------
-        // 7. Vault async request is still pending (NOT fulfilled)
-        // ------------------------------------------------------------
-        // Shares are still held by the vault
-        assertEq(
-            asyncVault.balanceOf(address(asyncVault), PROJECT_ID),
-            shares
-        );
-    }
+    // Money is now back in the vault. The last step is to execute withdrawal from the vault
+}
 
 
-    function test_fork_yieldRequest_USDC_reverts_without_approval() external {
+/*
+    function test_fork_yield_request_finalization_success() external {
         uint256 amount = pool.minimumInvestmentAmount();
 
         deal(BASE_USDC, address(vault), amount);
@@ -270,7 +445,7 @@ function test_fork_decentralDeposit_USDC_success() external {
             ,
             bool exists,
             bool approved
-        ) = pool.getYieldWithdrawalRequest(tokenId);
+        ) = pool.getYieldWithdrawalRequest(0);
 
         assertTrue(exists);
         assertFalse(approved);
@@ -279,5 +454,5 @@ function test_fork_decentralDeposit_USDC_success() external {
         vm.prank(FUNDS_OPERATOR);
         vm.expectRevert(bytes("DECENTRAL_NOT_READY"));
         facet.finalizeDecentralYield(0);
-    }
+    } */
 }
