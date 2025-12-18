@@ -14,7 +14,12 @@ interface IDecentralPool{
     function getYieldWithdrawalRequest(uint256 tokenId)
         external
         view
-        returns (uint256 amount, uint256 requestTimestamp, bool exists, bool approved);
+        returns (
+            uint256 amount, 
+            uint256 requestTimestamp, 
+            bool exists, 
+            bool approved
+        );
 
     function getPrincipalWithdrawalRequest(uint256 tokenId)
         external

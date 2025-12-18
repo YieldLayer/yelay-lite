@@ -311,7 +311,8 @@ function test_fork_principal_request_finalization_success() external {
 
 
     // ------------------------------------------------------------
-    // 4. USER requests async withdrawal from VAULT
+    // 4. USER requests async withdrawal from VAULT. 
+    // Without a user async request, principal should not be pulled, because that would break vault share accounting.
     // ------------------------------------------------------------
     console2.log("user requests async withdrawal from vault");
 
@@ -415,45 +416,168 @@ function test_fork_principal_request_finalization_success() external {
 }
 
 
-/*
-    function test_fork_yield_request_finalization_success() external {
-        uint256 amount = pool.minimumInvestmentAmount();
 
-        deal(BASE_USDC, address(vault), amount);
 
-        vm.prank(FUNDS_OPERATOR);
-        facet.decentralDeposit(amount);
+// User deposits into async vault → gets shares
+// Operator allocates funds from vault into Decentral
+// Time passes → yield accrues
+// Operator requests yield withdrawal on Decentral
+// Approver approves yield withdrawal
+// Operator finalizes yield withdrawal → success
 
-        (
-            uint256[] memory tokenIds,
-            ,
-            ,
-            bool[] memory closed
-        ) = facet.decentralPositions();
+function test_fork_yield_request_finalization_success() external {
 
-        uint256 tokenId = tokenIds[0];
-        assertFalse(closed[0]);
+    console2.log("=== test_fork_yield_request_finalization_success ===");
 
-        vm.warp(block.timestamp + pool.paymentFrequencySeconds() + 1);
-        uint256 pendingYield = pool.pendingRewards(tokenId);
-        assertGt(pendingYield, 0);
+    uint256 amount = pool.minimumInvestmentAmount();
+    console2.log("deposit amount:", amount);
 
-        vm.prank(FUNDS_OPERATOR);
-        facet.requestDecentralYieldWithdrawal(0);
+    // ------------------------------------------------------------
+    // 1. USER deposits into ASYNC VAULT (shares minted)
+    // ------------------------------------------------------------
+    address user = address(0xBEEF);
+    console2.log("user:", user);
 
-        (
-            uint256 withdrawalAmount,
-            ,
-            bool exists,
-            bool approved
-        ) = pool.getYieldWithdrawalRequest(0);
+    deal(BASE_USDC, user, amount);
+    console2.log(
+        "user USDC balance after deal:",
+        IERC20(BASE_USDC).balanceOf(user)
+    );
 
-        assertTrue(exists);
-        assertFalse(approved);
-        assertEq(withdrawalAmount, pendingYield);
+    vm.startPrank(user);
+    IERC20(BASE_USDC).approve(address(asyncVault), amount);
+    uint256 shares = asyncVault.deposit(amount, PROJECT_ID, user);
+    vm.stopPrank();
 
-        vm.prank(FUNDS_OPERATOR);
-        vm.expectRevert(bytes("DECENTRAL_NOT_READY"));
-        facet.finalizeDecentralYieldWithdrawal(0);
-    } */
+    console2.log("shares minted:", shares);
+    console2.log(
+        "vault balanceOf(user, PROJECT_ID):",
+        asyncVault.balanceOf(user, PROJECT_ID)
+    );
+
+    assertGt(shares, 0);
+    assertEq(asyncVault.balanceOf(user, PROJECT_ID), shares);
+
+    // ------------------------------------------------------------
+    // 2. FUNDS_OPERATOR allocates vault funds into Decentral
+    // ------------------------------------------------------------
+    console2.log("FUNDS_OPERATOR:", FUNDS_OPERATOR);
+
+    vm.prank(FUNDS_OPERATOR);
+    facet.decentralDeposit(amount);
+
+    console2.log("decentralDeposit executed");
+
+    IDecentralStrategyFacet.NFTPosition[] memory positions =
+        facet.decentralPositions();
+
+    console2.log("decentralPositions.length:", positions.length);
+    assertEq(positions.length, 1);
+
+    uint256 tokenId = positions[0].tokenId;
+
+    console2.log("tokenId:", tokenId);
+    console2.log("closed:", positions[0].closed);
+    console2.log("yieldRequested:", positions[0].yieldRequested);
+
+    assertFalse(positions[0].closed);
+    assertFalse(positions[0].yieldRequested);
+
+    // ------------------------------------------------------------
+    // 3. Advance time to accrue yield
+    // ------------------------------------------------------------
+    uint256 paymentFrequency = pool.paymentFrequencySeconds();
+    console2.log("paymentFrequencySeconds:", paymentFrequency);
+
+    // move to the block that is paymentFrequency * 2 ahead in time, to be sure
+    vm.warp(block.timestamp + (paymentFrequency * 2));
+    console2.log("time warped to:", block.timestamp);
+
+    uint256 pendingYield = pool.pendingRewards(tokenId);
+    console2.log("pendingYield:", pendingYield);
+
+    assertGt(pendingYield, 0);
+
+    // ------------------------------------------------------------
+    // 4. FUNDS_OPERATOR requests YIELD withdrawal on Decentral
+    // ------------------------------------------------------------
+    console2.log("requesting yield withdrawal on Decentral");
+
+    vm.prank(FUNDS_OPERATOR);
+    facet.requestDecentralYieldWithdrawal(0);
+
+    positions = facet.decentralPositions();
+    console2.log(
+        "yieldRequested flag after request:",
+        positions[0].yieldRequested
+    );
+
+    assertTrue(positions[0].yieldRequested);
+
+    (
+        uint256 withdrawalAmount,
+        uint256 requestTimestamp,
+        bool exists,
+        bool approved
+    ) = pool.getYieldWithdrawalRequest(tokenId);
+
+    console2.log("withdrawalAmount:", withdrawalAmount);
+    console2.log("requestTimestamp:", requestTimestamp);
+    console2.log("exists:", exists);
+    console2.log("approved:", approved);
+
+    assertTrue(exists);
+    assertFalse(approved);
+    assertEq(withdrawalAmount, pendingYield);
+
+    // ------------------------------------------------------------
+    // 5. Approver approves & FUNDS_OPERATOR finalizes withdrawal
+    // ------------------------------------------------------------
+    console2.log("approving yield withdrawal");
+
+    vm.prank(DECENTRAL_APPROVER); // Decentral admin
+    pool.approveYieldWithdrawal(tokenId);
+
+    (
+        ,
+        ,
+        bool existsAfter,
+        bool approvedAfter
+    ) = pool.getYieldWithdrawalRequest(tokenId);
+
+    console2.log("existsAfter:", existsAfter);
+    console2.log("approvedAfter:", approvedAfter);
+
+    assertTrue(existsAfter);
+    assertTrue(approvedAfter);
+
+    // ------------------------------------------------------------
+    // 6. FUNDS_OPERATOR finalizes yield withdrawal
+    // ------------------------------------------------------------
+    console2.log("finalizing yield withdrawal via strategy");
+
+    vm.prank(FUNDS_OPERATOR);
+    uint256 received = facet.finalizeDecentralYieldWithdrawal(0);
+
+    console2.log("yield received:", received);
+    assertEq(received, pendingYield);
+
+    // ------------------------------------------------------------
+    // 7. Position + vault post-conditions
+    // ------------------------------------------------------------
+    positions = facet.decentralPositions();
+
+    console2.log("position.closed:", positions[0].closed);
+    console2.log(
+        "position.yieldRequested:",
+        positions[0].yieldRequested
+    );
+
+    assertFalse(positions[0].yieldRequested);
+    assertFalse(positions[0].closed); // withdrawal of the yield never closes position
+
+    // finalize moving yield to yieldextractor
+
+    console2.log("=== test completed successfully ===");
+    }
 }
