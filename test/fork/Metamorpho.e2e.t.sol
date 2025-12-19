@@ -13,7 +13,9 @@ contract MetamorphoTest is AbstractStrategyTest {
         vm.startPrank(owner);
         address strategyAdapter = address(new ERC4626Strategy());
         StrategyData memory strategy = StrategyData({
-            adapter: strategyAdapter, supplement: abi.encode(METAMORPHO_GAUNTLET_DAI_CORE), name: "metamorpho"
+            adapter: strategyAdapter,
+            supplement: abi.encode(METAMORPHO_GAUNTLET_DAI_CORE),
+            name: "metamorpho"
         });
         yelayLiteVault.addStrategy(strategy);
         yelayLiteVault.approveStrategy(0, type(uint256).max);

@@ -4,9 +4,8 @@ pragma solidity ^0.8.28;
 import {Test, console} from "forge-std/Test.sol";
 
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
-import {
-    IAccessControlDefaultAdminRules
-} from "@openzeppelin/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
+import {IAccessControlDefaultAdminRules} from
+    "@openzeppelin/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
 import {PausableUpgradeable} from "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -278,7 +277,11 @@ contract YieldExtractorTest is Test {
 
         // Replace with an invalid vault address
         YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
-            yelayLiteVault: vault_fail, projectId: projectId, cycle: 1, yieldSharesTotal: yieldTotal0, proof: proof
+            yelayLiteVault: vault_fail,
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldTotal0,
+            proof: proof
         });
         vm.startPrank(yieldPublisher);
         YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});

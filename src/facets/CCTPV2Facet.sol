@@ -41,7 +41,11 @@ contract CCTPV2Facet is RoleCheck, PausableCheck, ICCTPV2Facet {
     }
 
     /// @inheritdoc ICCTPV2Facet
-    function bridgeUSDC(uint256 amount, uint32 destinationDomain) external onlyRole(LibRoles.FUNDS_OPERATOR) notPaused {
+    function bridgeUSDC(uint256 amount, uint32 destinationDomain)
+        external
+        onlyRole(LibRoles.FUNDS_OPERATOR)
+        notPaused
+    {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         CCTPV2Storage storage sC = _getCCTPV2Storage();
 
@@ -62,16 +66,15 @@ contract CCTPV2Facet is RoleCheck, PausableCheck, ICCTPV2Facet {
         sF.underlyingAsset.safeApprove(address(sC.tokenMessenger), amount);
 
         // Initiate CCTP v2 burn with destination caller (destination vault)
-        uint64 nonce = sC.tokenMessenger
-            .depositForBurn(
-                amount,
-                destinationDomain,
-                bytes32(uint256(uint160(destinationVault))), // mintRecipient
-                address(sF.underlyingAsset), // burnToken (USDC)
-                bytes32(uint256(uint160(destinationVault))), // destinationCaller
-                0, // maxFee = 0 for free standard transfers
-                2000 // Messages with a minFinalityThreshold of 2000 are considered Standard messages. These messages are attested to at the finalized level by Iris.
-            );
+        uint64 nonce = sC.tokenMessenger.depositForBurn(
+            amount,
+            destinationDomain,
+            bytes32(uint256(uint160(destinationVault))), // mintRecipient
+            address(sF.underlyingAsset), // burnToken (USDC)
+            bytes32(uint256(uint160(destinationVault))), // destinationCaller
+            0, // maxFee = 0 for free standard transfers
+            2000 // Messages with a minFinalityThreshold of 2000 are considered Standard messages. These messages are attested to at the finalized level by Iris.
+        );
 
         emit LibEvents.CrossChainTransferInitiated(msg.sender, destinationDomain, destinationVault, amount, nonce);
     }

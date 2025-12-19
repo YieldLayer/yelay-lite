@@ -37,10 +37,8 @@ library LibAsyncDecentral {
 
     struct NFTPosition {
         uint256 tokenId;
-
         bool yieldRequested;
         bool principalRequested;
-
         bool closed;
     }
 
@@ -102,12 +100,14 @@ contract DecentralStrategyFacet is AccessFacet {
 
         uint256 tokenId = pool.deposit(amount);
 
-        LibAsyncDecentral.store().positions
-            .push(
-                LibAsyncDecentral.NFTPosition({
-                    tokenId: tokenId, yieldRequested: false, principalRequested: false, closed: false
-                })
-            );
+        LibAsyncDecentral.store().positions.push(
+            LibAsyncDecentral.NFTPosition({
+                tokenId: tokenId,
+                yieldRequested: false,
+                principalRequested: false,
+                closed: false
+            })
+        );
     }
 
     /*//////////////////////////////////////////////////////////////

@@ -14,11 +14,7 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
 import {MockExchange, Quote} from "../mocks/MockExchange.sol";
 import {Utils} from "../Utils.sol";
 import {
-    DAI_ADDRESS,
-    MAINNET_BLOCK_NUMBER,
-    GEARBOX_DAI_POOL,
-    GEARBOX_DAI_STAKING,
-    GEARBOX_TOKEN
+    DAI_ADDRESS, MAINNET_BLOCK_NUMBER, GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING, GEARBOX_TOKEN
 } from "../Constants.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 
@@ -41,7 +37,9 @@ contract CompoundTest is Test {
         vm.startPrank(owner);
         address strategyAdapter = address(new GearboxV3Strategy(GEARBOX_TOKEN));
         StrategyData memory strategy = StrategyData({
-            adapter: strategyAdapter, name: "gearbox", supplement: abi.encode(GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING)
+            adapter: strategyAdapter,
+            name: "gearbox",
+            supplement: abi.encode(GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING)
         });
 
         yelayLiteVault.addStrategy(strategy);

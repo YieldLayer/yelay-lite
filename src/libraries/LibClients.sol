@@ -25,8 +25,7 @@ library LibClients {
     }
 
     // keccak256(abi.encode(uint256(keccak256("yelay-vault.storage.ClientsFacet")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant ClientsStorageLocation =
-        0x78b8360ea116a1ac1aaf7d99dc2a2fa96091e5ce27ad9c46aa3a48ffec134800;
+    bytes32 private constant ClientsStorageLocation = 0x78b8360ea116a1ac1aaf7d99dc2a2fa96091e5ce27ad9c46aa3a48ffec134800;
 
     function _getClientsStorage() internal pure returns (ClientsStorage storage $) {
         assembly {

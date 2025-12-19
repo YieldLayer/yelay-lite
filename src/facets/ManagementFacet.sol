@@ -137,10 +137,9 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         require(LibManagement._strategyAssets(index) == 0, LibErrors.StrategyNotEmpty());
         emit LibEvents.DeactivateStrategy(strategy.adapter, strategy.supplement);
         sM.strategyIsActive[strategyId] = false;
-        sM.activeStrategies[index].adapter
-            .functionDelegateCall(
-                abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.activeStrategies[index].supplement)
-            );
+        sM.activeStrategies[index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.activeStrategies[index].supplement)
+        );
         sM.activeStrategies[index] = sM.activeStrategies[sM.activeStrategies.length - 1];
         sM.activeStrategies.pop();
         _updateDepositQueue(sM, depositQueue_);

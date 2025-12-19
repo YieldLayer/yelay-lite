@@ -13,7 +13,9 @@ contract GearboxV3Test is AbstractStrategyTest {
         vm.startPrank(owner);
         address strategyAdapter = address(new GearboxV3Strategy(GEARBOX_TOKEN));
         StrategyData memory strategy = StrategyData({
-            adapter: strategyAdapter, name: "gearbox", supplement: abi.encode(GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING)
+            adapter: strategyAdapter,
+            name: "gearbox",
+            supplement: abi.encode(GEARBOX_DAI_POOL, GEARBOX_DAI_STAKING)
         });
 
         yelayLiteVault.addStrategy(strategy);

@@ -39,7 +39,11 @@ contract AsyncFundsFacet is FundsFacetBase, IAsyncFundsFacet {
         requestId = sA.lastRequestId;
 
         sA.requestIdToAsyncFundsRequest[requestId] = LibAsyncFunds.AsyncFundsRequest({
-            sharesRedeemed: shares, assetsSent: 0, receiver: receiver, user: msg.sender, projectId: projectId
+            sharesRedeemed: shares,
+            assetsSent: 0,
+            receiver: receiver,
+            user: msg.sender,
+            projectId: projectId
         });
 
         _safeTransferFrom(msg.sender, address(this), projectId, shares, "");

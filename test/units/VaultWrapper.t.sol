@@ -46,9 +46,11 @@ contract VaultWrapperTest is Test {
         address vaultWrapperImpl =
             address(new VaultWrapper(IWETH(address(weth)), ISwapper(yelayLiteVaultEth.swapper())));
         vaultWrapper = VaultWrapper(
-            payable(new ERC1967Proxy(
+            payable(
+                new ERC1967Proxy(
                     address(vaultWrapperImpl), abi.encodeWithSelector(VaultWrapper.initialize.selector, owner)
-                ))
+                )
+            )
         );
 
         mockExchange = new MockExchange();

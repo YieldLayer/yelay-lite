@@ -14,7 +14,11 @@ contract GearboxV3Strategy is IStrategyBase {
         gearToken = gearToken_;
     }
 
-    function _decodeSupplement(bytes calldata supplement) internal pure returns (IERC4626 vault, IFarmingPool sdToken) {
+    function _decodeSupplement(bytes calldata supplement)
+        internal
+        pure
+        returns (IERC4626 vault, IFarmingPool sdToken)
+    {
         return abi.decode(supplement, (IERC4626, IFarmingPool));
     }
 
