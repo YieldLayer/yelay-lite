@@ -15,6 +15,7 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
+import {IAsyncFundsFacet} from "src/interfaces/IAsyncFundsFacet.sol";
 
 /**
  * @title YieldExtractor
@@ -173,10 +174,19 @@ contract YieldExtractor is
     function claim(ClaimRequest[] calldata data) external whenNotPaused {
         for (uint256 i; i < data.length; ++i) {
             uint256 toClaim = _processClaimRequest(data[i], i);
-
             IFundsFacet(data[i].yelayLiteVault).redeem(toClaim, YIELD_PROJECT_ID, msg.sender);
-
             emit LibEvents.YieldClaimed(msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim);
+        }
+    }
+
+    function request(ClaimRequest[] calldata data) external whenNotPaused {
+        for (uint256 i; i < data.length; ++i) {
+            uint256 toClaim = _processClaimRequest(data[i], i);
+            uint256 requestId =
+                IAsyncFundsFacet(data[i].yelayLiteVault).requestAsyncFunds(toClaim, YIELD_PROJECT_ID, msg.sender);
+            emit LibEvents.YieldRequested(
+                msg.sender, data[i].yelayLiteVault, data[i].projectId, data[i].cycle, toClaim, requestId
+            );
         }
     }
 
@@ -192,18 +202,6 @@ contract YieldExtractor is
         emit LibEvents.YieldTransformed(msg.sender, data.yelayLiteVault, data.projectId, data.cycle, toClaim);
     }
 
-    function _processClaimRequest(ClaimRequest memory data, uint256 index) internal returns (uint256 toClaim) {
-        bytes32 leaf = _getLeaf(data, msg.sender);
-        require(!isLeafClaimed[leaf], LibErrors.ProofAlreadyClaimed(index));
-        require(_verify(data, leaf), LibErrors.InvalidProof(index));
-
-        isLeafClaimed[leaf] = true;
-
-        uint256 alreadyClaimed = yieldSharesClaimed[msg.sender][data.yelayLiteVault][data.projectId];
-        toClaim = data.yieldSharesTotal - alreadyClaimed;
-        yieldSharesClaimed[msg.sender][data.yelayLiteVault][data.projectId] = data.yieldSharesTotal;
-    }
-
     /**
      * @notice Verify a Merkle proof for given claim request
      * @param data Claim request to verify
@@ -211,6 +209,20 @@ contract YieldExtractor is
      */
     function verify(ClaimRequest memory data, address user) external view returns (bool) {
         return _verify(data, _getLeaf(data, user));
+    }
+
+    function _processClaimRequest(ClaimRequest memory data, uint256 i) internal returns (uint256) {
+        bytes32 leaf = _getLeaf(data, msg.sender);
+        require(!isLeafClaimed[leaf], LibErrors.ProofAlreadyClaimed(i));
+        require(_verify(data, leaf), LibErrors.InvalidProof(i));
+
+        isLeafClaimed[leaf] = true;
+
+        uint256 alreadyClaimed = yieldSharesClaimed[msg.sender][data.yelayLiteVault][data.projectId];
+        uint256 toClaim = data.yieldSharesTotal - alreadyClaimed;
+        yieldSharesClaimed[msg.sender][data.yelayLiteVault][data.projectId] = data.yieldSharesTotal;
+
+        return toClaim;
     }
 
     /**

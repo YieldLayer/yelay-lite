@@ -13,6 +13,7 @@ import {YelayLiteDeployer} from "src/YelayLiteDeployer.sol";
 import {YelayLiteVault} from "src/YelayLiteVault.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
 import {FundsFacet} from "src/facets/FundsFacet.sol";
+import {FundsFacetBase} from "src/facets/FundsFacetBase.sol";
 import {OwnerFacet} from "src/facets/OwnerFacet.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {IOwnerFacet, SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
@@ -52,8 +53,8 @@ contract YelayLiteDeployerTest is Test {
 
         SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](2);
         bytes4[] memory fundsSelectors = new bytes4[](3);
-        fundsSelectors[0] = FundsFacet.underlyingAsset.selector;
-        fundsSelectors[1] = FundsFacet.yieldExtractor.selector;
+        fundsSelectors[0] = FundsFacetBase.underlyingAsset.selector;
+        fundsSelectors[1] = FundsFacetBase.yieldExtractor.selector;
         fundsSelectors[2] = ERC1155Upgradeable.uri.selector;
         selectorsToFacets[0] = SelectorsToFacet({facet: fundsFacetAddr, selectors: fundsSelectors});
 
@@ -95,7 +96,7 @@ contract YelayLiteDeployerTest is Test {
         assertEq(vault.yieldExtractor(), yieldExtractor);
         assertEq(vault.uri(0), uri);
         assertEq(vault.selectorToFacet(IOwnerFacet.owner.selector), ownerFacetAddr);
-        assertEq(vault.selectorToFacet(FundsFacet.underlyingAsset.selector), fundsFacetAddr);
+        assertEq(vault.selectorToFacet(FundsFacetBase.underlyingAsset.selector), fundsFacetAddr);
         assertEq(vault.selectorToFacet(AccessFacet.grantRole.selector), accessFacetAddr);
         assertTrue(vault.hasRole(LibRoles.CLIENT_MANAGER, deployerOwner));
         assertTrue(vault.hasRole(LibRoles.FUNDS_OPERATOR, yieldExtractor));

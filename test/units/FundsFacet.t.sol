@@ -11,7 +11,7 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 
 import {StrategyData} from "src/interfaces/IManagementFacet.sol";
-import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
+import {StrategyArgs} from "src/interfaces/IFundsFacetBase.sol";
 
 import {MockStrategy, MockProtocol} from "test/mocks/MockStrategy.sol";
 import {MockYieldExtractor} from "test/mocks/MockYieldExtractor.sol";

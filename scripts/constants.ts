@@ -8,6 +8,7 @@ export const ADDRESSES = {
         OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
         WETH: '0x4200000000000000000000000000000000000006',
         USDC: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+        MERKL: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
         CB_BTC: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
         AAVE_V3_POOL: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
         MORPHO: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
@@ -23,6 +24,7 @@ export const ADDRESSES = {
                 'moonwell-flagship-eth': '0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1',
             },
         },
+        URI: 'https://lite.api.yelay.io/base/metadata/{id}',
         YIELD_PUBLISHER: '0x5F63F86155B5Dd1eb4843a7985776337f9dE6378',
         YIELD_PUBLISHER_TEST: '0xabcDD1CB8BE0C6031a693BCc3267aa9fF2f7AE14',
     },
@@ -30,6 +32,7 @@ export const ADDRESSES = {
         WS: '0x039e2fb66102314ce7b64ce5ce3e5183bc94ad38',
         WETH: '0x50c42deacd8fc9773493ed674b675be577f2634b',
         USDCe: '0x29219dd400f2bf60e5a23d13be72b486d4038894',
+        MERKL: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
         OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
         URI: 'https://lite.api.yelay.io/sonic/metadata/{id}',
@@ -41,6 +44,7 @@ export const ADDRESSES = {
         OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
         WETH: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
         USDC: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+        MERKL: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
         WBTC: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
         URI: 'https://lite.api.yelay.io/mainnet/metadata/{id}',
         AAVE_V3_POOL: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -199,4 +203,28 @@ export const ROLES = {
     SWAP_REWARDS_OPERATOR: ethers.id('SWAP_REWARDS_OPERATOR'),
     PAUSER: ethers.id('PAUSER'),
     UNPAUSER: ethers.id('UNPAUSER'),
+    YIELD_PUBLISHER: ethers.id('YIELD_PUBLISHER'),
+};
+
+export const CCTP_V2 = {
+    1: {
+        DOMAIN: 0,
+        TokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+        MessageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+    },
+    146: {
+        DOMAIN: 13,
+        TokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+        MessageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+    },
+    8453: {
+        DOMAIN: 6,
+        TokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+        MessageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+    },
+    42161: {
+        DOMAIN: 3,
+        TokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+        MessageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+    },
 };

@@ -53,4 +53,8 @@ contract AccessFacet is AccessControlEnumerableUpgradeable, IAccessFacet {
     function selectorToPaused(bytes4 selector) external view returns (bool) {
         return LibPausable._getPausableStorage().selectorToPaused[selector];
     }
+
+    function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
 }

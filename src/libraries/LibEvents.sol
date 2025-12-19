@@ -287,6 +287,90 @@ library LibEvents {
     );
 
     /**
+     * @notice Request yield claiming
+     * @param user claimer
+     * @param yelayLiteVault yelayLiteVault address
+     * @param projectId project id
+     * @param cycle cycle number
+     * @param amount claimed amount
+     */
+    event YieldRequested(
+        address indexed user,
+        address indexed yelayLiteVault,
+        uint256 indexed projectId,
+        uint256 cycle,
+        uint256 amount,
+        uint256 requestId
+    );
+
+    /**
+     * @notice Async funds request
+     * @param user user address
+     * @param projectId project id
+     * @param sharesRedeemed shares redeemed
+     * @param requestId request id
+     */
+    event AsyncFundsRequest(
+        address indexed user,
+        uint256 indexed projectId,
+        address indexed receiver,
+        uint256 requestId,
+        uint256 sharesRedeemed
+    );
+
+    event AsyncFundsRequestFullfiled(
+        address indexed user,
+        uint256 indexed projectId,
+        address indexed receiver,
+        uint256 requestId,
+        uint256 assetsToClaim
+    );
+
+    // CCTPV2Facet
+
+    /**
+     * @dev Emitted when a cross-chain transfer is initiated.
+     * @param sender The address of the sender.
+     * @param destinationDomain The destination domain.
+     * @param destinationVault The destination vault address.
+     * @param amount The amount transferred.
+     * @param nonce The transfer nonce.
+     */
+    event CrossChainTransferInitiated(
+        address sender,
+        uint32 indexed destinationDomain,
+        address indexed destinationVault,
+        uint256 amount,
+        uint64 indexed nonce
+    );
+
+    /**
+     * @dev Emitted when a cross-chain transfer is received.
+     * @param amount The amount received.
+     */
+    event CrossChainTransferReceived(uint256 amount);
+
+    /**
+     * @dev Emitted when CCTP contracts are updated.
+     * @param tokenMessenger The TokenMessenger address.
+     * @param messageTransmitter The MessageTransmitter address.
+     */
+    event CCTPContractsUpdated(address tokenMessenger, address messageTransmitter);
+
+    /**
+     * @dev Emitted when domain mapping is updated.
+     * @param chainId The chain ID.
+     * @param domain The CCTP domain.
+     */
+    event DomainMappingUpdated(uint256 chainId, uint32 domain);
+
+    /// @dev Emitted when a vault is whitelisted for cross-chain transfers
+    event VaultWhitelisted(uint32 indexed destinationDomain, address indexed vault);
+
+    /// @dev Emitted when a vault is removed from whitelist
+    event VaultRemovedFromWhitelist(uint32 indexed destinationDomain, address indexed vault);
+
+    /*
      * @dev Emitted when yield shares are transformed from yield project to regular project shares.
      * @param user The address of the user whose yield is being transformed
      * @param yelayLiteVault The address of the YelayLite vault
