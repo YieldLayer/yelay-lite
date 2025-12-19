@@ -2,6 +2,8 @@ import { ethers } from 'hardhat';
 import { isDeepStrictEqual } from 'node:util';
 import {
     DepositLockPlugin__factory,
+    ERC4626Plugin__factory,
+    ERC4626PluginFactory__factory,
     IYelayLiteVault,
     IYelayLiteVault__factory,
     Swapper__factory,
@@ -74,7 +76,7 @@ export const checkSetup = async (
         unpauser,
     }: ExpectedAddresses,
 ) => {
-    console.log(`Working on swapper, vaultWrapper, depositLockPlugin...`);
+    console.log(`Working on swapper, vaultWrapper, depositLockPlugin, erc4626Plugin...`);
     console.log('');
 
     await Swapper__factory.connect(contracts.swapper.proxy, provider)
@@ -102,6 +104,15 @@ export const checkSetup = async (
                 );
             }
         });
+    await ERC4626PluginFactory__factory.connect(contracts.erc4626Plugin.factory, provider)
+        .owner()
+        .then((erc4626PluginFactoryOwner) => {
+            if (erc4626PluginFactoryOwner.toLowerCase() !== owner.toLowerCase()) {
+                warning(
+                    `ERC4626PluginFactory owner mismatch! Expected: ${owner}. Actual: ${erc4626PluginFactoryOwner}`,
+                );
+            }
+        });
 
     await checkImplementation(provider, contracts.swapper.proxy, contracts.swapper.implementation);
 
@@ -116,6 +127,17 @@ export const checkSetup = async (
         contracts.depositLockPlugin.proxy,
         contracts.depositLockPlugin.implementation,
     );
+
+    await ERC4626PluginFactory__factory.connect(contracts.erc4626Plugin.factory, provider)
+        .implementation()
+        .then((implementation) => {
+            if (
+                implementation.toLowerCase() !==
+                contracts.erc4626Plugin.implementation.toLowerCase()
+            ) {
+                warning(`Implementation doesn't match for: ${contracts.erc4626Plugin.factory} !`);
+            }
+        });
 
     await checkSwapper(
         VaultWrapper__factory.connect(contracts.vaultWrapper.proxy, provider),
@@ -160,6 +182,40 @@ export const checkSetup = async (
         await checkRoleMembers(yelayLiteVault, 'UNPAUSER', unpauser);
 
         await checkSwapper(yelayLiteVault, contracts.swapper.proxy);
+    }
+
+    if (contracts.erc4626Plugin?.proxies) {
+        console.log(`Working on ERC4626Plugin proxies...`);
+        console.log('');
+
+        for (const [key, proxyAddress] of Object.entries(contracts.erc4626Plugin.proxies)) {
+            const [asset, projectIdStr] = key.split('-');
+            const expectedProjectId = BigInt(projectIdStr);
+            const expectedVault = contracts.vaults[asset];
+
+            if (!expectedVault) {
+                warning(`No vault found for asset ${asset} in ERC4626Plugin proxy ${key}`);
+                continue;
+            }
+
+            const plugin = ERC4626Plugin__factory.connect(proxyAddress as string, provider);
+
+            await plugin.yelayLiteVault().then((actualVault) => {
+                if (actualVault.toLowerCase() !== expectedVault.toLowerCase()) {
+                    warning(
+                        `ERC4626Plugin proxy ${key} (${proxyAddress}) yelayLiteVault mismatch! Expected: ${expectedVault}. Actual: ${actualVault}`,
+                    );
+                }
+            });
+
+            await plugin.projectId().then((actualProjectId) => {
+                if (actualProjectId !== expectedProjectId) {
+                    warning(
+                        `ERC4626Plugin proxy ${key} (${proxyAddress}) projectId mismatch! Expected: ${expectedProjectId}. Actual: ${actualProjectId}`,
+                    );
+                }
+            });
+        }
     }
 };
 
