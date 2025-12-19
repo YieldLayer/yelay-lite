@@ -40,7 +40,8 @@ library LibFunds {
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC1155")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant ERC1155StorageLocation = 0x88be536d5240c274a3b1d3a1be54482fd9caa294f08c62a7cde569f49a3c4500;
+    bytes32 private constant ERC1155StorageLocation =
+        0x88be536d5240c274a3b1d3a1be54482fd9caa294f08c62a7cde569f49a3c4500;
 
     function _getERC1155Storage() internal pure returns (ERC1155Storage storage $) {
         assembly {

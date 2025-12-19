@@ -3,8 +3,9 @@ pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
 
-import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {
+    AccessControlEnumerableUpgradeable
+} from "@openzeppelin-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {
     AccessControlUpgradeable,
     IAccessControl

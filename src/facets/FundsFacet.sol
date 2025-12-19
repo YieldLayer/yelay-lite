@@ -42,18 +42,18 @@ contract FundsFacet is FundsFacetBase, IFundsFacet {
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
             uint256 toWithdraw = assets - withdrawn;
             if (toWithdraw <= WITHDRAW_MARGIN) break;
-            uint256 assetBalance = IStrategyBase(sM.activeStrategies[sM.withdrawQueue[i]].adapter).assetBalance(
-                address(this), sM.activeStrategies[sM.withdrawQueue[i]].supplement
-            );
+            uint256 assetBalance = IStrategyBase(sM.activeStrategies[sM.withdrawQueue[i]].adapter)
+                .assetBalance(address(this), sM.activeStrategies[sM.withdrawQueue[i]].supplement);
             if (assetBalance == 0) continue;
             uint256 availableToWithdraw = FixedPointMathLib.min(assetBalance, toWithdraw);
-            (bool success, bytes memory result) = sM.activeStrategies[sM.withdrawQueue[i]].adapter.delegatecall(
-                abi.encodeWithSelector(
-                    IStrategyBase.withdraw.selector,
-                    availableToWithdraw,
-                    sM.activeStrategies[sM.withdrawQueue[i]].supplement
-                )
-            );
+            (bool success, bytes memory result) = sM.activeStrategies[sM.withdrawQueue[i]].adapter
+                .delegatecall(
+                    abi.encodeWithSelector(
+                        IStrategyBase.withdraw.selector,
+                        availableToWithdraw,
+                        sM.activeStrategies[sM.withdrawQueue[i]].supplement
+                    )
+                );
             if (success) {
                 withdrawn += SafeCast.toUint192(abi.decode(result, (uint256)));
             }

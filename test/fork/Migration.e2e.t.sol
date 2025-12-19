@@ -46,8 +46,7 @@ contract Migration is Test {
         //No need to remove old facets, all are being replaced, there were no changes to function signatures
         SelectorsToFacet[] memory facets = new SelectorsToFacet[](3);
         facets[0] = SelectorsToFacet({
-            facet: address(new FundsFacet(swapper, merklDistributor)),
-            selectors: Utils.fundsFacetSelectors()
+            facet: address(new FundsFacet(swapper, merklDistributor)), selectors: Utils.fundsFacetSelectors()
         });
         facets[1] =
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: Utils.managementFacetSelectors()});

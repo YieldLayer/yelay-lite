@@ -54,9 +54,8 @@ abstract contract AbstractYieldExtractorMigration is Test {
 
             // DO MIGRATION
             vaults[i].setSelectorToFacets(selectorsToFacets);
-            MigrateToYieldExtractor(address(vaults[i])).transferYieldSharesToYieldExtractor(
-                address(yieldExtractor), testingDeployerAddress
-            );
+            MigrateToYieldExtractor(address(vaults[i]))
+                .transferYieldSharesToYieldExtractor(address(yieldExtractor), testingDeployerAddress);
             selectorsToFacets[0] = SelectorsToFacet({facet: address(0), selectors: selectors});
             vaults[i].setSelectorToFacets(selectorsToFacets);
 

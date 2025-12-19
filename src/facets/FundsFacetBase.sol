@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {ERC1155SupplyUpgradeable} from
-    "@openzeppelin-upgradeable/contracts/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
+import {
+    ERC1155SupplyUpgradeable
+} from "@openzeppelin-upgradeable/contracts/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
@@ -144,9 +145,8 @@ contract FundsFacetBase is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, I
     function strategyRewards(uint256 index) external view returns (Reward[] memory rewards) {
         require(tx.origin == address(0), LibErrors.OnlyView());
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        rewards = IStrategyBase(sM.activeStrategies[index].adapter).viewRewards(
-            address(this), sM.activeStrategies[index].supplement
-        );
+        rewards = IStrategyBase(sM.activeStrategies[index].adapter)
+            .viewRewards(address(this), sM.activeStrategies[index].supplement);
     }
 
     /// @inheritdoc IFundsFacetBase
@@ -168,11 +168,12 @@ contract FundsFacetBase is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, I
         sF.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
         bool success;
         for (uint256 i; i < sM.depositQueue.length; i++) {
-            (success,) = sM.activeStrategies[sM.depositQueue[i]].adapter.delegatecall(
-                abi.encodeWithSelector(
-                    IStrategyBase.deposit.selector, assets, sM.activeStrategies[sM.depositQueue[i]].supplement
-                )
-            );
+            (success,) = sM.activeStrategies[sM.depositQueue[i]].adapter
+                .delegatecall(
+                    abi.encodeWithSelector(
+                        IStrategyBase.deposit.selector, assets, sM.activeStrategies[sM.depositQueue[i]].supplement
+                    )
+                );
             if (success) {
                 break;
             }
@@ -288,9 +289,10 @@ contract FundsFacetBase is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, I
     /// @inheritdoc IFundsFacetBase
     function claimStrategyRewards(uint256 index) external notPaused onlyRole(LibRoles.FUNDS_OPERATOR) {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        sM.activeStrategies[index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(IStrategyBase.claimRewards.selector, sM.activeStrategies[index].supplement)
-        );
+        sM.activeStrategies[index].adapter
+            .functionDelegateCall(
+                abi.encodeWithSelector(IStrategyBase.claimRewards.selector, sM.activeStrategies[index].supplement)
+            );
     }
 
     /// @inheritdoc IFundsFacetBase
@@ -318,11 +320,12 @@ contract FundsFacetBase is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, I
         StrategyArgs calldata strategyArgs
     ) internal {
         uint256 depositAmount = strategyArgs.amount == type(uint256).max ? sF.underlyingBalance : strategyArgs.amount;
-        sM.activeStrategies[strategyArgs.index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(
-                IStrategyBase.deposit.selector, depositAmount, sM.activeStrategies[strategyArgs.index].supplement
-            )
-        );
+        sM.activeStrategies[strategyArgs.index].adapter
+            .functionDelegateCall(
+                abi.encodeWithSelector(
+                    IStrategyBase.deposit.selector, depositAmount, sM.activeStrategies[strategyArgs.index].supplement
+                )
+            );
         sF.underlyingBalance -= SafeCast.toUint192(depositAmount);
         emit LibEvents.ManagedDeposit(sM.activeStrategies[strategyArgs.index].name, strategyArgs.amount);
     }
@@ -339,7 +342,9 @@ contract FundsFacetBase is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, I
         StrategyArgs calldata strategyArgs
     ) internal {
         bytes memory payload = strategyArgs.amount == type(uint256).max
-            ? abi.encodeWithSelector(IStrategyBase.withdrawAll.selector, sM.activeStrategies[strategyArgs.index].supplement)
+            ? abi.encodeWithSelector(
+                IStrategyBase.withdrawAll.selector, sM.activeStrategies[strategyArgs.index].supplement
+            )
             : abi.encodeWithSelector(
                 IStrategyBase.withdraw.selector, strategyArgs.amount, sM.activeStrategies[strategyArgs.index].supplement
             );

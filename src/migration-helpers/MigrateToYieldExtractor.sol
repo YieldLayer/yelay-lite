@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {ERC1155SupplyUpgradeable} from
-    "@openzeppelin-upgradeable/contracts/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
+import {
+    ERC1155SupplyUpgradeable
+} from "@openzeppelin-upgradeable/contracts/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 
 import {LibOwner} from "src/libraries/LibOwner.sol";
 import {LibFunds} from "src/libraries/LibFunds.sol";

@@ -41,8 +41,7 @@ library LibManagement {
      */
     function _strategyAssets(uint256 index) internal view returns (uint256) {
         LibManagement.ManagementStorage storage sM = _getManagementStorage();
-        return IStrategyBase(sM.activeStrategies[index].adapter).assetBalance(
-            address(this), sM.activeStrategies[index].supplement
-        );
+        return IStrategyBase(sM.activeStrategies[index].adapter)
+            .assetBalance(address(this), sM.activeStrategies[index].supplement);
     }
 }
