@@ -29,9 +29,6 @@ export const getFundsFacetSelectors = () => {
         'totalSupply()',
         'totalSupply(uint256)',
         'lastTotalAssets',
-        'lastTotalAssetsTimestamp',
-        'lastTotalAssetsUpdateInterval',
-        'setLastTotalAssetsUpdateInterval',
         'underlyingBalance',
         'underlyingAsset',
         'yieldExtractor',
@@ -225,6 +222,8 @@ export const getContractsPath = (chainId: number, testing = false) => {
         fileName = 'sonic.json';
     } else if (chainId === 42161) {
         fileName = 'arbitrum.json';
+    } else if (chainId === 43114) {
+        fileName = 'avalanche.json';
     } else {
         throw new Error(`No contracts for chainId ${chainId}`);
     }

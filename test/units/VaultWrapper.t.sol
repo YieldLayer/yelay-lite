@@ -10,11 +10,11 @@ import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {ISwapper, SwapArgs} from "src/interfaces/ISwapper.sol";
 import {IWETH} from "src/interfaces/external/weth/IWETH.sol";
 
-import {MockExchange, Quote} from "./MockExchange.sol";
-import {Utils} from "./Utils.sol";
+import {MockExchange, Quote} from "test/mocks/MockExchange.sol";
+import {Utils} from "test/Utils.sol";
 import {VaultWrapper} from "src/VaultWrapper.sol";
-import {WETH9} from "./WETH9.sol";
-import {MockToken} from "./MockToken.sol";
+import {WETH9} from "test/mocks/WETH9.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
 
 contract VaultWrapperTest is Test {
     using Utils for address;

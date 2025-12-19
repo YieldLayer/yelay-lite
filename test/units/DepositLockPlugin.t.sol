@@ -6,8 +6,8 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {UUPSUpgradeable} from "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {DepositLockPlugin} from "src/plugins/DepositLockPlugin.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
-import {MockToken} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
@@ -95,6 +95,12 @@ contract DepositLockPluginTest is Test {
         vm.prank(projectOwner);
         vm.expectRevert(abi.encodeWithSelector(LibErrors.LockPeriodExceedsMaximum.selector, excessiveLock));
         depositLock.updateLockPeriod(address(mockVault), projectId, excessiveLock);
+    }
+
+    function test_updateLockPeriod_ProjectInactive() public {
+        vm.prank(projectOwner);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ProjectInactive.selector));
+        depositLock.updateLockPeriod(address(mockVault), projectId + 100, 1 days);
     }
 
     function test_updateLockPeriod_success() public {
@@ -319,6 +325,9 @@ contract DepositLockPluginTest is Test {
         }
 
         uint256 newProjectId = projectId + 7;
+        vm.startPrank(projectOwner);
+        mockVault.activateProject(newProjectId);
+        vm.stopPrank();
         vm.expectRevert(
             abi.encodeWithSelector(
                 LibErrors.LockModeMismatch.selector,
@@ -369,6 +378,7 @@ contract DepositLockPluginTest is Test {
         uint256 newLockPeriod = 1 days;
         uint256 toProjectId = 456;
         vm.startPrank(projectOwner);
+        mockVault.activateProject(toProjectId);
         depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
         depositLock.updateLockPeriod(address(mockVault), toProjectId, newLockPeriod);
         vm.stopPrank();
@@ -393,6 +403,7 @@ contract DepositLockPluginTest is Test {
         uint256 globalLockPeriod = block.timestamp + newLockPeriod;
         uint256 toProjectId = 456;
         vm.startPrank(projectOwner);
+        mockVault.activateProject(toProjectId);
         depositLock.updateLockPeriod(address(mockVault), projectId, newLockPeriod);
         depositLock.updateGlobalUnlockTime(address(mockVault), toProjectId, globalLockPeriod);
         vm.stopPrank();
@@ -498,6 +509,13 @@ contract DepositLockPluginTest is Test {
     // -------------------------------------------------------------------------
     // Global mode tests
     // -------------------------------------------------------------------------
+
+    function test_updateGlobalUnlockTime_ProjectInactive() public {
+        vm.prank(projectOwner);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.ProjectInactive.selector));
+        depositLock.updateGlobalUnlockTime(address(mockVault), projectId + 100, 1 days);
+    }
+
     function test_updateGlobalUnlockTime_success() public {
         uint256 newGlobalUnlockTime = block.timestamp + 1 days;
         vm.prank(projectOwner);

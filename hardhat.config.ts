@@ -38,6 +38,11 @@ const config: HardhatUserConfig = {
             url: process.env.ARBITRUM_URL!,
             accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
         },
+        avalanche: {
+            chainId: 43114,
+            url: process.env.AVALANCHE_URL!,
+            accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
+        },
     },
     etherscan: {
         apiKey: process.env.ETHERSCAN_API_KEY!,

@@ -112,6 +112,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      */
     function updateLockPeriod(address vault, uint256 projectId, uint256 lockPeriod) external {
         require(_isProjectOwner(vault, projectId), LibErrors.NotProjectOwner(vault, projectId, msg.sender));
+        require(_isProjectActivated(vault, projectId), LibErrors.ProjectInactive());
         require(lockPeriod <= MAX_LOCK_PERIOD, LibErrors.LockPeriodExceedsMaximum(lockPeriod));
         _setOrValidateLockMode(vault, projectId, LockMode.Variable);
 
@@ -129,6 +130,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
      */
     function updateGlobalUnlockTime(address vault, uint256 projectId, uint256 unlockTime) external {
         require(_isProjectOwner(vault, projectId), LibErrors.NotProjectOwner(vault, projectId, msg.sender));
+        require(_isProjectActivated(vault, projectId), LibErrors.ProjectInactive());
         _setOrValidateLockMode(vault, projectId, LockMode.Global);
 
         projectGlobalUnlockTime[vault][projectId] = unlockTime;
@@ -269,6 +271,10 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
     function _isProjectOwner(address vault, uint256 projectId) internal view returns (bool) {
         ClientData memory clientData = IClientsFacet(vault).ownerToClientData(msg.sender);
         return clientData.minProjectId <= projectId && projectId <= clientData.maxProjectId;
+    }
+
+    function _isProjectActivated(address vault, uint256 projectId) internal view returns (bool) {
+        return IClientsFacet(vault).projectIdActive(projectId);
     }
 
     /**

@@ -79,10 +79,12 @@ library LibEvents {
     );
 
     /**
-     * @dev Emitted when lastTotalAssetsUpdateInterval is updated.
-     * @param newInterval The new interval for updating lastTotalAssets.
+     * @dev Emitted when yield shares are transformed for an account.
+     * @param account The address whose yield shares are transformed.
+     * @param projectId The ID of the project associated with the shares.
+     * @param shares The amount of shares transformed.
      */
-    event UpdateLastTotalAssetsUpdateInterval(uint256 newInterval);
+    event YieldSharesTransformed(address indexed account, uint256 indexed projectId, uint256 shares);
 
     // ManagementFacet
     /**
@@ -167,6 +169,12 @@ library LibEvents {
      * @param facet The address of the facet.
      */
     event SelectorToFacetSet(bytes4 indexed selector, address indexed facet);
+
+    event SelectorAdded(bytes4 indexed selector, address indexed facet);
+    event SelectorUpdated(bytes4 indexed selector, address indexed facet);
+    event SelectorRemoved(bytes4 indexed selector);
+
+    event YelayLiteVaultDeployed(address yelayLiteVault);
 
     // AccessFacet
     /**
@@ -361,4 +369,28 @@ library LibEvents {
 
     /// @dev Emitted when a vault is removed from whitelist
     event VaultRemovedFromWhitelist(uint32 indexed destinationDomain, address indexed vault);
+
+    /*
+     * @dev Emitted when yield shares are transformed from yield project to regular project shares.
+     * @param user The address of the user whose yield is being transformed
+     * @param yelayLiteVault The address of the YelayLite vault
+     * @param projectId The ID of the target project receiving the transformed shares
+     * @param cycle The cycle number from which the yield is being transformed
+     * @param amount The amount of yield being transformed into regular shares
+     */
+    event YieldTransformed(
+        address indexed user, address indexed yelayLiteVault, uint256 indexed projectId, uint256 cycle, uint256 amount
+    );
+
+    /**
+     * @dev Emitted when a new ERC4626Plugin is deployed by the factory.
+     * @param erc4626Plugin The address of the newly deployed ERC4626Plugin contract
+     */
+    event ERC4626PluginDeployed(address indexed erc4626Plugin);
+
+    /**
+     * @dev Emitted when excess assets are skimmed from an ERC4626Plugin and deposited into the underlying vault.
+     * @param amount The amount of assets that were skimmed and deposited
+     */
+    event ERC4626PluginAssetsSkimmed(uint256 amount);
 }

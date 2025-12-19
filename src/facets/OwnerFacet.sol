@@ -12,6 +12,12 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
  * @dev Contract that provides ownership management functionality.
  */
 contract OwnerFacet is IOwnerFacet {
+    address immutable self;
+
+    constructor() {
+        self = address(this);
+    }
+
     /// @inheritdoc IOwnerFacet
     function owner() external view returns (address) {
         return LibOwner._getOwnerStorage().owner;
@@ -22,17 +28,49 @@ contract OwnerFacet is IOwnerFacet {
         return LibOwner._getOwnerStorage().pendingOwner;
     }
 
-    /// @inheritdoc IOwnerFacet
-    function setSelectorToFacets(SelectorsToFacet[] calldata arr) external {
+    function addSelectors(SelectorsToFacet[] calldata arr) external {
         LibOwner.onlyOwner();
         LibOwner.OwnerStorage storage s = LibOwner._getOwnerStorage();
 
         for (uint256 i = 0; i < arr.length; i++) {
             SelectorsToFacet memory selectorsToFacet = arr[i];
             for (uint256 j = 0; j < selectorsToFacet.selectors.length; j++) {
+                require(
+                    s.selectorToFacet[selectorsToFacet.selectors[j]] == address(0),
+                    LibErrors.SelectorCollision(selectorsToFacet.facet, selectorsToFacet.selectors[j])
+                );
                 s.selectorToFacet[selectorsToFacet.selectors[j]] = selectorsToFacet.facet;
-                emit LibEvents.SelectorToFacetSet(selectorsToFacet.selectors[j], selectorsToFacet.facet);
+                emit LibEvents.SelectorAdded(selectorsToFacet.selectors[j], selectorsToFacet.facet);
             }
+        }
+    }
+
+    function updateSelectors(SelectorsToFacet[] calldata arr) external {
+        LibOwner.onlyOwner();
+        LibOwner.OwnerStorage storage s = LibOwner._getOwnerStorage();
+
+        for (uint256 i = 0; i < arr.length; i++) {
+            SelectorsToFacet memory selectorsToFacet = arr[i];
+            for (uint256 j = 0; j < selectorsToFacet.selectors.length; j++) {
+                address currentFacet = s.selectorToFacet[selectorsToFacet.selectors[j]];
+                require(currentFacet != address(0), LibErrors.SelectorNotSet(selectorsToFacet.selectors[j]));
+                require(currentFacet != self, LibErrors.ForbiddenOwnerSelector(selectorsToFacet.selectors[j]));
+                s.selectorToFacet[selectorsToFacet.selectors[j]] = selectorsToFacet.facet;
+                emit LibEvents.SelectorUpdated(selectorsToFacet.selectors[j], selectorsToFacet.facet);
+            }
+        }
+    }
+
+    function removeSelectors(bytes4[] calldata selectors) external {
+        LibOwner.onlyOwner();
+        LibOwner.OwnerStorage storage s = LibOwner._getOwnerStorage();
+
+        for (uint256 i = 0; i < selectors.length; i++) {
+            address currentFacet = s.selectorToFacet[selectors[i]];
+            require(currentFacet != address(0), LibErrors.SelectorNotSet(selectors[i]));
+            require(currentFacet != self, LibErrors.ForbiddenOwnerSelector(selectors[i]));
+            delete s.selectorToFacet[selectors[i]];
+            emit LibEvents.SelectorRemoved(selectors[i]);
         }
     }
 

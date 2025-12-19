@@ -18,9 +18,8 @@ import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {IFundsFacetBase} from "src/interfaces/IFundsFacetBase.sol";
 import {IMulticall} from "src/interfaces/IMulticall.sol";
 
-import {MockStrategy} from "./MockStrategy.sol";
-import {MockToken} from "./MockToken.sol";
-import {Utils} from "./Utils.sol";
+import {MockToken} from "test/mocks/MockToken.sol";
+import {Utils} from "test/Utils.sol";
 
 contract AccessFacetTest is Test {
     using Utils for address;

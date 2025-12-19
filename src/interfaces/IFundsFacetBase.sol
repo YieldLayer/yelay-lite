@@ -38,19 +38,6 @@ interface IFundsFacetBase is IERC1155, IERC1155MetadataURI {
     function lastTotalAssetsTimestamp() external view returns (uint64);
 
     /**
-     * @dev Returns the interval for updating the last total assets.
-     * @return The interval for updating the last total assets.
-     */
-    function lastTotalAssetsUpdateInterval() external view returns (uint64);
-
-    /**
-     * @dev Sets the interval for updating the last total assets.
-     * @dev Callable by FUNDS_OPERATOR.
-     * @param interval The new interval.
-     */
-    function setLastTotalAssetsUpdateInterval(uint64 interval) external;
-
-    /**
      * @dev Returns the underlying balance of the contract.
      * @return The underlying balance.
      */

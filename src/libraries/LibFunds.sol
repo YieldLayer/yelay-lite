@@ -7,16 +7,20 @@ library LibFunds {
     /**
      * @custom:storage-location erc7201:yelay-vault.storage.FundsFacet
      * @custom:member underlyingBalance The balance of the underlying asset held by the vault excluding assets in strategies.
-     * @custom:member lastTotalAssetsUpdateInterval The interval for updating the last total assets on deposit.
+     * @custom:member lastTotalAssetsUpdateInterval DEPRECATED: Previously used interval for updating the last total assets on deposit. No longer used as timing-based updates were removed.
      * @custom:member lastTotalAssets The last total assets value for yield calculation.
-     * @custom:member lastTotalAssetsTimestamp The timestamp of the last total assets update.
+     * @custom:member lastTotalAssetsTimestamp DEPRECATED: Previously used timestamp of the last total assets update. No longer used as timing-based tracking was simplified.
      * @custom:member underlyingAsset The underlying asset.
      * @custom:member yieldExtractor The address of the yield extractor.
      */
     struct FundsStorage {
         uint192 underlyingBalance;
+        /// @dev DEPRECATED: This field is no longer used and should be ignored.
+        ///      This field is retained for storage layout compatibility.
         uint64 lastTotalAssetsUpdateInterval;
         uint192 lastTotalAssets;
+        /// @dev DEPRECATED: This field is no longer used and should be ignored.
+        ///      This field is retained for storage layout compatibility.
         uint64 lastTotalAssetsTimestamp;
         ERC20 underlyingAsset;
         address yieldExtractor;

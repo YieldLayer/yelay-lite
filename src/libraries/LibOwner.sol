@@ -9,11 +9,13 @@ library LibOwner {
      * @custom:member owner The owner of the contract.
      * @custom:member pendingOwner The address pending to become the owner.
      * @custom:member selectorToFacet Mapping from selector to facet address.
+     * @custom:member initialized - prevents second initialization of the vault
      */
     struct OwnerStorage {
         address owner;
         address pendingOwner;
         mapping(bytes4 => address) selectorToFacet;
+        bool initialized;
     }
 
     // keccak256(abi.encode(uint256(keccak256("yelay-vault.storage.OwnerFacet")) - 1)) & ~bytes32(uint256(0xff))

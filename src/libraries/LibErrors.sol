@@ -15,6 +15,13 @@ library LibErrors {
      */
     error InvalidSelector(bytes4 selector);
 
+    error AlreadyInitialized();
+    error MalformedInitData();
+
+    error SelectorCollision(address facet, bytes4 selector);
+    error SelectorNotSet(bytes4 selector);
+    error ForbiddenOwnerSelector(bytes4 selector);
+
     // ===================== ClientsFacet ================================
     /**
      * @dev The owner address is already used by some client.
@@ -86,6 +93,11 @@ library LibErrors {
      * @dev During swapRewards totalAssets have been reduced
      */
     error TotalAssetsLoss();
+
+    /**
+     * @dev Caller can be only YieldExtractor
+     */
+    error OnlyYieldExtractor();
 
     // ===================== SwapWrapper ================================
     /**
@@ -253,4 +265,17 @@ library LibErrors {
      * @dev Zero USDC received.
      */
     error ZeroUSDCReceived();
+    // ===================== ERC4626Plugin ================================
+
+    /**
+     * @notice Thrown when the amount of assets during a withdrawal is less than the requested amount
+     * @param requested The amount of assets that were requested to be withdrawn
+     * @param actual The actual amount of assets available, which is less than requested
+     */
+    error WithdrawSlippageExceeded(uint256 requested, uint256 actual);
+
+    /**
+     * @notice Thrown when the amount of assets or shares is zero
+     */
+    error ZeroValue();
 }

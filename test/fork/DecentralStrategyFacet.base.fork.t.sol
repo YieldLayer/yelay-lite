@@ -15,6 +15,8 @@ import {BASE_USDC, USDC_DECIMALS} from "../Constants.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {StrategyArgs} from "src/interfaces/IFundsFacetBase.sol";
 
+import {DecentralStrategyFacet} from "src/facets/DecentralStrategyFacet.sol";
+
 import "forge-std/console2.sol";
 
 interface IDecentralStrategyFacet {
@@ -79,6 +81,9 @@ contract DecentralStrategyFacetBaseForkTest is Test {
         vault = Utils.deployDiamond(OWNER, BASE_USDC, YIELD_EXTRACTOR, "https://yelay-lite-vault/{id}.json");
 
         Utils.upgradeToAsyncFundsFacet(vault);
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = DecentralStrategyFacet.totalAssets.selector;
+        vault.removeSelectors(selectors);
         Utils.upgradeToDecentralStrategyFacet(vault);
 
         asyncVault = IYelayLiteVaultAsync(address(vault));
