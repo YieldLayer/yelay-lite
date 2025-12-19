@@ -17,7 +17,8 @@ library LibOwner {
     }
 
     // keccak256(abi.encode(uint256(keccak256("yelay-vault.storage.OwnerFacet")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant OWNER_STORAGE_LOCATION = 0x52b130868e76fc87849159cef46eb9bb0156aa8877197d318e4437829044d000;
+    bytes32 private constant OWNER_STORAGE_LOCATION =
+        0x52b130868e76fc87849159cef46eb9bb0156aa8877197d318e4437829044d000;
 
     function _getOwnerStorage() internal pure returns (OwnerStorage storage $) {
         assembly {

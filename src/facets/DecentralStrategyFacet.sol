@@ -11,12 +11,9 @@ import {LibFunds} from "src/libraries/LibFunds.sol";
 
 import "forge-std/console2.sol";
 
-
 /*//////////////////////////////////////////////////////////////
                         POOL TOKEN INTERFACE
 //////////////////////////////////////////////////////////////*/
-
-
 
 interface IPoolToken {
     struct TokenInfo {
@@ -28,20 +25,15 @@ interface IPoolToken {
         uint256 lastYieldPayoutTime;
     }
 
-    function getTokenInfo(uint256 tokenId)
-        external
-        view
-        returns (TokenInfo memory);
+    function getTokenInfo(uint256 tokenId) external view returns (TokenInfo memory);
 }
-
 
 /*//////////////////////////////////////////////////////////////
                         STORAGE LIBRARY
 //////////////////////////////////////////////////////////////*/
 
 library LibAsyncDecentral {
-    bytes32 internal constant STORAGE_POSITION =
-        keccak256("yelay.async.decentral.storage");
+    bytes32 internal constant STORAGE_POSITION = keccak256("yelay.async.decentral.storage");
 
     struct NFTPosition {
         uint256 tokenId;
@@ -71,8 +63,7 @@ library LibAsyncDecentral {
 contract DecentralStrategyFacet is AccessFacet {
     using SafeTransferLib for ERC20;
 
-    IDecentralPool public constant DECENTRAL_POOL =
-        IDecentralPool(0x6fC42888f157A772968CaB5B95A4e42a38C07fD0);
+    IDecentralPool public constant DECENTRAL_POOL = IDecentralPool(0x6fC42888f157A772968CaB5B95A4e42a38C07fD0);
 
     /*//////////////////////////////////////////////////////////////
                             INTERNAL HELPERS
@@ -86,23 +77,17 @@ contract DecentralStrategyFacet is AccessFacet {
         return IPoolToken(DECENTRAL_POOL.poolToken());
     }
 
-
     function _principal(uint256 tokenId) internal view returns (uint256) {
-        IPoolToken.TokenInfo memory info =
-            _poolToken().getTokenInfo(tokenId);
+        IPoolToken.TokenInfo memory info = _poolToken().getTokenInfo(tokenId);
 
         return info.principalAmount - info.principalRedeemed;
     }
-
 
     /*//////////////////////////////////////////////////////////////
                             DEPOSIT
     //////////////////////////////////////////////////////////////*/
 
-    function decentralDeposit(uint256 amount)
-        external
-        onlyRole(LibRoles.FUNDS_OPERATOR)
-    {
+    function decentralDeposit(uint256 amount) external onlyRole(LibRoles.FUNDS_OPERATOR) {
         if (amount == 0) revert LibErrors.ZeroAmount();
 
         ERC20 stable = _stable();
@@ -117,28 +102,20 @@ contract DecentralStrategyFacet is AccessFacet {
 
         uint256 tokenId = pool.deposit(amount);
 
-        LibAsyncDecentral.store().positions.push(
-            LibAsyncDecentral.NFTPosition({
-                tokenId: tokenId,
-                yieldRequested: false,
-                principalRequested: false,
-                closed: false
-            })
-        );
+        LibAsyncDecentral.store().positions
+            .push(
+                LibAsyncDecentral.NFTPosition({
+                    tokenId: tokenId, yieldRequested: false, principalRequested: false, closed: false
+                })
+            );
     }
-
 
     /*//////////////////////////////////////////////////////////////
                         YIELD WITHDRAWAL (ASYNC)
     //////////////////////////////////////////////////////////////*/
 
-
-    function requestDecentralYieldWithdrawal(uint256 index)
-        external
-        onlyRole(LibRoles.FUNDS_OPERATOR)
-    {
-        LibAsyncDecentral.NFTPosition storage p =
-            LibAsyncDecentral.store().positions[index];
+    function requestDecentralYieldWithdrawal(uint256 index) external onlyRole(LibRoles.FUNDS_OPERATOR) {
+        LibAsyncDecentral.NFTPosition storage p = LibAsyncDecentral.store().positions[index];
 
         if (p.closed || p.yieldRequested) revert("DECENTRAL_INVALID_STATE");
 
@@ -148,19 +125,15 @@ contract DecentralStrategyFacet is AccessFacet {
         p.yieldRequested = true;
     }
 
-
-
     function finalizeDecentralYieldWithdrawal(uint256 index)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
         returns (uint256 received)
     {
-        LibAsyncDecentral.NFTPosition storage p =
-            LibAsyncDecentral.store().positions[index];
+        LibAsyncDecentral.NFTPosition storage p = LibAsyncDecentral.store().positions[index];
         if (p.closed || !p.yieldRequested) revert("DECENTRAL_INVALID_STATE");
 
-        (, , bool exists, bool approved) =
-            DECENTRAL_POOL.getYieldWithdrawalRequest(p.tokenId);
+        (,, bool exists, bool approved) = DECENTRAL_POOL.getYieldWithdrawalRequest(p.tokenId);
 
         if (!exists || !approved) revert("DECENTRAL_NOT_READY");
 
@@ -174,52 +147,35 @@ contract DecentralStrategyFacet is AccessFacet {
         p.yieldRequested = false;
     }
 
-
-
     /*//////////////////////////////////////////////////////////////
 
                     PRINCIPAL WITHDRAWAL (ASYNC)
 
     //////////////////////////////////////////////////////////////*/
 
-
-    function requestDecentralPrincipalWithdrawal(uint256 index)
-        external
-        onlyRole(LibRoles.FUNDS_OPERATOR)
-    {
-
-        LibAsyncDecentral.NFTPosition storage p =
-            LibAsyncDecentral.store().positions[index];
+    function requestDecentralPrincipalWithdrawal(uint256 index) external onlyRole(LibRoles.FUNDS_OPERATOR) {
+        LibAsyncDecentral.NFTPosition storage p = LibAsyncDecentral.store().positions[index];
 
         if (p.closed || p.principalRequested) revert("DECENTRAL_INVALID_STATE");
 
         console2.log("DecentralStrategyFacet.requestDecentralPrincipalWithdrawal for:", p.tokenId);
-      
+
         DECENTRAL_POOL.requestPrincipalWithdrawal(p.tokenId);
         p.principalRequested = true;
     }
-
-
 
     function finalizeDecentralPrincipalWithdrawal(uint256 index)
         external
         onlyRole(LibRoles.FUNDS_OPERATOR)
         returns (uint256 received)
     {
-
-        LibAsyncDecentral.NFTPosition storage p =
-            LibAsyncDecentral.store().positions[index];
+        LibAsyncDecentral.NFTPosition storage p = LibAsyncDecentral.store().positions[index];
         if (p.closed || !p.principalRequested) revert("DECENTRAL_INVALID_STATE");
 
         console2.log("DecentralStrategyFacet.finalizeDecentralPrincipalWithdrawal for:", p.tokenId);
 
-        (
-            uint256 withdrawalAmount,
-            uint256 requestTs,
-            uint256 availableTs,
-            bool exists,
-            bool approved
-        ) = DECENTRAL_POOL.getPrincipalWithdrawalRequest(p.tokenId);
+        (uint256 withdrawalAmount, uint256 requestTs, uint256 availableTs, bool exists, bool approved) =
+            DECENTRAL_POOL.getPrincipalWithdrawalRequest(p.tokenId);
 
         console2.log("Facet.getPrincipalWithdrawalRequest withdrawalAmount:", withdrawalAmount);
         console2.log("Facet.getPrincipalWithdrawalRequest requestTs:", requestTs);
@@ -228,14 +184,12 @@ contract DecentralStrategyFacet is AccessFacet {
         console2.log("Facet.getPrincipalWithdrawalRequest approved:", approved);
         console2.log("Facet.getPrincipalWithdrawalRequest approved. Current timestamp:", block.timestamp);
 
-
         if (!exists || !approved) {
             revert("DECENTRAL_NOT_READY");
         }
 
         uint256 principalBefore = _principal(p.tokenId);
         console2.log("principalBefore:", principalBefore);
-
 
         ERC20 stable = _stable();
         uint256 balBefore = stable.balanceOf(address(this));
@@ -255,28 +209,18 @@ contract DecentralStrategyFacet is AccessFacet {
         p.principalRequested = false;
     }
 
-
-
     /*//////////////////////////////////////////////////////////////
 
                             VIEW
 
     //////////////////////////////////////////////////////////////*/
 
-
-
-    function decentralPositions()
-        external
-        view
-        returns (LibAsyncDecentral.NFTPosition[] memory)
-    {
+    function decentralPositions() external view returns (LibAsyncDecentral.NFTPosition[] memory) {
         return LibAsyncDecentral.store().positions;
     }
 
-
     function totalAssets() external view returns (uint256 assets) {
-        LibAsyncDecentral.Storage storage s =
-            LibAsyncDecentral.store();
+        LibAsyncDecentral.Storage storage s = LibAsyncDecentral.store();
         uint256 len = s.positions.length;
 
         console2.log("TotalAssets(). s.positions.length = ", len);

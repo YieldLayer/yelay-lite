@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IDecentralPool{
+interface IDecentralPool {
     function deposit(uint256 amount) external returns (uint256 tokenId);
 
     function requestYieldWithdrawal(uint256 tokenId) external;
@@ -14,23 +14,12 @@ interface IDecentralPool{
     function getYieldWithdrawalRequest(uint256 tokenId)
         external
         view
-        returns (
-            uint256 amount, 
-            uint256 requestTimestamp, 
-            bool exists, 
-            bool approved
-        );
+        returns (uint256 amount, uint256 requestTimestamp, bool exists, bool approved);
 
     function getPrincipalWithdrawalRequest(uint256 tokenId)
         external
         view
-        returns (
-            uint256 amount,
-            uint256 requestTimestamp,
-            uint256 availableTimestamp,
-            bool exists,
-            bool approved
-        );
+        returns (uint256 amount, uint256 requestTimestamp, uint256 availableTimestamp, bool exists, bool approved);
 
     function stablecoinAddress() external view returns (address);
 

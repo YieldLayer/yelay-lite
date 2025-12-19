@@ -20,7 +20,6 @@ import {ClientsFacet} from "src/facets/ClientsFacet.sol";
 import {OwnerFacet} from "src/facets/OwnerFacet.sol";
 import {DecentralStrategyFacet} from "src/facets/DecentralStrategyFacet.sol";
 
-
 import {SelectorsToFacet} from "src/interfaces/IOwnerFacet.sol";
 import {IFundsFacetBase} from "src/interfaces/IFundsFacetBase.sol";
 import {ISwapper, ExchangeArgs} from "src/interfaces/ISwapper.sol";
@@ -60,12 +59,11 @@ library Utils {
         });
         selectorsToFacets[1] =
             SelectorsToFacet({facet: address(new ManagementFacet()), selectors: managementFacetSelectors()});
-        selectorsToFacets[2] = 
-            SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
+        selectorsToFacets[2] = SelectorsToFacet({facet: address(new AccessFacet()), selectors: _accessFacetSelectors()});
         selectorsToFacets[3] =
             SelectorsToFacet({facet: address(new ClientsFacet()), selectors: clientsFacetSelectors()});
-//        selectorsToFacets[4] = 
-//            SelectorsToFacet({facet: address(new DecentralStrategyFacet()),selectors: decentralStrategySelectors()});
+        //        selectorsToFacets[4] =
+        //            SelectorsToFacet({facet: address(new DecentralStrategyFacet()),selectors: decentralStrategySelectors()});
 
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
 
@@ -87,10 +85,8 @@ library Utils {
 
     function upgradeToDecentralStrategyFacet(IYelayLiteVault yelayLiteVault) internal {
         SelectorsToFacet[] memory selectorsToFacets = new SelectorsToFacet[](1);
-        selectorsToFacets[0] = SelectorsToFacet({
-            facet: address(new DecentralStrategyFacet()),
-            selectors: decentralStrategySelectors()
-        });
+        selectorsToFacets[0] =
+            SelectorsToFacet({facet: address(new DecentralStrategyFacet()), selectors: decentralStrategySelectors()});
         yelayLiteVault.setSelectorToFacets(selectorsToFacets);
     }
 
@@ -222,7 +218,7 @@ library Utils {
         selectors[5] = DecentralStrategyFacet.decentralPositions.selector;
         selectors[6] = DecentralStrategyFacet.totalAssets.selector;
         return selectors;
-    }    
+    }
 
     function addExchange(IYelayLiteVault yelayLiteVault, address exchange) internal {
         ISwapper swapper = ISwapper(yelayLiteVault.swapper());

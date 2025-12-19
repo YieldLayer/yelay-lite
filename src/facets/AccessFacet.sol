@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import {
+    AccessControlEnumerableUpgradeable
+} from "@openzeppelin-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import {
     AccessControlUpgradeable,
     IAccessControl
@@ -54,13 +55,7 @@ contract AccessFacet is AccessControlEnumerableUpgradeable, IAccessFacet {
         return LibPausable._getPausableStorage().selectorToPaused[selector];
     }
 
-        function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
         return this.onERC721Received.selector;
     }
-
 }
