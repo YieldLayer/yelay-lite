@@ -7,7 +7,9 @@ async function main() {
     const [deployer] = await ethers.getSigners();
     const assets = ['USDC', 'WETH'] as const;
     const AUTHORITY = ADDRESSES[43114].OWNER;
-    const OPERATOR = ADDRESSES[43114].OPERATOR;
+    const FUNDS_OPERATORS = ADDRESSES[43114].FUNDS_OPERATORS;
+    const QUEUE_OPERATORS = ADDRESSES[43114].QUEUE_OPERATORS;
+    const SWAP_REWARDS_OPERATOR = ADDRESSES[43114].SWAP_REWARDS_OPERATOR;
     for (const asset of assets) {
         const yelayLiteVault = IYelayLiteVault__factory.connect(contracts.vaults[asset], deployer);
 
@@ -18,10 +20,15 @@ async function main() {
             yelayLiteVault.grantRole.populateTransaction(ROLES.FUNDS_OPERATOR, AUTHORITY),
             yelayLiteVault.grantRole.populateTransaction(ROLES.QUEUES_OPERATOR, AUTHORITY),
 
-            yelayLiteVault.grantRole.populateTransaction(ROLES.FUNDS_OPERATOR, OPERATOR),
-            yelayLiteVault.grantRole.populateTransaction(ROLES.QUEUES_OPERATOR, OPERATOR),
-            yelayLiteVault.grantRole.populateTransaction(ROLES.PAUSER, OPERATOR),
-            yelayLiteVault.grantRole.populateTransaction(ROLES.SWAP_REWARDS_OPERATOR, OPERATOR),
+            ...FUNDS_OPERATORS.flatMap((OPERATOR) => [
+                yelayLiteVault.grantRole.populateTransaction(ROLES.FUNDS_OPERATOR, OPERATOR),
+            ]),
+            ...QUEUE_OPERATORS.flatMap((OPERATOR) => [
+                yelayLiteVault.grantRole.populateTransaction(ROLES.QUEUES_OPERATOR, OPERATOR),
+            ]),
+            ...SWAP_REWARDS_OPERATOR.flatMap((OPERATOR) => [
+                yelayLiteVault.grantRole.populateTransaction(ROLES.SWAP_REWARDS_OPERATOR, OPERATOR),
+            ]),
 
             yelayLiteVault.grantRole.populateTransaction(
                 ROLES.STRATEGY_AUTHORITY,
