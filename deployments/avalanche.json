@@ -7,11 +7,11 @@
         "proxy": "0x20E65eA03a1563Eb95bC7AC25F892D11D7a5D88f",
         "implementation": "0x123db049cc5ee36010f5148000754181ab87b3b3"
     },
-    "ownerFacet": "0xC4f43e85f10Fd6F29BC973c45160DC3f78E80D15",
-    "fundsFacet": "0x53C33DDf45Cd47132e2e639a868AB6c2fE4FDC7E",
+    "ownerFacet": "0xa1A32FC1573B8D0532845c833cF4e8eA205345f1",
+    "fundsFacet": "0x0A09027643d21F35df24f156694A97776d211907",
     "accessFacet": "0x2e988479F14Ff61586F8Fd0F09E8720484Eb6030",
     "managementFacet": "0xf1963B270a167B308040C2a0C0E74D8f912f3ABb",
-    "clientsFacet": "0x1358bFE8CC9ff0f278e93d0e47f5138812998CeD",
+    "clientsFacet": "0xF4a23fC0f9beB15Df3d4e1a44425Ec559f746D4F",
     "vaults": {
         "USDC": "0x90b8695EDCdEfAFA678Df6d819307573f7B1a18C",
         "WETH": "0x500250021a0C72d2Cf86b389b1cb953Cbf626b07"
@@ -22,10 +22,14 @@
     },
     "yieldExtractor": {
         "proxy": "0x98732e2FEb854bAd400D4b5336f4439E7E53fe88",
-        "implementation": "0x9fabdfde140f05c809c983f336f757ffc944d498"
+        "implementation": "0x7Cdd48a57AD24BcE6195234B153b0b8a0ee3974f"
     },
     "depositLockPlugin": {
         "proxy": "0x0872e8391662D4e53D6649c8dE5d4bF581Bd778C",
-        "implementation": "0x119242eebda97066045a6e175e508aaeedbe8b68"
+        "implementation": "0xFFB90D5599892054dDE4B415Fd827908B376DCf8"
+    },
+    "erc4626Plugin": {
+        "factory": "0x0aADeF25ac515c6f9cCAD2afD23fCf90209F7346",
+        "implementation": "0x226239384EB7d78Cdf279BA6Fb458E2A4945E275"
     }
 }

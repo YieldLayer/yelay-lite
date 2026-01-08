@@ -21,20 +21,15 @@ async function main() {
                 ADDRESSES[146].OWNER,
             ),
 
-            // OPERATOR
-            yelayLiteVault.grantRole.populateTransaction(
-                ROLES.FUNDS_OPERATOR,
-                ADDRESSES[146].OPERATOR,
-            ),
-            yelayLiteVault.grantRole.populateTransaction(
-                ROLES.QUEUES_OPERATOR,
-                ADDRESSES[146].OPERATOR,
-            ),
-            yelayLiteVault.grantRole.populateTransaction(ROLES.PAUSER, ADDRESSES[1].OPERATOR),
-            yelayLiteVault.grantRole.populateTransaction(
-                ROLES.SWAP_REWARDS_OPERATOR,
-                ADDRESSES[146].OPERATOR,
-            ),
+            ...ADDRESSES[146].FUNDS_OPERATORS.flatMap((OPERATOR) => [
+                yelayLiteVault.grantRole.populateTransaction(ROLES.FUNDS_OPERATOR, OPERATOR),
+            ]),
+            ...ADDRESSES[146].QUEUE_OPERATORS.flatMap((OPERATOR) => [
+                yelayLiteVault.grantRole.populateTransaction(ROLES.QUEUES_OPERATOR, OPERATOR),
+            ]),
+            ...ADDRESSES[146].SWAP_REWARDS_OPERATOR.flatMap((OPERATOR) => [
+                yelayLiteVault.grantRole.populateTransaction(ROLES.SWAP_REWARDS_OPERATOR, OPERATOR),
+            ]),
 
             // DEPLOYER FOR INITIAL SETUP
             yelayLiteVault.grantRole.populateTransaction(

@@ -7,11 +7,11 @@
         "proxy": "0x0872e8391662D4e53D6649c8dE5d4bF581Bd778C",
         "implementation": "0x119242eebda97066045a6e175e508aaeedbe8b68"
     },
-    "ownerFacet": "0xda1620236ACE35387ce753A081d82868a738e6ae",
-    "fundsFacet": "0xC203718250098584F3DbD84b0AC332D02539ebef",
+    "ownerFacet": "0xB9d537443306cA76738407EE20367F1Edf478857",
+    "fundsFacet": "0x680eb0997BB85Ac6f89a2Aeec9bb9157cFDF0ED1",
     "accessFacet": "0x90b8695EDCdEfAFA678Df6d819307573f7B1a18C",
     "managementFacet": "0x0A09027643d21F35df24f156694A97776d211907",
-    "clientsFacet": "0x1798b36C340DBA0A2bd7BD379dF100af07396e57",
+    "clientsFacet": "0x910607fD3e0D1EF561Ee356c3aDF92b3DFb0CeA8",
     "vaults": {
         "USDCe": "0x56b0c5C989C65e712463278976ED26D6e07592ab",
         "WS": "0x6880bb001417f123f824c573A07a991e0cD00daC",
@@ -23,11 +23,15 @@
     },
     "depositLockPlugin": {
         "proxy": "0x16dB68C86EDFdB60ba733563326ed392B319EB2B",
-        "implementation": "0x5ad91b2f07a5fb7ba13c39940fa16826e9bbd5b9"
+        "implementation": "0xCC44c35C7ba6DcafEdDE59d9dEf8904468aFA619"
     },
     "yieldExtractor": {
         "proxy": "0xB84B621D3da3E5e47A1927883C685455Ad731D7C",
-        "implementation": "0x4D6A89dc55d8bACC0cbC3824BD7e44fa051c3958"
+        "implementation": "0xdd4D9766B931d165E44890D0288A6f2Dd565AdEC"
     },
-    "feeMRegistrationPlugin": "0xF3b5E160898CFd8b89476e77887050aBB377C277"
+    "feeMRegistrationPlugin": "0xF3b5E160898CFd8b89476e77887050aBB377C277",
+    "erc4626Plugin": {
+        "factory": "0x0aADeF25ac515c6f9cCAD2afD23fCf90209F7346",
+        "implementation": "0x0F648F6EAF4AE90Dc8b1Edf54D9aAA9dBe87B9F8"
+    }
 }

@@ -22,7 +22,6 @@ async function main() {
 
         yelayLiteVault.grantRole.populateTransaction(ROLES.FUNDS_OPERATOR, OPERATOR),
         yelayLiteVault.grantRole.populateTransaction(ROLES.QUEUES_OPERATOR, OPERATOR),
-        yelayLiteVault.grantRole.populateTransaction(ROLES.PAUSER, OPERATOR),
         yelayLiteVault.grantRole.populateTransaction(ROLES.SWAP_REWARDS_OPERATOR, OPERATOR),
 
         yelayLiteVault.grantRole.populateTransaction(ROLES.STRATEGY_AUTHORITY, deployer.address),

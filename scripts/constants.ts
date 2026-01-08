@@ -1,11 +1,28 @@
 import { ethers } from 'hardhat';
-import arbContracts from '../deployments/arbitrum.json';
-import avaxContracts from '../deployments/avalanche.json';
+import baseContracts from '../deployments/base-production.json';
+import baseTestContracts from '../deployments/base-testing.json';
+import mainnetContracts from '../deployments/mainnet.json';
+import sonicContracts from '../deployments/sonic.json';
+import arbitrumContracts from '../deployments/arbitrum.json';
+import avalancheContracts from '../deployments/avalanche.json';
 
 export const ADDRESSES = {
     8453: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
+        FUNDS_OPERATORS: [
+            '0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E',
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        QUEUE_OPERATORS: [
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        SWAP_REWARDS_OPERATOR: ['0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E'],
         WETH: '0x4200000000000000000000000000000000000006',
         USDC: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
         CB_BTC: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
@@ -31,14 +48,40 @@ export const ADDRESSES = {
         WETH: '0x50c42deacd8fc9773493ed674b675be577f2634b',
         USDCe: '0x29219dd400f2bf60e5a23d13be72b486d4038894',
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
+        FUNDS_OPERATORS: [
+            '0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E',
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        QUEUE_OPERATORS: [
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        SWAP_REWARDS_OPERATOR: ['0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E'],
         URI: 'https://lite.api.yelay.io/sonic/metadata/{id}',
         AAVE_V3_POOL: '0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3',
         YIELD_PUBLISHER: '0x5F63F86155B5Dd1eb4843a7985776337f9dE6378',
     },
     1: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
+        FUNDS_OPERATORS: [
+            '0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E',
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        QUEUE_OPERATORS: [
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        SWAP_REWARDS_OPERATOR: ['0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E'],
         WETH: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
         USDC: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
         WBTC: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
@@ -65,7 +108,20 @@ export const ADDRESSES = {
     },
     42161: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
+        FUNDS_OPERATORS: [
+            '0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E',
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        QUEUE_OPERATORS: [
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        SWAP_REWARDS_OPERATOR: ['0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E'],
         WETH: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
         USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
         MERKL: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
@@ -77,7 +133,20 @@ export const ADDRESSES = {
     },
     43114: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        OPERATOR: '0xf8081dc0f15E6B6508139237a7E9Ed2480Dc7cdc',
+        FUNDS_OPERATORS: [
+            '0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E',
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        QUEUE_OPERATORS: [
+            '0x225F31863b892dd747D06c1F46DcebFa73907870',
+            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+        ],
+        SWAP_REWARDS_OPERATOR: ['0xB59879c9E3d5925EC1fC596cE2b01887fDb1d77E'],
         WETH: '0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab',
         WAVAX: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7',
         USDC: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
@@ -110,78 +179,109 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
         if (test) {
             return {
                 owner: ADDRESSES[chainId].OWNER,
-                yieldExtractor: ADDRESSES[chainId].OPERATOR,
+                yieldExtractor: baseTestContracts.yieldExtractor.proxy,
                 oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
-                strategyAuthority: [ADDRESSES[chainId].OPERATOR],
-                fundsOperator: [ADDRESSES[chainId].OPERATOR],
-                queueOperator: [ADDRESSES[chainId].OPERATOR],
-                swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
-                pauser: [ADDRESSES[chainId].OPERATOR],
-                unpauser: [ADDRESSES[chainId].OPERATOR],
+                strategyAuthority: [ADDRESSES[chainId].OWNER],
+                fundsOperator: [
+                    ADDRESSES[chainId].OWNER,
+                    '0xbf819b13F3FA2244d16a79482bE60D9F3d26a3C5',
+                    '0x225F31863b892dd747D06c1F46DcebFa73907870',
+                    '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+                    '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+                    '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+                ],
+                queueOperator: [
+                    ADDRESSES[chainId].OWNER,
+                    '0x225F31863b892dd747D06c1F46DcebFa73907870',
+                    '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
+                    '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
+                    '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
+                ],
+                swapRewardsOperator: [
+                    ADDRESSES[chainId].OWNER,
+                    '0xbf819b13F3FA2244d16a79482bE60D9F3d26a3C5',
+                ],
+                pauser: [ADDRESSES[chainId].OWNER],
+                unpauser: [ADDRESSES[chainId].OWNER],
                 yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER_TEST,
             };
         }
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: ADDRESSES[chainId].OWNER,
+            yieldExtractor: baseContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OPERATOR],
-            queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
-            swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
-            pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
+            swapRewardsOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+            ],
+            pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
         };
     } else if (chainId === 1) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: ADDRESSES[chainId].OWNER,
+            yieldExtractor: mainnetContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OPERATOR],
-            queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
-            swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
-            pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
+            swapRewardsOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+            ],
+            pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
         };
     } else if (chainId === 146) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: ADDRESSES[chainId].OWNER,
+            yieldExtractor: sonicContracts.yieldExtractor.proxy,
             oneInchRouter: ethers.ZeroAddress,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OPERATOR],
-            queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
-            swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
-            pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
+            swapRewardsOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+            ],
+            pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
         };
     } else if (chainId === 42161) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: arbContracts.yieldExtractor.proxy,
+            yieldExtractor: arbitrumContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
-            queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
-            swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
-            pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
+            swapRewardsOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+            ],
+            pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
         };
     } else if (chainId === 43114) {
         return {
             owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: avaxContracts.yieldExtractor.proxy,
+            yieldExtractor: avalancheContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
-            queueOperator: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
-            swapRewardsOperator: [ADDRESSES[chainId].OPERATOR],
-            pauser: [ADDRESSES[chainId].OWNER, ADDRESSES[chainId].OPERATOR],
+            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
+            swapRewardsOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+            ],
+            pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
         };
