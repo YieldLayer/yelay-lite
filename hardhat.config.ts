@@ -43,9 +43,21 @@ const config: HardhatUserConfig = {
             url: process.env.AVALANCHE_URL!,
             accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
         },
+        snowtrace: {
+            chainId: 43114,
+            url: 'https://api.avax.network/ext/bc/C/rpc',
+            accounts: [process.env.DEPLOYER_PRIVATE_KEY!],
+        },
     },
     etherscan: {
-        apiKey: process.env.ETHERSCAN_API_KEY!,
+        apiKey: {
+            mainnet: process.env.ETHERSCAN_API_KEY!,
+            base: process.env.ETHERSCAN_API_KEY!,
+            arbitrum: process.env.ETHERSCAN_API_KEY!,
+            avalanche: process.env.ETHERSCAN_API_KEY!,
+            sonic: process.env.ETHERSCAN_API_KEY!,
+            snowtrace: 'snowtrace',
+        },
         customChains: [
             {
                 network: 'sonic',
@@ -53,6 +65,14 @@ const config: HardhatUserConfig = {
                 urls: {
                     apiURL: 'https://api.sonicscan.org/api',
                     browserURL: 'https://sonicscan.org',
+                },
+            },
+            {
+                network: 'snowtrace',
+                chainId: 43114,
+                urls: {
+                    apiURL: 'https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan',
+                    browserURL: 'https://snowtrace.io',
                 },
             },
         ],
