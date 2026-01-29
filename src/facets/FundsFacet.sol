@@ -170,7 +170,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
         uint256 withdrawn;
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
-            uint256 toWithdraw = assets - withdrawn;
+            uint256 toWithdraw = assets.zeroFloorSub(withdrawn);
             if (toWithdraw <= WITHDRAW_MARGIN) break;
             uint256 assetBalance = IStrategyBase(sM.activeStrategies[sM.withdrawQueue[i]].adapter).assetBalance(
                 address(this), sM.activeStrategies[sM.withdrawQueue[i]].supplement
