@@ -12,6 +12,7 @@ import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
+import {ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 
@@ -82,7 +83,7 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
      * @notice Accrues yield by processing a claim request through the yield extractor
      * @param data The claim request data containing yield extraction parameters
      */
-    function accrue(YieldExtractor.ClaimRequest calldata data) external {
+    function accrue(ClaimRequest calldata data) external {
         yieldExtractor.transform(data);
     }
 

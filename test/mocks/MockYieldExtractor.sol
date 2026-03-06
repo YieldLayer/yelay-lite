@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
+import {ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
 
 import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
@@ -15,11 +16,11 @@ contract MockYieldExtractor is ERC1155Holder {
         toClaim = value;
     }
 
-    function claim(YieldExtractor.ClaimRequest[] calldata data) external {
+    function claim(ClaimRequest[] calldata data) external {
         IFundsFacet(data[0].yelayLiteVault).redeem(toClaim, YIELD_PROJECT_ID, msg.sender);
     }
 
-    function transform(YieldExtractor.ClaimRequest calldata data) external {
+    function transform(ClaimRequest calldata data) external {
         IFundsFacet(data.yelayLiteVault).transformYieldShares(data.projectId, toClaim, msg.sender);
     }
 }

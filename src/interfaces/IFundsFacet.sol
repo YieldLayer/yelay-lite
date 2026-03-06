@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
 import {IERC1155MetadataURI} from "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import {Reward} from "./IStrategyBase.sol";
 import {SwapArgs} from "./ISwapper.sol";
@@ -122,6 +123,17 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
      * @param receiver The address that will receive the transformed shares
      */
     function transformYieldShares(uint256 projectId, uint256 shares, address receiver) external;
+
+    /**
+     * @dev Claim yield via transform and redeem in one call.
+     * @param data Claim request.
+     * @param shares Amount of shares to redeem (independent of claim amount).
+     * @param receiver The address of the receiver.
+     * @return assets The amount of assets redeemed.
+     */
+    function claimAndRedeem(ClaimRequest calldata data, uint256 shares, address receiver)
+        external
+        returns (uint256 assets);
 
     /**
      * @notice Converts a given amount of assets to the equivalent amount of shares
