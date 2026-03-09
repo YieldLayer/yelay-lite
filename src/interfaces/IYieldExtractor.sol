@@ -109,9 +109,8 @@ interface IYieldExtractor {
      * @dev Callable only by the vault (data.yelayLiteVault).
      * @param data Claim request.
      * @param user Owner of the shares to transform.
-     * @return toClaim The amount of shares transformed.
      */
-    function transformFor(ClaimRequest calldata data, address user) external returns (uint256 toClaim);
+    function transformFor(ClaimRequest calldata data, address user) external;
 
     /**
      * @dev Verifies a Merkle proof for a given claim request.

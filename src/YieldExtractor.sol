@@ -150,10 +150,10 @@ contract YieldExtractor is
     }
 
     /// @inheritdoc IYieldExtractor
-    function transformFor(ClaimRequest calldata data, address user) external whenNotPaused returns (uint256 toClaim) {
+    function transformFor(ClaimRequest calldata data, address user) external whenNotPaused {
         require(msg.sender == data.yelayLiteVault, LibErrors.OnlyYelayLiteVault());
 
-        toClaim = _processClaimRequest(data, 0, user);
+        uint256 toClaim = _processClaimRequest(data, 0, user);
 
         IFundsFacet(data.yelayLiteVault).transformYieldShares(data.projectId, toClaim, user);
 
