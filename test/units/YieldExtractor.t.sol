@@ -15,7 +15,7 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
-import {ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
+import {ClaimRequest, Root} from "src/interfaces/IYieldExtractor.sol";
 import {MockToken} from "test/mocks/MockToken.sol";
 import {Utils} from "test/Utils.sol";
 
@@ -138,7 +138,7 @@ contract YieldExtractorTest is Test {
         uint256 cycleBefore = yieldExtractor.cycleCount(address(mockVault0));
 
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root = Root({hash: treeRoot0, blockNumber: block.number});
         vm.expectEmit(true, true, true, true);
         emit LibEvents.PoolRootAdded(address(mockVault0), cycleBefore + 1, root.hash, root.blockNumber);
         yieldExtractor.addTreeRoot(root, address(mockVault0));
@@ -154,7 +154,7 @@ contract YieldExtractorTest is Test {
         uint256 cycleVault1 = yieldExtractor.cycleCount(address(mockVault1));
 
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root = Root({hash: treeRoot0, blockNumber: block.number});
         vm.expectEmit(true, true, true, true);
         emit LibEvents.PoolRootAdded(address(mockVault0), cycleVault0 + 1, root.hash, root.blockNumber);
         yieldExtractor.addTreeRoot(root, address(mockVault0));
@@ -166,7 +166,7 @@ contract YieldExtractorTest is Test {
         assertEq(getTreeRoot(cycleVault1, address(mockVault1)), treeRootZero);
 
         vm.startPrank(yieldPublisher);
-        root = YieldExtractor.Root({hash: treeRoot2, blockNumber: block.number});
+        root = Root({hash: treeRoot2, blockNumber: block.number});
         vm.expectEmit(true, true, true, true);
         emit LibEvents.PoolRootAdded(address(mockVault1), cycleVault1 + 1, root.hash, root.blockNumber);
         yieldExtractor.addTreeRoot(root, address(mockVault1));
@@ -185,22 +185,22 @@ contract YieldExtractorTest is Test {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), LibRoles.YIELD_PUBLISHER
             )
         );
-        YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root, address(mockVault0));
     }
 
     function test_updateRoot_success() public {
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
-        YieldExtractor.Root memory root2 = YieldExtractor.Root({hash: treeRoot2, blockNumber: block.number});
+        Root memory root2 = Root({hash: treeRoot2, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root2, address(mockVault1));
         vm.stopPrank();
 
         uint256 cycle = yieldExtractor.cycleCount(address(mockVault0));
 
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root1 = YieldExtractor.Root({hash: treeRoot1, blockNumber: block.number});
+        Root memory root1 = Root({hash: treeRoot1, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root1, address(mockVault0));
         vm.stopPrank();
 
@@ -228,7 +228,7 @@ contract YieldExtractorTest is Test {
 
     function test_updateRoot_revertInvalidCycle() public {
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
 
         vm.expectRevert(abi.encodeWithSelector(LibErrors.InvalidCycle.selector));
@@ -248,7 +248,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertTrue(yieldExtractor.verify(data, user));
@@ -266,7 +266,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
@@ -285,7 +285,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
@@ -303,7 +303,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
 
         // Added to different vault
         yieldExtractor.addTreeRoot(root0, address(mockVault1));
@@ -323,7 +323,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         // Using a different user than user
@@ -342,7 +342,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
@@ -360,7 +360,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
@@ -378,7 +378,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
@@ -408,7 +408,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
@@ -432,7 +432,7 @@ contract YieldExtractorTest is Test {
 
         // Do cycle 1 - user has 5 shares to claim
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         proof[0] = proof0;
@@ -452,7 +452,7 @@ contract YieldExtractorTest is Test {
 
         // Do cycle 2 - user has another .01 shares to claim, for a total of 5.01
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root1 = YieldExtractor.Root({hash: treeRoot1, blockNumber: block.number});
+        Root memory root1 = Root({hash: treeRoot1, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root1, address(mockVault0));
         vm.stopPrank();
         proof[0] = proof1;
@@ -493,9 +493,9 @@ contract YieldExtractorTest is Test {
         });
 
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
-        YieldExtractor.Root memory root1 = YieldExtractor.Root({hash: treeRoot2, blockNumber: block.number});
+        Root memory root1 = Root({hash: treeRoot2, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root1, address(mockVault1));
         vm.stopPrank();
 
@@ -535,7 +535,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
@@ -562,7 +562,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
@@ -660,7 +660,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 

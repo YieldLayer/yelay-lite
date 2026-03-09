@@ -15,7 +15,7 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
-import {IYieldExtractor, ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
+import {IYieldExtractor, ClaimRequest, Root} from "src/interfaces/IYieldExtractor.sol";
 
 /**
  * @title YieldExtractor
@@ -46,16 +46,6 @@ contract YieldExtractor is
     using SafeERC20 for IERC20;
 
     uint256 constant YIELD_PROJECT_ID = 0;
-
-    /**
-     * @notice Merkle tree root data structure
-     * @param hash Merkle root hash
-     * @param blockNumber Block number at which yield share values were calculated
-     */
-    struct Root {
-        bytes32 hash;
-        uint256 blockNumber;
-    }
 
     /**
      * @notice Current cycle count for yield distributions per vault
@@ -108,25 +98,17 @@ contract YieldExtractor is
         return super.supportsInterface(interfaceId);
     }
 
-    /**
-     * @notice Pause claiming
-     */
+    /// @inheritdoc IYieldExtractor
     function pause() external onlyRole(LibRoles.PAUSER) {
         _pause();
     }
 
-    /**
-     * @notice Unpause claiming
-     */
+    /// @inheritdoc IYieldExtractor
     function unpause() external onlyRole(LibRoles.UNPAUSER) {
         _unpause();
     }
 
-    /**
-     * @notice Add a Merkle tree root for a new cycle for a given vault
-     * @param root Root to add
-     * @param yelayLiteVault Address of the vault
-     */
+    /// @inheritdoc IYieldExtractor
     function addTreeRoot(Root memory root, address yelayLiteVault) external onlyRole(LibRoles.YIELD_PUBLISHER) {
         cycleCount[yelayLiteVault]++;
         roots[yelayLiteVault][cycleCount[yelayLiteVault]] = root;
@@ -134,12 +116,7 @@ contract YieldExtractor is
         emit LibEvents.PoolRootAdded(yelayLiteVault, cycleCount[yelayLiteVault], root.hash, root.blockNumber);
     }
 
-    /**
-     * @notice Update existing root for a given cycle for a given vault
-     * @param root New root
-     * @param cycle Cycle to update
-     * @param yelayLiteVault Address of the vault
-     */
+    /// @inheritdoc IYieldExtractor
     function updateTreeRoot(Root memory root, uint256 cycle, address yelayLiteVault)
         external
         onlyRole(LibRoles.YIELD_PUBLISHER)
@@ -152,10 +129,7 @@ contract YieldExtractor is
         emit LibEvents.PoolRootUpdated(yelayLiteVault, cycle, previousRoot.hash, root.hash, root.blockNumber);
     }
 
-    /**
-     * @notice Claim incentives by submitting a Merkle proof
-     * @param data Array of claim requests
-     */
+    /// @inheritdoc IYieldExtractor
     function claim(ClaimRequest[] calldata data) external whenNotPaused {
         for (uint256 i; i < data.length; ++i) {
             uint256 toClaim = _processClaimRequest(data[i], i, msg.sender);
@@ -166,10 +140,7 @@ contract YieldExtractor is
         }
     }
 
-    /**
-     * @notice Transform incentives to projectId shares by submitting a Merkle proof
-     * @param data Claim request
-     */
+    /// @inheritdoc IYieldExtractor
     function transform(ClaimRequest calldata data) external whenNotPaused {
         uint256 toClaim = _processClaimRequest(data, 0, msg.sender);
 
@@ -178,13 +149,7 @@ contract YieldExtractor is
         emit LibEvents.YieldTransformed(msg.sender, data.yelayLiteVault, data.projectId, data.cycle, toClaim);
     }
 
-    /**
-     * @notice Transform yield shares to project shares on behalf of a user
-     * @dev Callable only by the vault (data.yelayLiteVault)
-     * @param data Claim request
-     * @param user Owner of the shares to transform
-     * @return toClaim The amount of shares transformed
-     */
+    /// @inheritdoc IYieldExtractor
     function transformFor(ClaimRequest calldata data, address user) external whenNotPaused returns (uint256 toClaim) {
         require(msg.sender == data.yelayLiteVault, LibErrors.OnlyYelayLiteVault());
 
@@ -210,11 +175,7 @@ contract YieldExtractor is
         isLeafClaimed[leaf] = true;
     }
 
-    /**
-     * @notice Verify a Merkle proof for given claim request
-     * @param data Claim request to verify
-     * @param user User address for claim request
-     */
+    /// @inheritdoc IYieldExtractor
     function verify(ClaimRequest memory data, address user) external view returns (bool) {
         return _verify(data, _getLeaf(data, user));
     }
