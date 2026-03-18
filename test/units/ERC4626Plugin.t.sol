@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import {ERC4626Upgradeable} from "@openzeppelin-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
@@ -61,6 +62,7 @@ contract ERC4626PluginTest is Test {
 
         yelayLiteVault.grantRole(LibRoles.QUEUES_OPERATOR, address(this));
         yelayLiteVault.grantRole(LibRoles.STRATEGY_AUTHORITY, address(this));
+        yelayLiteVault.grantRole(LibRoles.ERC4626_ACCRUE_OPERATOR, address(this));
 
         StrategyData memory strategy = StrategyData({adapter: address(mockStrategy), supplement: "", name: ""});
         yelayLiteVault.addStrategy(strategy);
@@ -585,6 +587,35 @@ contract ERC4626PluginTest is Test {
         assertEq(user2Burnt, user2Shares, "User2 burnt");
         assertEq(user2MaxWithdraw, toDeposit, "User2 withdrawn");
         vm.stopPrank();
+    }
+
+    function test_accrue_revertsWhenCallerLacksRole() external {
+        address stranger = makeAddr("stranger");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, LibRoles.ERC4626_ACCRUE_OPERATOR
+            )
+        );
+        vm.prank(stranger);
+        erc4626Plugin.accrue(YieldExtractor.ClaimRequest(address(yelayLiteVault), PROJECT_ID, 0, 0, new bytes32[](0)));
+    }
+
+    function test_accrue_succeedsWhenCallerHasRole() external {
+        address operator = makeAddr("accrueOperator");
+        yelayLiteVault.grantRole(LibRoles.ERC4626_ACCRUE_OPERATOR, operator);
+
+        vm.prank(user1);
+        erc4626Plugin.deposit(toDeposit, user1);
+
+        uint256 pluginShares = yelayLiteVault.totalSupply(PROJECT_ID);
+        uint256 yieldShares = yelayLiteVault.balanceOf(address(yieldExtractor), 0);
+        uint256 toClaim = yieldShares / 4;
+        yieldExtractor.setToClaim(toClaim);
+
+        vm.prank(operator);
+        erc4626Plugin.accrue(YieldExtractor.ClaimRequest(address(yelayLiteVault), PROJECT_ID, 0, 0, new bytes32[](0)));
+
+        assertEq(yelayLiteVault.totalSupply(PROJECT_ID), pluginShares + toClaim);
     }
 
     function test_accrue() external {

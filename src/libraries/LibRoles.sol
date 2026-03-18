@@ -25,4 +25,7 @@ library LibRoles {
 
     // 0xe1e438f510a6787349796e72348290fc4309699b8925cfe7df77feeaca3b7020
     bytes32 constant YIELD_PUBLISHER = keccak256("YIELD_PUBLISHER");
+
+    // 0xaa792cee953120e0a59b0d50300f15068d6465c1f24402b68efb2681c9a11f02 — granted per ERC4626Plugin, not on vault
+    bytes32 constant ERC4626_ACCRUE_OPERATOR = keccak256("ERC4626_ACCRUE_OPERATOR");
 }
