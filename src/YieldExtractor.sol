@@ -169,7 +169,7 @@ contract YieldExtractor is
         require(_verify(data, leaf), LibErrors.InvalidProof(index));
 
         isLeafClaimed[leaf] = true;
-        
+
         uint256 alreadyClaimed = yieldSharesClaimed[user][data.yelayLiteVault][data.projectId];
         toClaim = data.yieldSharesTotal - alreadyClaimed;
 
