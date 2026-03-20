@@ -72,7 +72,7 @@ library Utils {
     }
 
     function fundsFacetSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](30);
+        bytes4[] memory selectors = new bytes4[](31);
         selectors[0] = bytes4(keccak256("totalSupply()"));
         selectors[1] = bytes4(keccak256("totalSupply(uint256)"));
         selectors[2] = FundsFacet.lastTotalAssets.selector;
@@ -88,21 +88,22 @@ library Utils {
         selectors[12] = FundsFacet.deposit.selector;
         selectors[13] = FundsFacet.redeem.selector;
         selectors[14] = FundsFacet.migratePosition.selector;
-        selectors[15] = FundsFacet.managedDeposit.selector;
-        selectors[16] = FundsFacet.managedWithdraw.selector;
-        selectors[17] = FundsFacet.reallocate.selector;
-        selectors[18] = FundsFacet.swapRewards.selector;
-        selectors[19] = FundsFacet.compoundUnderlyingReward.selector;
-        selectors[20] = FundsFacet.accrueFee.selector;
-        selectors[21] = FundsFacet.claimStrategyRewards.selector;
-        selectors[22] = FundsFacet.claimMerklRewards.selector;
-        selectors[23] = ERC1155Upgradeable.balanceOf.selector;
-        selectors[24] = ERC1155Upgradeable.uri.selector;
-        selectors[25] = FundsFacet.transformYieldShares.selector;
-        selectors[26] = FundsFacet.convertToShares.selector;
-        selectors[27] = FundsFacet.convertToAssets.selector;
-        selectors[28] = FundsFacet.previewRedeem.selector;
-        selectors[29] = FundsFacet.previewWithdraw.selector;
+        selectors[15] = FundsFacet.claimAndRedeem.selector;
+        selectors[16] = FundsFacet.managedDeposit.selector;
+        selectors[17] = FundsFacet.managedWithdraw.selector;
+        selectors[18] = FundsFacet.reallocate.selector;
+        selectors[19] = FundsFacet.swapRewards.selector;
+        selectors[20] = FundsFacet.compoundUnderlyingReward.selector;
+        selectors[21] = FundsFacet.accrueFee.selector;
+        selectors[22] = FundsFacet.claimStrategyRewards.selector;
+        selectors[23] = FundsFacet.claimMerklRewards.selector;
+        selectors[24] = ERC1155Upgradeable.balanceOf.selector;
+        selectors[25] = ERC1155Upgradeable.uri.selector;
+        selectors[26] = FundsFacet.transformYieldShares.selector;
+        selectors[27] = FundsFacet.convertToShares.selector;
+        selectors[28] = FundsFacet.convertToAssets.selector;
+        selectors[29] = FundsFacet.previewRedeem.selector;
+        selectors[30] = FundsFacet.previewWithdraw.selector;
         return selectors;
     }
 

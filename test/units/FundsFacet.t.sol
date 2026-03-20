@@ -12,6 +12,7 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 
 import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
+import {ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
 
 import {MockStrategy, MockProtocol} from "test/mocks/MockStrategy.sol";
 import {MockYieldExtractor} from "test/mocks/MockYieldExtractor.sol";
@@ -216,6 +217,163 @@ contract FundsFacetTest is Test {
         vm.prank(address(yieldExtractor));
         vm.expectRevert(abi.encodeWithSelector(LibErrors.PositionMigrationForbidden.selector));
         yelayLiteVault.transformYieldShares(100500, 100, user);
+    }
+
+    // ========== Tests for claimAndRedeem ==========
+
+    function _claimRedeemYieldSetup()
+        internal
+        returns (uint256 userShares_, uint256 yieldShares_, uint256 yieldAmount_, uint256 toDeposit_)
+    {
+        _addStrategy();
+        toDeposit_ = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+        vm.prank(user);
+        userShares_ = yelayLiteVault.deposit(toDeposit_, projectId, user);
+        yieldAmount_ = toDeposit_ * 2 / 10;
+        deal(address(underlyingAsset), address(mockProtocol), yieldAmount_);
+        mockProtocol.setAssetBalance(address(yelayLiteVault), toDeposit_ + yieldAmount_);
+        yelayLiteVault.accrueFee();
+        yieldShares_ = yelayLiteVault.balanceOf(address(yieldExtractor), 0);
+        assertGt(yieldShares_, 0);
+    }
+
+    function test_claimAndRedeem_success() external {
+        (uint256 userShares, uint256 yieldShares, uint256 yieldAmount, uint256 toDeposit) = _claimRedeemYieldSetup();
+        uint256 toClaim = yieldShares;
+        yieldExtractor.setToClaim(toClaim);
+
+        address receiver = user2;
+        uint256 sharesToRedeem = yieldShares;
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(yelayLiteVault),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldShares,
+            proof: new bytes32[](0)
+        });
+
+        uint256 receiverBalanceBefore = underlyingAsset.balanceOf(receiver);
+        uint256 totalSupplyBefore = yelayLiteVault.totalSupply();
+        uint256 expectedRedeemAssets = yelayLiteVault.convertToAssets(sharesToRedeem);
+
+        assertEq(yelayLiteVault.totalAssets(), toDeposit + yieldAmount);
+
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.claimAndRedeem(data, sharesToRedeem, receiver);
+
+        assertEq(assets, expectedRedeemAssets);
+
+        // claimed: yield shares removed from extractor = toClaim (MockYieldExtractor.toClaim)
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), yieldShares - toClaim);
+        // redeemed: burnt shares = shares passed into claimAndRedeem
+        assertEq(yelayLiteVault.totalSupply(), totalSupplyBefore - sharesToRedeem);
+
+        assertEq(underlyingAsset.balanceOf(receiver), receiverBalanceBefore + assets);
+        assertEq(yelayLiteVault.balanceOf(user, projectId), userShares);
+        assertEq(yelayLiteVault.balanceOf(user, 0), 0);
+    }
+
+    /// @dev Claim (transform) moves full yield shares to user; redeem burns only part — leftover stays on projectId.
+    function test_claimAndRedeem_claimedGreaterThanRedeemed() external {
+        (uint256 userShares, uint256 yieldShares, uint256 yieldAmount, uint256 toDeposit) = _claimRedeemYieldSetup();
+        uint256 toClaim = yieldShares;
+        yieldExtractor.setToClaim(toClaim);
+        uint256 sharesToRedeem = yieldShares / 2;
+        assertGt(sharesToRedeem, 0);
+
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(yelayLiteVault),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldShares,
+            proof: new bytes32[](0)
+        });
+
+        uint256 totalSupplyBefore = yelayLiteVault.totalSupply();
+        uint256 expectedRedeemAssets = yelayLiteVault.convertToAssets(sharesToRedeem);
+        assertEq(yelayLiteVault.totalAssets(), toDeposit + yieldAmount);
+
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.claimAndRedeem(data, sharesToRedeem, user);
+
+        assertEq(assets, expectedRedeemAssets);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), yieldShares - toClaim);
+        assertEq(yelayLiteVault.totalSupply(), totalSupplyBefore - sharesToRedeem);
+        assertEq(yelayLiteVault.balanceOf(user, projectId), userShares + toClaim - sharesToRedeem);
+        assertEq(yelayLiteVault.balanceOf(user, 0), 0);
+    }
+
+    /// @dev Redeem burns more shares than transform minted — difference is taken from the user's prior deposit.
+    function test_claimAndRedeem_redeemedGreaterThanClaimed() external {
+        (uint256 userShares, uint256 yieldShares, uint256 yieldAmount, uint256 toDeposit) = _claimRedeemYieldSetup();
+        uint256 toClaim = yieldShares / 2;
+        yieldExtractor.setToClaim(toClaim);
+        uint256 sharesToRedeem = yieldShares;
+        assertGt(toClaim, 0);
+        assertGt(sharesToRedeem, toClaim);
+        assertGe(userShares + toClaim, sharesToRedeem);
+
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(yelayLiteVault),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldShares,
+            proof: new bytes32[](0)
+        });
+
+        uint256 totalSupplyBefore = yelayLiteVault.totalSupply();
+        uint256 expectedRedeemAssets = yelayLiteVault.convertToAssets(sharesToRedeem);
+        assertEq(yelayLiteVault.totalAssets(), toDeposit + yieldAmount);
+
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.claimAndRedeem(data, sharesToRedeem, user);
+
+        assertEq(assets, expectedRedeemAssets);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), yieldShares - toClaim);
+        assertEq(yelayLiteVault.totalSupply(), totalSupplyBefore - sharesToRedeem);
+        assertEq(yelayLiteVault.balanceOf(user, projectId), userShares + toClaim - sharesToRedeem);
+        assertEq(yelayLiteVault.balanceOf(user, 0), 0);
+    }
+
+    /// @dev Cannot redeem more shares on projectId than deposit + claimed amount.
+    function test_claimAndRedeem_revertsWhenRedeemExceedsDepositPlusClaimed() external {
+        (uint256 userShares, uint256 yieldShares,,) = _claimRedeemYieldSetup();
+        uint256 toClaim = yieldShares;
+        yieldExtractor.setToClaim(toClaim);
+        uint256 sharesToRedeem = userShares + toClaim + 1;
+
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(yelayLiteVault),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldShares,
+            proof: new bytes32[](0)
+        });
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.NotEnoughInternalFunds.selector));
+        yelayLiteVault.claimAndRedeem(data, sharesToRedeem, user);
+    }
+
+    function test_claimAndRedeem_invalidVault() external {
+        _addStrategy();
+        uint256 userBalance = 10_000e18;
+        deal(address(underlyingAsset), user, userBalance);
+        vm.prank(user);
+        yelayLiteVault.deposit(1000e18, projectId, user);
+
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(0xdead),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: 100,
+            proof: new bytes32[](0)
+        });
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.InvalidClaimVault.selector));
+        yelayLiteVault.claimAndRedeem(data, 100, user);
     }
 
     // ========== Tests for convertToShares / convertToAssets ==========

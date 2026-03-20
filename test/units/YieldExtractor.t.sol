@@ -426,6 +426,56 @@ contract YieldExtractorTest is Test {
         assertEq(userSharesBefore + yieldTotal0, userSharesAfter);
     }
 
+    function test_transformFor_success() public {
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = proof0;
+
+        uint256 yieldSharesBefore = mockVault0.totalSupply(0);
+        uint256 sharesBefore = mockVault0.totalSupply(projectId);
+        uint256 userSharesBefore = mockVault0.balanceOf(user, projectId);
+
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(mockVault0),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldTotal0,
+            proof: proof
+        });
+        vm.startPrank(yieldPublisher);
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0, address(mockVault0));
+        vm.stopPrank();
+
+        vm.prank(address(mockVault0));
+        vm.expectEmit(true, true, true, true);
+        emit LibEvents.YieldTransformed(user, data.yelayLiteVault, data.projectId, data.cycle, data.yieldSharesTotal);
+        yieldExtractor.transformFor(data, user);
+
+        assertEq(mockVault0.totalSupply(0), yieldSharesBefore - yieldTotal0);
+        assertEq(mockVault0.totalSupply(projectId), sharesBefore + yieldTotal0);
+        assertEq(mockVault0.balanceOf(user, projectId), userSharesBefore + yieldTotal0);
+    }
+
+    function test_transformFor_onlyVaultCanCall() public {
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = proof0;
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(mockVault0),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldTotal0,
+            proof: proof
+        });
+        vm.startPrank(yieldPublisher);
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0, address(mockVault0));
+        vm.stopPrank();
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.OnlyYelayLiteVault.selector));
+        yieldExtractor.transformFor(data, user);
+    }
+
     function test_claim_twoCycles() public {
         bytes32[] memory proof = new bytes32[](1);
         ClaimRequest[] memory payload = new ClaimRequest[](1);
