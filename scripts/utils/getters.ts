@@ -38,6 +38,7 @@ export const getFundsFacetSelectors = () => {
         'strategyRewards',
         'deposit',
         'redeem',
+        'claimAndRedeem',
         'migratePosition',
         'managedDeposit',
         'managedWithdraw',
