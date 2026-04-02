@@ -299,4 +299,5 @@ export const ROLES = {
     SWAP_REWARDS_OPERATOR: ethers.id('SWAP_REWARDS_OPERATOR'),
     PAUSER: ethers.id('PAUSER'),
     UNPAUSER: ethers.id('UNPAUSER'),
+    YIELD_PUBLISHER: ethers.id('YIELD_PUBLISHER'),
 };

@@ -15,6 +15,7 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
+import {IYieldExtractor, ClaimRequest, Root} from "src/interfaces/IYieldExtractor.sol";
 
 /**
  * @title YieldExtractor
@@ -36,6 +37,7 @@ import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
  * - Upgradeable contract design
  */
 contract YieldExtractor is
+    IYieldExtractor,
     PausableUpgradeable,
     ERC1155HolderUpgradeable,
     AccessControlDefaultAdminRulesUpgradeable,
@@ -44,32 +46,6 @@ contract YieldExtractor is
     using SafeERC20 for IERC20;
 
     uint256 constant YIELD_PROJECT_ID = 0;
-
-    /**
-     * @notice Request data structure for claiming yield
-     * @param yelayLiteVault Address of the YelayLite vault contract
-     * @param projectId ID of the project in the vault
-     * @param cycle Yield cycle number
-     * @param yieldSharesTotal Total amount of yield shares to be claimed
-     * @param proof Merkle proof array for verification
-     */
-    struct ClaimRequest {
-        address yelayLiteVault;
-        uint256 projectId;
-        uint256 cycle;
-        uint256 yieldSharesTotal;
-        bytes32[] proof;
-    }
-
-    /**
-     * @notice Merkle tree root data structure
-     * @param hash Merkle root hash
-     * @param blockNumber Block number at which yield share values were calculated
-     */
-    struct Root {
-        bytes32 hash;
-        uint256 blockNumber;
-    }
 
     /**
      * @notice Current cycle count for yield distributions per vault
@@ -122,25 +98,17 @@ contract YieldExtractor is
         return super.supportsInterface(interfaceId);
     }
 
-    /**
-     * @notice Pause claiming
-     */
+    /// @inheritdoc IYieldExtractor
     function pause() external onlyRole(LibRoles.PAUSER) {
         _pause();
     }
 
-    /**
-     * @notice Unpause claiming
-     */
+    /// @inheritdoc IYieldExtractor
     function unpause() external onlyRole(LibRoles.UNPAUSER) {
         _unpause();
     }
 
-    /**
-     * @notice Add a Merkle tree root for a new cycle for a given vault
-     * @param root Root to add
-     * @param yelayLiteVault Address of the vault
-     */
+    /// @inheritdoc IYieldExtractor
     function addTreeRoot(Root memory root, address yelayLiteVault) external onlyRole(LibRoles.YIELD_PUBLISHER) {
         cycleCount[yelayLiteVault]++;
         roots[yelayLiteVault][cycleCount[yelayLiteVault]] = root;
@@ -148,12 +116,7 @@ contract YieldExtractor is
         emit LibEvents.PoolRootAdded(yelayLiteVault, cycleCount[yelayLiteVault], root.hash, root.blockNumber);
     }
 
-    /**
-     * @notice Update existing root for a given cycle for a given vault
-     * @param root New root
-     * @param cycle Cycle to update
-     * @param yelayLiteVault Address of the vault
-     */
+    /// @inheritdoc IYieldExtractor
     function updateTreeRoot(Root memory root, uint256 cycle, address yelayLiteVault)
         external
         onlyRole(LibRoles.YIELD_PUBLISHER)
@@ -166,13 +129,10 @@ contract YieldExtractor is
         emit LibEvents.PoolRootUpdated(yelayLiteVault, cycle, previousRoot.hash, root.hash, root.blockNumber);
     }
 
-    /**
-     * @notice Claim incentives by submitting a Merkle proof
-     * @param data Array of claim requests
-     */
+    /// @inheritdoc IYieldExtractor
     function claim(ClaimRequest[] calldata data) external whenNotPaused {
         for (uint256 i; i < data.length; ++i) {
-            uint256 toClaim = _processClaimRequest(data[i], i);
+            uint256 toClaim = _processClaimRequest(data[i], i, msg.sender);
 
             IFundsFacet(data[i].yelayLiteVault).redeem(toClaim, YIELD_PROJECT_ID, msg.sender);
 
@@ -180,35 +140,43 @@ contract YieldExtractor is
         }
     }
 
-    /**
-     * @notice Transform incentives to projectId shares by submitting a Merkle proof
-     * @param data Claim request
-     */
+    /// @inheritdoc IYieldExtractor
     function transform(ClaimRequest calldata data) external whenNotPaused {
-        uint256 toClaim = _processClaimRequest(data, 0);
+        uint256 toClaim = _processClaimRequest(data, 0, msg.sender);
 
         IFundsFacet(data.yelayLiteVault).transformYieldShares(data.projectId, toClaim, msg.sender);
 
         emit LibEvents.YieldTransformed(msg.sender, data.yelayLiteVault, data.projectId, data.cycle, toClaim);
     }
 
-    function _processClaimRequest(ClaimRequest memory data, uint256 index) internal returns (uint256 toClaim) {
-        bytes32 leaf = _getLeaf(data, msg.sender);
+    /// @inheritdoc IYieldExtractor
+    function transformFor(ClaimRequest calldata data, address user) external whenNotPaused {
+        require(msg.sender == data.yelayLiteVault, LibErrors.OnlyYelayLiteVault());
+
+        uint256 toClaim = _processClaimRequest(data, 0, user);
+
+        IFundsFacet(data.yelayLiteVault).transformYieldShares(data.projectId, toClaim, user);
+
+        emit LibEvents.YieldTransformed(user, data.yelayLiteVault, data.projectId, data.cycle, toClaim);
+    }
+
+    function _processClaimRequest(ClaimRequest memory data, uint256 index, address user)
+        internal
+        returns (uint256 toClaim)
+    {
+        bytes32 leaf = _getLeaf(data, user);
         require(!isLeafClaimed[leaf], LibErrors.ProofAlreadyClaimed(index));
         require(_verify(data, leaf), LibErrors.InvalidProof(index));
 
         isLeafClaimed[leaf] = true;
 
-        uint256 alreadyClaimed = yieldSharesClaimed[msg.sender][data.yelayLiteVault][data.projectId];
+        uint256 alreadyClaimed = yieldSharesClaimed[user][data.yelayLiteVault][data.projectId];
         toClaim = data.yieldSharesTotal - alreadyClaimed;
-        yieldSharesClaimed[msg.sender][data.yelayLiteVault][data.projectId] = data.yieldSharesTotal;
+
+        yieldSharesClaimed[user][data.yelayLiteVault][data.projectId] = data.yieldSharesTotal;
     }
 
-    /**
-     * @notice Verify a Merkle proof for given claim request
-     * @param data Claim request to verify
-     * @param user User address for claim request
-     */
+    /// @inheritdoc IYieldExtractor
     function verify(ClaimRequest memory data, address user) external view returns (bool) {
         return _verify(data, _getLeaf(data, user));
     }

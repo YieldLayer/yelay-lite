@@ -9,6 +9,7 @@ import {
     Swapper__factory,
     VaultWrapper,
     VaultWrapper__factory,
+    YieldExtractor__factory,
 } from '../../typechain-types';
 import { ExpectedAddresses, IMPLEMENTATION_STORAGE_SLOT, ROLES } from '../constants';
 import { warning } from './common';
@@ -67,6 +68,7 @@ export const checkSetup = async (
     {
         owner,
         yieldExtractor,
+        yieldPublisher,
         oneInchRouter,
         strategyAuthority,
         fundsOperator,
@@ -113,6 +115,25 @@ export const checkSetup = async (
                 );
             }
         });
+
+    await checkImplementation(
+        provider,
+        contracts.yieldExtractor.proxy,
+        contracts.yieldExtractor.implementation,
+    );
+    const yieldExtractorContract = YieldExtractor__factory.connect(
+        contracts.yieldExtractor.proxy,
+        provider,
+    );
+    const hasYieldPublisher = await yieldExtractorContract.hasRole(
+        ROLES.YIELD_PUBLISHER,
+        yieldPublisher,
+    );
+    if (!hasYieldPublisher) {
+        warning(
+            `YieldExtractor: expected address ${yieldPublisher} to have YIELD_PUBLISHER (AccessControl is not enumerable on this contract).`,
+        );
+    }
 
     await checkImplementation(provider, contracts.swapper.proxy, contracts.swapper.implementation);
 
@@ -170,7 +191,7 @@ export const checkSetup = async (
         });
         await yelayLiteVault.yieldExtractor().then((r) => {
             if (r.toLowerCase() !== yieldExtractor.toLowerCase()) {
-                warning(`YieldExtractor mismatch. Expected: ${owner}. Actual: ${r}`);
+                warning(`YieldExtractor mismatch. Expected: ${yieldExtractor}. Actual: ${r}`);
             }
         });
 

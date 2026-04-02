@@ -8,7 +8,7 @@
         "implementation": "0x28b905d160dacdc93160de62f01bb8f146f93d9d"
     },
     "ownerFacet": "0xdAB8e9B1976C724027BE339848811615279Dae4c",
-    "fundsFacet": "0xc40C2059e9Dc43fef251Cde69D63425441b733f6",
+    "fundsFacet": "0xe67DE5E147884C4484f9D1fe3BD6e0C50149b8fb",
     "accessFacet": "0x5982506084271f49c48E809dB1893312D4915490",
     "managementFacet": "0xF4a23fC0f9beB15Df3d4e1a44425Ec559f746D4F",
     "clientsFacet": "0x19808E4fc707B0D17b7Ac91177537A7F8d6CDB5d",
@@ -27,7 +27,7 @@
     },
     "yieldExtractor": {
         "proxy": "0xF3b5E160898CFd8b89476e77887050aBB377C277",
-        "implementation": "0xE8671aF5617b520dEB8Cc630A9D4a7745817D62D"
+        "implementation": "0x1857d8Ca0F82C7Df18F1ca6576687Cb4cebeB8F0"
     },
     "erc4626Plugin": {
         "factory": "0xaFb394CA38baAc51cd6d2Ca9A54F71AF40a6220b",

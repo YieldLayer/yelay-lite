@@ -8,7 +8,7 @@
         "implementation": "0x24ae0218d9e33b27bbb8ad7c55b2be5a1083f14d"
     },
     "ownerFacet": "0x0A09027643d21F35df24f156694A97776d211907",
-    "fundsFacet": "0x1798b36C340DBA0A2bd7BD379dF100af07396e57",
+    "fundsFacet": "0xbA8911d42d27a281a27c301b3284167aC950Ad37",
     "accessFacet": "0xA7B78cB41B0923D41f002CCF32B95F00Be2c6f73",
     "managementFacet": "0xF9ED32A3B0E92ba991B60945744eFf95C7D5b421",
     "clientsFacet": "0x94cec01bCed84022c91Cd5bf4f424A5CC781deE3",
@@ -23,7 +23,7 @@
     },
     "yieldExtractor": {
         "proxy": "0x79b7e90F1BAe837362DBD2c83Bd0715c2De5E47f",
-        "implementation": "0xF4a23fC0f9beB15Df3d4e1a44425Ec559f746D4F"
+        "implementation": "0xF3b5E160898CFd8b89476e77887050aBB377C277"
     },
     "depositLockPlugin": {
         "proxy": "0x20E65eA03a1563Eb95bC7AC25F892D11D7a5D88f",

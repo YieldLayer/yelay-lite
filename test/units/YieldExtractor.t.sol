@@ -15,6 +15,7 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
+import {ClaimRequest, Root} from "src/interfaces/IYieldExtractor.sol";
 import {MockToken} from "test/mocks/MockToken.sol";
 import {Utils} from "test/Utils.sol";
 
@@ -137,7 +138,7 @@ contract YieldExtractorTest is Test {
         uint256 cycleBefore = yieldExtractor.cycleCount(address(mockVault0));
 
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root = Root({hash: treeRoot0, blockNumber: block.number});
         vm.expectEmit(true, true, true, true);
         emit LibEvents.PoolRootAdded(address(mockVault0), cycleBefore + 1, root.hash, root.blockNumber);
         yieldExtractor.addTreeRoot(root, address(mockVault0));
@@ -153,7 +154,7 @@ contract YieldExtractorTest is Test {
         uint256 cycleVault1 = yieldExtractor.cycleCount(address(mockVault1));
 
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root = Root({hash: treeRoot0, blockNumber: block.number});
         vm.expectEmit(true, true, true, true);
         emit LibEvents.PoolRootAdded(address(mockVault0), cycleVault0 + 1, root.hash, root.blockNumber);
         yieldExtractor.addTreeRoot(root, address(mockVault0));
@@ -165,7 +166,7 @@ contract YieldExtractorTest is Test {
         assertEq(getTreeRoot(cycleVault1, address(mockVault1)), treeRootZero);
 
         vm.startPrank(yieldPublisher);
-        root = YieldExtractor.Root({hash: treeRoot2, blockNumber: block.number});
+        root = Root({hash: treeRoot2, blockNumber: block.number});
         vm.expectEmit(true, true, true, true);
         emit LibEvents.PoolRootAdded(address(mockVault1), cycleVault1 + 1, root.hash, root.blockNumber);
         yieldExtractor.addTreeRoot(root, address(mockVault1));
@@ -184,22 +185,22 @@ contract YieldExtractorTest is Test {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), LibRoles.YIELD_PUBLISHER
             )
         );
-        YieldExtractor.Root memory root = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root, address(mockVault0));
     }
 
     function test_updateRoot_success() public {
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
-        YieldExtractor.Root memory root2 = YieldExtractor.Root({hash: treeRoot2, blockNumber: block.number});
+        Root memory root2 = Root({hash: treeRoot2, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root2, address(mockVault1));
         vm.stopPrank();
 
         uint256 cycle = yieldExtractor.cycleCount(address(mockVault0));
 
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root1 = YieldExtractor.Root({hash: treeRoot1, blockNumber: block.number});
+        Root memory root1 = Root({hash: treeRoot1, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root1, address(mockVault0));
         vm.stopPrank();
 
@@ -227,7 +228,7 @@ contract YieldExtractorTest is Test {
 
     function test_updateRoot_revertInvalidCycle() public {
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
 
         vm.expectRevert(abi.encodeWithSelector(LibErrors.InvalidCycle.selector));
@@ -239,7 +240,7 @@ contract YieldExtractorTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = proof0;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -247,7 +248,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertTrue(yieldExtractor.verify(data, user));
@@ -257,7 +258,7 @@ contract YieldExtractorTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = proof_fail;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -265,7 +266,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
@@ -276,7 +277,7 @@ contract YieldExtractorTest is Test {
         proof[0] = proof0;
 
         // Replace with an invalid vault address
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: vault_fail,
             projectId: projectId,
             cycle: 1,
@@ -284,7 +285,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
@@ -294,7 +295,7 @@ contract YieldExtractorTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = proof0;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -302,7 +303,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
 
         // Added to different vault
         yieldExtractor.addTreeRoot(root0, address(mockVault1));
@@ -314,7 +315,7 @@ contract YieldExtractorTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = proof0;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -322,7 +323,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         // Using a different user than user
@@ -333,7 +334,7 @@ contract YieldExtractorTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = proof0;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -341,7 +342,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
@@ -351,7 +352,7 @@ contract YieldExtractorTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = proof0;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 2,
@@ -359,7 +360,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         assertFalse(yieldExtractor.verify(data, user));
@@ -369,7 +370,7 @@ contract YieldExtractorTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = proof0;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -377,11 +378,11 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
-        YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
+        ClaimRequest[] memory payload = new ClaimRequest[](1);
         payload[0] = data;
         vm.prank(user);
         vm.expectEmit(true, true, true, true);
@@ -399,7 +400,7 @@ contract YieldExtractorTest is Test {
         uint256 sharesBefore = mockVault0.totalSupply(projectId);
         uint256 userSharesBefore = mockVault0.balanceOf(user, projectId);
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -407,7 +408,7 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
@@ -425,17 +426,67 @@ contract YieldExtractorTest is Test {
         assertEq(userSharesBefore + yieldTotal0, userSharesAfter);
     }
 
+    function test_transformFor_success() public {
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = proof0;
+
+        uint256 yieldSharesBefore = mockVault0.totalSupply(0);
+        uint256 sharesBefore = mockVault0.totalSupply(projectId);
+        uint256 userSharesBefore = mockVault0.balanceOf(user, projectId);
+
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(mockVault0),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldTotal0,
+            proof: proof
+        });
+        vm.startPrank(yieldPublisher);
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0, address(mockVault0));
+        vm.stopPrank();
+
+        vm.prank(address(mockVault0));
+        vm.expectEmit(true, true, true, true);
+        emit LibEvents.YieldTransformed(user, data.yelayLiteVault, data.projectId, data.cycle, data.yieldSharesTotal);
+        yieldExtractor.transformFor(data, user);
+
+        assertEq(mockVault0.totalSupply(0), yieldSharesBefore - yieldTotal0);
+        assertEq(mockVault0.totalSupply(projectId), sharesBefore + yieldTotal0);
+        assertEq(mockVault0.balanceOf(user, projectId), userSharesBefore + yieldTotal0);
+    }
+
+    function test_transformFor_onlyVaultCanCall() public {
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = proof0;
+        ClaimRequest memory data = ClaimRequest({
+            yelayLiteVault: address(mockVault0),
+            projectId: projectId,
+            cycle: 1,
+            yieldSharesTotal: yieldTotal0,
+            proof: proof
+        });
+        vm.startPrank(yieldPublisher);
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
+        yieldExtractor.addTreeRoot(root0, address(mockVault0));
+        vm.stopPrank();
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.OnlyYelayLiteVault.selector));
+        yieldExtractor.transformFor(data, user);
+    }
+
     function test_claim_twoCycles() public {
         bytes32[] memory proof = new bytes32[](1);
-        YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
+        ClaimRequest[] memory payload = new ClaimRequest[](1);
 
         // Do cycle 1 - user has 5 shares to claim
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
         proof[0] = proof0;
-        YieldExtractor.ClaimRequest memory data1 = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data1 = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -451,11 +502,11 @@ contract YieldExtractorTest is Test {
 
         // Do cycle 2 - user has another .01 shares to claim, for a total of 5.01
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root1 = YieldExtractor.Root({hash: treeRoot1, blockNumber: block.number});
+        Root memory root1 = Root({hash: treeRoot1, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root1, address(mockVault0));
         vm.stopPrank();
         proof[0] = proof1;
-        YieldExtractor.ClaimRequest memory data2 = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data2 = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 2,
@@ -473,7 +524,7 @@ contract YieldExtractorTest is Test {
     function test_claim_twoVaults() public {
         bytes32[] memory proof_1 = new bytes32[](1);
         proof_1[0] = proof0;
-        YieldExtractor.ClaimRequest memory data1 = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data1 = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -483,7 +534,7 @@ contract YieldExtractorTest is Test {
 
         bytes32[] memory proof_2 = new bytes32[](1);
         proof_2[0] = proof2;
-        YieldExtractor.ClaimRequest memory data2 = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data2 = ClaimRequest({
             yelayLiteVault: address(mockVault1),
             projectId: projectId,
             cycle: 1,
@@ -492,14 +543,14 @@ contract YieldExtractorTest is Test {
         });
 
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
-        YieldExtractor.Root memory root1 = YieldExtractor.Root({hash: treeRoot2, blockNumber: block.number});
+        Root memory root1 = Root({hash: treeRoot2, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root1, address(mockVault1));
         vm.stopPrank();
 
         // Claim from vault 0
-        YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
+        ClaimRequest[] memory payload = new ClaimRequest[](1);
         payload[0] = data1;
         vm.prank(user);
         vm.expectEmit(true, true, true, true);
@@ -526,7 +577,7 @@ contract YieldExtractorTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = proof0;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -534,11 +585,11 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
-        YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
+        ClaimRequest[] memory payload = new ClaimRequest[](1);
         payload[0] = data;
 
         vm.startPrank(user);
@@ -553,7 +604,7 @@ contract YieldExtractorTest is Test {
         proof[0] = proof0;
         proof[1] = proof1;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -561,11 +612,11 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
-        YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
+        ClaimRequest[] memory payload = new ClaimRequest[](1);
         payload[0] = data;
 
         vm.startPrank(user);
@@ -651,7 +702,7 @@ contract YieldExtractorTest is Test {
         proof[0] = proof0;
         proof[1] = proof1;
 
-        YieldExtractor.ClaimRequest memory data = YieldExtractor.ClaimRequest({
+        ClaimRequest memory data = ClaimRequest({
             yelayLiteVault: address(mockVault0),
             projectId: projectId,
             cycle: 1,
@@ -659,11 +710,11 @@ contract YieldExtractorTest is Test {
             proof: proof
         });
         vm.startPrank(yieldPublisher);
-        YieldExtractor.Root memory root0 = YieldExtractor.Root({hash: treeRoot0, blockNumber: block.number});
+        Root memory root0 = Root({hash: treeRoot0, blockNumber: block.number});
         yieldExtractor.addTreeRoot(root0, address(mockVault0));
         vm.stopPrank();
 
-        YieldExtractor.ClaimRequest[] memory payload = new YieldExtractor.ClaimRequest[](1);
+        ClaimRequest[] memory payload = new ClaimRequest[](1);
         payload[0] = data;
 
         vm.startPrank(owner);

@@ -11,7 +11,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
-import {YieldExtractor} from "src/YieldExtractor.sol";
+import {ClaimRequest, IYieldExtractor} from "src/interfaces/IYieldExtractor.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 
@@ -28,7 +28,7 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     // ============ Constants ============
 
     /// @notice The yield extractor contract used for yield accrual
-    YieldExtractor public immutable yieldExtractor;
+    IYieldExtractor public immutable yieldExtractor;
 
     // ============ State Variables ============
 
@@ -48,7 +48,7 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
      * @param _yieldExtractor The address of the yield extractor contract
      */
     constructor(address _yieldExtractor) {
-        yieldExtractor = YieldExtractor(_yieldExtractor);
+        yieldExtractor = IYieldExtractor(_yieldExtractor);
     }
 
     // ============ Initialization ============
@@ -82,7 +82,7 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
      * @notice Accrues yield by processing a claim request through the yield extractor
      * @param data The claim request data containing yield extraction parameters
      */
-    function accrue(YieldExtractor.ClaimRequest calldata data) external {
+    function accrue(ClaimRequest calldata data) external {
         yieldExtractor.transform(data);
     }
 

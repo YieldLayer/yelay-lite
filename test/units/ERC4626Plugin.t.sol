@@ -7,6 +7,7 @@ import {ERC4626Upgradeable} from "@openzeppelin-upgradeable/contracts/token/ERC2
 
 import {ERC4626PluginFactory} from "src/plugins/ERC4626PluginFactory.sol";
 import {YieldExtractor} from "src/YieldExtractor.sol";
+import {ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
 
 import {ERC4626Plugin} from "src/plugins/ERC4626Plugin.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
@@ -112,7 +113,7 @@ contract ERC4626PluginTest is Test {
         uint256 yieldShares = yelayLiteVault.balanceOf(address(yieldExtractor), 0);
         uint256 yieldToGenerate = yieldShares / 2;
         yieldExtractor.setToClaim(yieldToGenerate);
-        erc4626Plugin.accrue(YieldExtractor.ClaimRequest(address(yelayLiteVault), PROJECT_ID, 0, 0, new bytes32[](0)));
+        erc4626Plugin.accrue(ClaimRequest(address(yelayLiteVault), PROJECT_ID, 0, 0, new bytes32[](0)));
         return yieldToGenerate;
     }
 

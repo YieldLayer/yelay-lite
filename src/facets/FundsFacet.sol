@@ -22,6 +22,7 @@ import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
+import {IYieldExtractor, ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
 
 /**
  * @title FundsFacet
@@ -158,6 +159,31 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
     /// @inheritdoc IFundsFacet
     function redeem(uint256 shares, uint256 projectId, address receiver) external notPaused returns (uint256 assets) {
+        return _redeem(shares, projectId, receiver);
+    }
+
+    /// @inheritdoc IFundsFacet
+    function claimAndRedeem(ClaimRequest calldata data, uint256 shares, address receiver)
+        external
+        notPaused
+        returns (uint256 assets)
+    {
+        LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
+        require(data.yelayLiteVault == address(this), LibErrors.InvalidClaimVault());
+
+        IYieldExtractor(sF.yieldExtractor).transformFor(data, msg.sender);
+
+        return _redeem(shares, data.projectId, receiver);
+    }
+
+    /**
+     * @dev Internal redeem logic
+     * @param shares The amount of shares to redeem.
+     * @param projectId The project ID.
+     * @param receiver The address of the receiver.
+     * @return assets The amount of assets redeemed.
+     */
+    function _redeem(uint256 shares, uint256 projectId, address receiver) internal returns (uint256 assets) {
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
 
@@ -170,7 +196,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
         uint256 withdrawn;
         for (uint256 i; i < sM.withdrawQueue.length; i++) {
-            uint256 toWithdraw = assets - withdrawn;
+            uint256 toWithdraw = assets.zeroFloorSub(withdrawn);
             if (toWithdraw <= WITHDRAW_MARGIN) break;
             uint256 assetBalance = IStrategyBase(sM.activeStrategies[sM.withdrawQueue[i]].adapter).assetBalance(
                 address(this), sM.activeStrategies[sM.withdrawQueue[i]].supplement

@@ -99,6 +99,11 @@ library LibErrors {
      */
     error OnlyYieldExtractor();
 
+    /**
+     * @dev Claim request must be for the vault making the call
+     */
+    error InvalidClaimVault();
+
     // ===================== SwapWrapper ================================
     /**
      * @dev The token is not WETH.
@@ -212,6 +217,11 @@ library LibErrors {
     error LockModeMismatch(address vault, uint256 projectId, uint256 lockMode);
 
     // ===================== YieldExtractor ================================
+
+    /**
+     * @dev transformFor can only be called by the vault
+     */
+    error OnlyYelayLiteVault();
 
     /**
      * @notice Thrown when a Merkle proof is invalid
