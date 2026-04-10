@@ -163,6 +163,7 @@ export type ExpectedAddresses = {
     yieldExtractor: string;
     oneInchRouter: string;
     strategyAuthority: string[];
+    clientManager: string[];
     fundsOperator: string[];
     queueOperator: string[];
     swapRewardsOperator: string[];
@@ -182,6 +183,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
                 yieldExtractor: baseTestContracts.yieldExtractor.proxy,
                 oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
                 strategyAuthority: [ADDRESSES[chainId].OWNER],
+                clientManager: [ADDRESSES[chainId].OWNER],
                 fundsOperator: [
                     ADDRESSES[chainId].OWNER,
                     '0xE119693DcAC48d05659065eb82eb51dB6044a528',
@@ -211,6 +213,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             yieldExtractor: baseContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
+            clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
@@ -227,6 +230,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             yieldExtractor: mainnetContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
+            clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
@@ -243,6 +247,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             yieldExtractor: sonicContracts.yieldExtractor.proxy,
             oneInchRouter: ethers.ZeroAddress,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
+            clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
@@ -259,6 +264,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             yieldExtractor: arbitrumContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
+            clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
@@ -275,6 +281,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             yieldExtractor: avalancheContracts.yieldExtractor.proxy,
             oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
             strategyAuthority: [ADDRESSES[chainId].OWNER],
+            clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
@@ -294,6 +301,7 @@ export const IMPLEMENTATION_STORAGE_SLOT =
 
 export const ROLES = {
     STRATEGY_AUTHORITY: ethers.id('STRATEGY_AUTHORITY'),
+    CLIENT_MANAGER: ethers.id('CLIENT_MANAGER'),
     FUNDS_OPERATOR: ethers.id('FUNDS_OPERATOR'),
     QUEUES_OPERATOR: ethers.id('QUEUES_OPERATOR'),
     SWAP_REWARDS_OPERATOR: ethers.id('SWAP_REWARDS_OPERATOR'),

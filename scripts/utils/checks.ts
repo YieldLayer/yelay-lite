@@ -71,6 +71,7 @@ export const checkSetup = async (
         yieldPublisher,
         oneInchRouter,
         strategyAuthority,
+        clientManager,
         fundsOperator,
         queueOperator,
         swapRewardsOperator,
@@ -196,6 +197,7 @@ export const checkSetup = async (
         });
 
         await checkRoleMembers(yelayLiteVault, 'STRATEGY_AUTHORITY', strategyAuthority);
+        await checkRoleMembers(yelayLiteVault, 'CLIENT_MANAGER', clientManager);
         await checkRoleMembers(yelayLiteVault, 'QUEUES_OPERATOR', queueOperator);
         await checkRoleMembers(yelayLiteVault, 'FUNDS_OPERATOR', fundsOperator);
         await checkRoleMembers(yelayLiteVault, 'SWAP_REWARDS_OPERATOR', swapRewardsOperator);
