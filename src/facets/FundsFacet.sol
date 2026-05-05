@@ -143,9 +143,8 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
             bytes memory supplement = sM.activeStrategies[q].supplement;
             address protocol = IStrategyBase(adapter).protocol(supplement);
             _setExactAllowance(sF, protocol, assets);
-            (success,) = adapter.delegatecall(
-                abi.encodeWithSelector(IStrategyBase.deposit.selector, assets, supplement)
-            );
+            (success,) =
+                adapter.delegatecall(abi.encodeWithSelector(IStrategyBase.deposit.selector, assets, supplement));
             if (success) {
                 break;
             }
