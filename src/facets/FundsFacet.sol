@@ -138,14 +138,18 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         sF.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
         bool success;
         for (uint256 i; i < sM.depositQueue.length; i++) {
-            (success,) = sM.activeStrategies[sM.depositQueue[i]].adapter.delegatecall(
-                abi.encodeWithSelector(
-                    IStrategyBase.deposit.selector, assets, sM.activeStrategies[sM.depositQueue[i]].supplement
-                )
+            uint256 q = sM.depositQueue[i];
+            address adapter = sM.activeStrategies[q].adapter;
+            bytes memory supplement = sM.activeStrategies[q].supplement;
+            address protocol = IStrategyBase(adapter).protocol(supplement);
+            _setExactAllowance(sF, protocol, assets);
+            (success,) = adapter.delegatecall(
+                abi.encodeWithSelector(IStrategyBase.deposit.selector, assets, supplement)
             );
             if (success) {
                 break;
             }
+            _setExactAllowance(sF, protocol, 0);
         }
         if (!success) {
             sF.underlyingBalance += SafeCast.toUint192(assets);
@@ -361,6 +365,21 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /**
+     * @dev Sets underlying allowance exactly to target using a zero-reset when needed.
+     */
+    function _setExactAllowance(LibFunds.FundsStorage storage sF, address spender, uint256 target) internal {
+        ERC20 asset = sF.underlyingAsset;
+        uint256 current = asset.allowance(address(this), spender);
+        if (current == target) return;
+        if (current != 0) {
+            asset.safeApprove(spender, 0);
+        }
+        if (target != 0) {
+            asset.safeApprove(spender, target);
+        }
+    }
+
+    /**
      * @dev Internal function to deposit assets into a strategy.
      * @param sM The management storage.
      * @param sF The funds storage.
@@ -371,7 +390,11 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF,
         StrategyArgs calldata strategyArgs
     ) internal {
-        sM.activeStrategies[strategyArgs.index].adapter.functionDelegateCall(
+        address adapter = sM.activeStrategies[strategyArgs.index].adapter;
+        bytes memory supplement = sM.activeStrategies[strategyArgs.index].supplement;
+        address protocol = IStrategyBase(adapter).protocol(supplement);
+        _setExactAllowance(sF, protocol, strategyArgs.amount);
+        adapter.functionDelegateCall(
             abi.encodeWithSelector(
                 IStrategyBase.deposit.selector, strategyArgs.amount, sM.activeStrategies[strategyArgs.index].supplement
             )
