@@ -14,7 +14,7 @@ import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 import {ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
 
-import {MockStrategy, MockProtocol} from "test/mocks/MockStrategy.sol";
+import {MockStrategy, MockProtocol, FailingMockStrategy} from "test/mocks/MockStrategy.sol";
 import {MockYieldExtractor} from "test/mocks/MockYieldExtractor.sol";
 
 import {MockToken} from "test/mocks/MockToken.sol";
@@ -164,6 +164,93 @@ contract FundsFacetTest is Test {
         assertEq(yelayLiteVault.underlyingBalance(), underlyingAssetBefore + compounded);
         assertEq(yelayLiteVault.totalAssets(), totalAssetsBefore + compounded);
         assertEq(compounded, 1e18);
+    }
+
+    // ========== Tests for allowance management  ==========
+
+    function test_deposit_clears_protocol_allowance_after_success() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
+    }
+
+    function test_deposit_resets_allowance_when_first_strategy_fails() external {
+        vm.startPrank(owner);
+        MockProtocol protocolA = new MockProtocol(address(underlyingAsset));
+        MockProtocol protocolB = new MockProtocol(address(underlyingAsset));
+        FailingMockStrategy stratA = new FailingMockStrategy(address(protocolA));
+        MockStrategy stratB = new MockStrategy(address(protocolB));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(stratA), supplement: "", name: ""}));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(stratB), supplement: "", name: ""}));
+        uint256[] memory queue = new uint256[](2);
+        queue[0] = 0;
+        queue[1] = 1;
+        yelayLiteVault.activateStrategy(0, new uint256[](0), new uint256[](0));
+        yelayLiteVault.activateStrategy(1, queue, queue);
+        vm.stopPrank();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolA)), 0);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolB)), 0);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolA)), 0);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolB)), 0);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), toDeposit, 1);
+    }
+
+    function test_deposit_to_strategy_fails_resets_allowance() external {
+        vm.startPrank(owner);
+        MockProtocol protocol = new MockProtocol(address(underlyingAsset));
+        FailingMockStrategy failingStrategy = new FailingMockStrategy(address(protocol));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(failingStrategy), supplement: "", name: ""}));
+        uint256[] memory queue = new uint256[](1);
+        queue[0] = 0;
+        yelayLiteVault.activateStrategy(0, queue, queue);
+        vm.stopPrank();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocol)), 0);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocol)), 0);
+        assertEq(yelayLiteVault.underlyingBalance(), toDeposit);
+    }
+
+    function test_managedDeposit_clears_protocol_allowance_after_success() external {
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(yelayLiteVault.underlyingBalance(), toDeposit);
+
+        vm.startPrank(owner);
+        StrategyData memory strategy = StrategyData({adapter: address(mockStrategy), supplement: "", name: ""});
+        yelayLiteVault.addStrategy(strategy);
+        uint256[] memory queue = new uint256[](1);
+        queue[0] = 0;
+        yelayLiteVault.activateStrategy(0, queue, queue);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
+
+        yelayLiteVault.managedDeposit(StrategyArgs({index: 0, amount: toDeposit}));
+        vm.stopPrank();
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
+        assertEq(yelayLiteVault.underlyingBalance(), 0);
+        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit, 1);
     }
 
     // ========== Tests for transformYieldShares ==========
