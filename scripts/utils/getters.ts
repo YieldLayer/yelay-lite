@@ -72,7 +72,6 @@ export const getManagementFacetSelectors = () => {
         'removeStrategy',
         'activateStrategy',
         'deactivateStrategy',
-        'approveStrategy',
     ] as const;
     return getFunctionSelectors(i, functions);
 };

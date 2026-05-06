@@ -116,7 +116,6 @@ library Utils {
         selectors[4] = ManagementFacet.getDepositQueue.selector;
         selectors[5] = ManagementFacet.getWithdrawQueue.selector;
         selectors[6] = ManagementFacet.getStrategies.selector;
-        selectors[7] = ManagementFacet.approveStrategy.selector;
         selectors[8] = ManagementFacet.activateStrategy.selector;
         selectors[9] = ManagementFacet.deactivateStrategy.selector;
         selectors[10] = ManagementFacet.getActiveStrategies.selector;

@@ -83,12 +83,4 @@ interface IManagementFacet {
      */
     function deactivateStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
         external;
-
-    /**
-     * @dev Function to approve spending of underlying asset by the strategy.
-     * @dev Callable by STRATEGY_AUTHORITY.
-     * @param index The index of the strategy.
-     * @param amount The amount to approve.
-     */
-    function approveStrategy(uint256 index, uint256 amount) external;
 }
