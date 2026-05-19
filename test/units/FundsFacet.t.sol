@@ -594,6 +594,28 @@ contract FundsFacetTest is Test {
         assertEq(yelayLiteVault.previewWithdraw(assetsToWithdraw), sharesToRedeem + WITHDRAW_MARGIN);
     }
 
+    function test_previewRedeem_revertsWhenBelowWithdrawMargin() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        mockProtocol.setAssetBalance(address(yelayLiteVault), toDeposit);
+
+        // 0 shares -> 0 assets, which is not > WITHDRAW_MARGIN
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.previewRedeem(0);
+
+        // Exactly WITHDRAW_MARGIN shares -> WITHDRAW_MARGIN assets (1:1 with no yield),
+        // not strictly greater than WITHDRAW_MARGIN, so it must revert
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.previewRedeem(WITHDRAW_MARGIN);
+
+        // One wei above the margin succeeds and returns the smallest possible asset amount.
+        assertEq(yelayLiteVault.previewRedeem(WITHDRAW_MARGIN + 1), 1);
+    }
+
     function test_preview_withLoss() external {
         _addStrategy();
         uint256 toDeposit = 1000e18;

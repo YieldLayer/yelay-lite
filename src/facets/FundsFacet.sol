@@ -454,7 +454,9 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
     /// @inheritdoc IFundsFacet
     function previewRedeem(uint256 shares) public view virtual returns (uint256) {
-        return convertToAssets(shares) - WITHDRAW_MARGIN;
+        uint256 assets = convertToAssets(shares);
+        require(assets > WITHDRAW_MARGIN, LibErrors.MinRedeem());
+        return assets - WITHDRAW_MARGIN;
     }
 
     /// @inheritdoc IFundsFacet
