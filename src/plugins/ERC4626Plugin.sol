@@ -5,6 +5,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ERC4626Upgradeable} from "@openzeppelin-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC1155HolderUpgradeable} from
     "@openzeppelin-upgradeable/contracts/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -14,6 +15,7 @@ import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {ClaimRequest, IYieldExtractor} from "src/interfaces/IYieldExtractor.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
+import {LibRoles} from "src/libraries/LibRoles.sol";
 
 /**
  * @title ERC4626Plugin
@@ -81,8 +83,12 @@ contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
     /**
      * @notice Accrues yield by processing a claim request through the yield extractor
      * @param data The claim request data containing yield extraction parameters
+     * @dev Caller must hold LibRoles.ERC4626_ACCRUE_OPERATOR on `yelayLiteVault`.
      */
     function accrue(ClaimRequest calldata data) external {
+        if (!IAccessControl(address(yelayLiteVault)).hasRole(LibRoles.ERC4626_ACCRUE_OPERATOR, msg.sender)) {
+            revert IAccessControl.AccessControlUnauthorizedAccount(msg.sender, LibRoles.ERC4626_ACCRUE_OPERATOR);
+        }
         yieldExtractor.transform(data);
     }
 
