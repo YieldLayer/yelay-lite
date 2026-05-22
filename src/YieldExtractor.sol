@@ -14,6 +14,7 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 
+import {IERC4626Plugin} from "src/interfaces/IERC4626Plugin.sol";
 import {IFundsFacet} from "src/interfaces/IFundsFacet.sol";
 import {IYieldExtractor, ClaimRequest, Root} from "src/interfaces/IYieldExtractor.sol";
 
@@ -110,10 +111,30 @@ contract YieldExtractor is
 
     /// @inheritdoc IYieldExtractor
     function addTreeRoot(Root memory root, address yelayLiteVault) external onlyRole(LibRoles.YIELD_PUBLISHER) {
-        cycleCount[yelayLiteVault]++;
-        roots[yelayLiteVault][cycleCount[yelayLiteVault]] = root;
+        _addTreeRoot(root, yelayLiteVault);
+    }
 
-        emit LibEvents.PoolRootAdded(yelayLiteVault, cycleCount[yelayLiteVault], root.hash, root.blockNumber);
+    /// @inheritdoc IYieldExtractor
+    function addTreeRootAndAccrue(
+        Root memory root,
+        address yelayLiteVault,
+        address[] calldata plugins,
+        ClaimRequest[] calldata data
+    ) external onlyRole(LibRoles.YIELD_PUBLISHER) whenNotPaused {
+        require(plugins.length == data.length, LibErrors.DataLengthMismatch());
+
+        _addTreeRoot(root, yelayLiteVault);
+        
+        uint256 cycle = cycleCount[yelayLiteVault];
+        for (uint256 i; i < data.length; ++i) {
+            ClaimRequest calldata claim = data[i];
+            require(
+                claim.yelayLiteVault == yelayLiteVault && claim.cycle == cycle,
+                LibErrors.InvalidAccrueRequest(i)
+            );
+
+            IERC4626Plugin(plugins[i]).accrue(claim);
+        }
     }
 
     /// @inheritdoc IYieldExtractor
@@ -158,6 +179,13 @@ contract YieldExtractor is
         IFundsFacet(data.yelayLiteVault).transformYieldShares(data.projectId, toClaim, user);
 
         emit LibEvents.YieldTransformed(user, data.yelayLiteVault, data.projectId, data.cycle, toClaim);
+    }
+
+    function _addTreeRoot(Root memory root, address yelayLiteVault) internal {
+        cycleCount[yelayLiteVault]++;
+        roots[yelayLiteVault][cycleCount[yelayLiteVault]] = root;
+
+        emit LibEvents.PoolRootAdded(yelayLiteVault, cycleCount[yelayLiteVault], root.hash, root.blockNumber);
     }
 
     function _processClaimRequest(ClaimRequest memory data, uint256 index, address user)

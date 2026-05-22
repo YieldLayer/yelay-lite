@@ -84,6 +84,21 @@ interface IYieldExtractor {
     function addTreeRoot(Root memory root, address yelayLiteVault) external;
 
     /**
+     * @dev Adds a Merkle tree root and accrues yield on ERC4626 plugins.
+     * @dev Callable by YIELD_PUBLISHER.
+     * @param root Root to add.
+     * @param yelayLiteVault Address of the vault.
+     * @param plugins ERC4626 plugin addresses to accrue on.
+     * @param data Claim requests passed to each plugin's accrue function.
+     */
+    function addTreeRootAndAccrue(
+        Root memory root,
+        address yelayLiteVault,
+        address[] calldata plugins,
+        ClaimRequest[] calldata data
+    ) external;
+
+    /**
      * @dev Updates existing root for a given cycle for a given vault.
      * @dev Callable by YIELD_PUBLISHER.
      * @param root New root.

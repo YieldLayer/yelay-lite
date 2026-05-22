@@ -240,6 +240,17 @@ library LibErrors {
      */
     error InvalidCycle();
 
+    /**
+     * @notice Thrown when plugins and claim request arrays have different lengths
+     */
+    error DataLengthMismatch();
+
+    /**
+     * @notice Thrown when a claim request does not match the new root accrual
+     * @param idx Index of the invalid claim request
+     */
+    error InvalidAccrueRequest(uint256 idx);
+
     // ===================== ERC4626Plugin ================================
 
     /**
