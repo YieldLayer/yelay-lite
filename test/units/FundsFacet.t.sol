@@ -464,6 +464,49 @@ contract FundsFacetTest is Test {
 
     // ========== Tests for convertToShares / convertToAssets ==========
 
+    function test_convertFunctions_emptyVault() external view {
+        uint256 amount = 1000e18;
+
+        assertEq(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertEq(yelayLiteVault.convertToShares(amount), amount);
+        assertEq(yelayLiteVault.convertToAssets(amount), amount);
+        assertEq(yelayLiteVault.convertToShares(0), 0);
+        assertEq(yelayLiteVault.convertToAssets(0), 0);
+    }
+
+    function test_convertFunctions_insolventVault() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        mockProtocol.setAssetBalance(address(yelayLiteVault), 0);
+
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertGt(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.convertToAssets(0), 0);
+        assertEq(yelayLiteVault.convertToAssets(toDeposit / 2), 0);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.convertToShares(0);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.convertToShares(toDeposit / 2);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.previewWithdraw(toDeposit / 2);
+
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.previewRedeem(toDeposit / 2);
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.deposit(toDeposit / 2, projectId, user);
+    }
+
     function test_convertFunctions_noYield() external {
         _addStrategy();
         uint256 toDeposit = 1000e18;
@@ -550,6 +593,14 @@ contract FundsFacetTest is Test {
     }
 
     // ========== Tests for previewRedeem / previewWithdraw ==========
+
+    function test_preview_emptyVault() external view {
+        uint256 assets = 1000e18;
+        uint256 shares = 1000e18;
+
+        assertEq(yelayLiteVault.previewWithdraw(assets), assets + WITHDRAW_MARGIN);
+        assertEq(yelayLiteVault.previewRedeem(shares), shares - WITHDRAW_MARGIN);
+    }
 
     function test_preview_noYield() external {
         _addStrategy();

@@ -104,6 +104,11 @@ library LibErrors {
      */
     error InvalidClaimVault();
 
+    /**
+     * @dev The vault has outstanding shares but no underlying assets.
+     */
+    error VaultInsolvent();
+
     // ===================== SwapWrapper ================================
     /**
      * @dev The token is not WETH.

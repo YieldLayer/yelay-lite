@@ -501,7 +501,9 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         pure
         returns (uint256)
     {
-        return newTotalSupply == 0 ? assets : assets.mulDiv(newTotalSupply, newTotalAssets);
+        if (newTotalSupply == 0) return assets;
+        if (newTotalAssets == 0) revert LibErrors.VaultInsolvent();
+        return assets.mulDiv(newTotalSupply, newTotalAssets);
     }
 
     /**
@@ -516,6 +518,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         pure
         returns (uint256)
     {
+        if (newTotalSupply == 0) return shares;
         return shares.mulDiv(newTotalAssets, newTotalSupply);
     }
 }
