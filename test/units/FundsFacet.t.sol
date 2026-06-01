@@ -507,6 +507,46 @@ contract FundsFacetTest is Test {
         yelayLiteVault.deposit(toDeposit / 2, projectId, user);
     }
 
+    /// @dev Same insolvent state as above, but after `accrueFee` has synced `lastTotalAssets` to zero.
+    /// View helpers must not spuriously revert; user actions still fail with meaningful errors.
+    function test_convertFunctions_insolventVault_afterAccrueFee() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        mockProtocol.setAssetBalance(address(yelayLiteVault), 0);
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertGt(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.lastTotalAssets(), 0);
+
+        assertEq(yelayLiteVault.convertToAssets(0), 0);
+        assertEq(yelayLiteVault.convertToAssets(toDeposit / 2), 0);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.convertToShares(toDeposit / 2);
+
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.previewRedeem(toDeposit / 2);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.previewWithdraw(toDeposit / 2);
+
+        vm.prank(user);
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.redeem(toDeposit / 2, projectId, user);
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.deposit(100, projectId, user);
+
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), 0);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+    }
+
     function test_convertFunctions_noYield() external {
         _addStrategy();
         uint256 toDeposit = 1000e18;
@@ -696,5 +736,108 @@ contract FundsFacetTest is Test {
         // accounting remains the same after fee accrual
         assertEq(yelayLiteVault.previewRedeem(sharesToRedeem), toDeposit / 2 - WITHDRAW_MARGIN);
         assertEq(yelayLiteVault.previewWithdraw(assetsToWithdraw), shares + 2 * WITHDRAW_MARGIN);
+    }
+
+    // ========== Tests for negative yield / share-to-asset ratio decrease ==========
+
+    /// @dev Negative yield (e.g. an underlying-strategy management fee that exceeds APY) must NOT mint fee shares.
+    /// The lastTotalAssets baseline should track down to the new (lower) value so subsequent yield can be measured.
+    function test_accrueFee_withNegativeYield_doesNotMintFee() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        assertEq(yelayLiteVault.lastTotalAssets(), toDeposit);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // 30% negative yield.
+        uint256 newBalance = toDeposit * 7 / 10;
+        mockProtocol.setAssetBalance(address(yelayLiteVault), newBalance);
+
+        yelayLiteVault.accrueFee();
+
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+        assertEq(yelayLiteVault.lastTotalAssets(), newBalance);
+        assertEq(yelayLiteVault.totalAssets(), newBalance);
+        assertEq(yelayLiteVault.totalSupply(), toDeposit);
+    }
+
+    /// @dev A new deposit made after a loss must mint more shares per asset to reflect the lower price-per-share.
+    function test_deposit_afterNegativeYield_mintsMoreShares() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        deal(address(underlyingAsset), user2, toDeposit);
+
+        vm.prank(user);
+        uint256 userShares = yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(userShares, toDeposit);
+
+        // 50% loss => share price halves.
+        mockProtocol.setAssetBalance(address(yelayLiteVault), toDeposit / 2);
+
+        vm.prank(user2);
+        uint256 user2Shares = yelayLiteVault.deposit(toDeposit, projectId, user2);
+
+        // Same assets in but 2x shares because price-per-share halved.
+        assertEq(user2Shares, toDeposit * 2);
+        assertEq(yelayLiteVault.totalSupply(), 3 * toDeposit);
+        assertEq(yelayLiteVault.totalAssets(), toDeposit + toDeposit / 2);
+
+        // user1 ate the loss; user2 keeps full purchasing power.
+        assertEq(yelayLiteVault.convertToAssets(userShares), toDeposit / 2);
+        assertEq(yelayLiteVault.convertToAssets(user2Shares), toDeposit);
+    }
+
+    /// @dev Redemption after a loss should give proportionally fewer assets than originally deposited.
+    function test_redeem_afterNegativeYield_receivesLessAssets() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        uint256 userShares = yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        // 40% loss reflected by the mock protocol (tokens are still there; the strategy reports less).
+        uint256 newBalance = toDeposit * 6 / 10;
+        mockProtocol.setAssetBalance(address(yelayLiteVault), newBalance);
+
+        uint256 userBalanceBefore = underlyingAsset.balanceOf(user);
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.redeem(userShares, projectId, user);
+
+        assertApproxEqAbs(assets, newBalance, WITHDRAW_MARGIN);
+        assertEq(underlyingAsset.balanceOf(user), userBalanceBefore + assets);
+        assertEq(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.balanceOf(user, projectId), 0);
+    }
+
+    /// @dev When yield recovers above the post-loss baseline, the formula must mint fee shares correctly
+    /// (this verifies the share-ratio decrease followed by an increase still works end-to-end).
+    function test_yieldRecoveryAboveLastTotalAssets_mintsFee() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        // Partial loss to 800 then accrue (resets lastTotalAssets to the lower baseline).
+        mockProtocol.setAssetBalance(address(yelayLiteVault), 800e18);
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), 800e18);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // Positive yield: 800 -> 1200 (relative to the post-loss baseline, +50%).
+        mockProtocol.setAssetBalance(address(yelayLiteVault), 1200e18);
+        yelayLiteVault.accrueFee();
+
+        // feeShares = 400e18 * 1000e18 / 800e18 = 500e18.
+        uint256 feeShares = yelayLiteVault.balanceOf(address(yieldExtractor), 0);
+        assertEq(feeShares, 500e18);
+        assertEq(yelayLiteVault.lastTotalAssets(), 1200e18);
+        assertEq(yelayLiteVault.totalSupply(), toDeposit + feeShares);
     }
 }

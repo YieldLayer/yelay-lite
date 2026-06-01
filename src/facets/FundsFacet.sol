@@ -434,7 +434,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
         uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);
         if (totalInterest > 0) {
-            uint256 feeShares = _convertToShares(totalInterest, totalSupply(), sF.lastTotalAssets);
+            uint256 feeShares = _convertToFeeShares(totalInterest, totalSupply(), sF.lastTotalAssets);
             if (feeShares > 0) {
                 _mint(sF.yieldExtractor, YIELD_PROJECT_ID, feeShares, "");
             }
@@ -485,8 +485,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         newTotalAssets = totalAssets();
         uint256 totalInterest = FixedPointMathLib.zeroFloorSub(newTotalAssets, sF.lastTotalAssets);
-        feeShares = _convertToShares(totalInterest, totalSupply(), sF.lastTotalAssets);
-        return (newTotalAssets, feeShares);
+        feeShares = _convertToFeeShares(totalInterest, totalSupply(), sF.lastTotalAssets);
     }
 
     /**
@@ -504,6 +503,24 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         if (newTotalSupply == 0) return assets;
         if (newTotalAssets == 0) revert LibErrors.VaultInsolvent();
         return assets.mulDiv(newTotalSupply, newTotalAssets);
+    }
+
+    /**
+     * @dev Internal function to convert assets to fee shares.
+     *      Unlike _convertToShares, returns 0 when newTotalAssets is 0 and newTotalSupply > 0 instead of reverting.
+     *      This can occur after a previously accrued total loss (e.g. forceDeactivateStrategy or negative yield).
+     * @param assets The amount of assets (accrued interest).
+     * @param newTotalSupply The total supply.
+     * @param newTotalAssets The fee baseline (lastTotalAssets at accrual time).
+     * @return The amount of fee shares.
+     */
+    function _convertToFeeShares(uint256 assets, uint256 newTotalSupply, uint256 newTotalAssets)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (newTotalAssets == 0 && newTotalSupply > 0) return 0;
+        return _convertToShares(assets, newTotalSupply, newTotalAssets);
     }
 
     /**
