@@ -46,8 +46,9 @@ library LibEvents {
      * @param newTotalAssets The new total assets value.
      * @param interest The amount of interest accrued.
      * @param feeShares The amount of fee shares minted.
+     * @param totalSupply The total supply after fee shares are minted.
      */
-    event AccrueInterest(uint256 newTotalAssets, uint256 interest, uint256 feeShares);
+    event AccrueInterest(uint256 newTotalAssets, uint256 interest, uint256 feeShares, uint256 totalSupply);
 
     /**
      * @dev Emitted when the last total assets value is updated.

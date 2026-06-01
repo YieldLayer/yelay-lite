@@ -438,7 +438,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
             if (feeShares > 0) {
                 _mint(sF.yieldExtractor, YIELD_PROJECT_ID, feeShares, "");
             }
-            emit LibEvents.AccrueInterest(newTotalAssets, totalInterest, feeShares);
+            emit LibEvents.AccrueInterest(newTotalAssets, totalInterest, feeShares, totalSupply());
         }
     }
 
