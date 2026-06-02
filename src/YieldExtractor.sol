@@ -127,10 +127,13 @@ contract YieldExtractor is
 
         uint256 cycle = cycleCount[yelayLiteVault];
         for (uint256 i; i < data.length; ++i) {
-            ClaimRequest calldata claim = data[i];
-            require(claim.yelayLiteVault == yelayLiteVault && claim.cycle == cycle, LibErrors.InvalidAccrueRequest(i));
+            ClaimRequest calldata claimRequest = data[i];
+            require(
+                claimRequest.yelayLiteVault == yelayLiteVault && claimRequest.cycle == cycle,
+                LibErrors.InvalidAccrueRequest(i)
+            );
 
-            IERC4626Plugin(plugins[i]).accrue(claim);
+            IERC4626Plugin(plugins[i]).accrue(claimRequest);
         }
     }
 
