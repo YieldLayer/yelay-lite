@@ -267,7 +267,11 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /// @inheritdoc IFundsFacet
-    function managedWithdraw(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) notPaused {
+    function managedWithdraw(StrategyArgs calldata strategyArgs)
+        public
+        onlyAnyRole(LibRoles.FUNDS_OPERATOR, LibRoles.EMERGENCY_WITHDRAW_OPERATOR)
+        notPaused
+    {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         _managedWithdraw(sM, sF, strategyArgs);

@@ -73,6 +73,7 @@ export const checkSetup = async (
         strategyAuthority,
         clientManager,
         fundsOperator,
+        emergencyWithdrawOperator,
         queueOperator,
         swapRewardsOperator,
         pauser,
@@ -200,6 +201,11 @@ export const checkSetup = async (
         await checkRoleMembers(yelayLiteVault, 'CLIENT_MANAGER', clientManager);
         await checkRoleMembers(yelayLiteVault, 'QUEUES_OPERATOR', queueOperator);
         await checkRoleMembers(yelayLiteVault, 'FUNDS_OPERATOR', fundsOperator);
+        await checkRoleMembers(
+            yelayLiteVault,
+            'EMERGENCY_WITHDRAW_OPERATOR',
+            emergencyWithdrawOperator,
+        );
         await checkRoleMembers(yelayLiteVault, 'SWAP_REWARDS_OPERATOR', swapRewardsOperator);
         await checkRoleMembers(yelayLiteVault, 'PAUSER', pauser);
         await checkRoleMembers(yelayLiteVault, 'UNPAUSER', unpauser);

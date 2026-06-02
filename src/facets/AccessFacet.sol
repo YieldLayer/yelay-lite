@@ -32,6 +32,16 @@ contract AccessFacet is AccessControlEnumerableUpgradeable, IAccessFacet {
         _revokeRole(role, account);
     }
 
+    /// @inheritdoc IAccessControl
+    function hasRole(bytes32 role, address account)
+        public
+        view
+        override(AccessControlUpgradeable, IAccessControl)
+        returns (bool)
+    {
+        return super.hasRole(role, account);
+    }
+
     /// @inheritdoc IAccessFacet
     function checkRole(bytes32 role) external view {
         _checkRole(role);

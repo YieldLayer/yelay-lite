@@ -165,6 +165,7 @@ export type ExpectedAddresses = {
     strategyAuthority: string[];
     clientManager: string[];
     fundsOperator: string[];
+    emergencyWithdrawOperator: string[];
     queueOperator: string[];
     swapRewardsOperator: string[];
     pauser: string[];
@@ -192,6 +193,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
                     '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
                     '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
                 ],
+                emergencyWithdrawOperator: [],
                 queueOperator: [
                     ADDRESSES[chainId].OWNER,
                     '0x225F31863b892dd747D06c1F46DcebFa73907870',
@@ -215,6 +217,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            emergencyWithdrawOperator: [],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
@@ -232,6 +235,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            emergencyWithdrawOperator: [],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
@@ -249,6 +253,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            emergencyWithdrawOperator: [],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
@@ -266,6 +271,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            emergencyWithdrawOperator: [],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
@@ -283,6 +289,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            emergencyWithdrawOperator: [],
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
@@ -303,6 +310,7 @@ export const ROLES = {
     STRATEGY_AUTHORITY: ethers.id('STRATEGY_AUTHORITY'),
     CLIENT_MANAGER: ethers.id('CLIENT_MANAGER'),
     FUNDS_OPERATOR: ethers.id('FUNDS_OPERATOR'),
+    EMERGENCY_WITHDRAW_OPERATOR: ethers.id('EMERGENCY_WITHDRAW_OPERATOR'),
     QUEUES_OPERATOR: ethers.id('QUEUES_OPERATOR'),
     SWAP_REWARDS_OPERATOR: ethers.id('SWAP_REWARDS_OPERATOR'),
     PAUSER: ethers.id('PAUSER'),

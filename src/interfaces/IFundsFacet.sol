@@ -176,7 +176,7 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
 
     /**
      * @dev Withdraws assets from a strategy.
-     * @dev Callable by FUNDS_OPERATOR.
+     * @dev Callable by FUNDS_OPERATOR or EMERGENCY_WITHDRAW_OPERATOR.
      * @param strategyArgs The strategy arguments.
      */
     function managedWithdraw(StrategyArgs calldata strategyArgs) external;

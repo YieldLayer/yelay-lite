@@ -206,7 +206,7 @@ contract FundsFacetTest is Test {
 
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolA)), 0);
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolB)), 0);
-        assertApproxEqAbs(yelayLiteVault.strategyAssets(1), toDeposit, 1);
+        assertEq(yelayLiteVault.strategyAssets(1), toDeposit);
     }
 
     function test_deposit_to_strategy_fails_resets_allowance() external {
@@ -250,7 +250,51 @@ contract FundsFacetTest is Test {
 
         assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
         assertEq(yelayLiteVault.underlyingBalance(), 0);
-        assertApproxEqAbs(yelayLiteVault.strategyAssets(0), toDeposit, 1);
+        assertEq(yelayLiteVault.strategyAssets(0), toDeposit);
+    }
+
+    // ========== Tests for managedWithdraw role access ==========
+
+    function test_managedWithdraw_onlyCallableBySetRoles() external {
+        address stranger = makeAddr("stranger");
+        address emergencyOperator = makeAddr("emergencyOperator");
+        _addStrategy();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit * 2);
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(yelayLiteVault.strategyAssets(0), toDeposit);
+
+        StrategyArgs memory args = StrategyArgs({index: 0, amount: toDeposit});
+
+        vm.prank(stranger);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                LibErrors.AccessControlUnauthorizedAnyRole.selector,
+                stranger,
+                LibRoles.FUNDS_OPERATOR,
+                LibRoles.EMERGENCY_WITHDRAW_OPERATOR
+            )
+        );
+        yelayLiteVault.managedWithdraw(args);
+
+        vm.prank(owner);
+        yelayLiteVault.managedWithdraw(args);
+        assertEq(yelayLiteVault.strategyAssets(0), 0);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(yelayLiteVault.strategyAssets(0), toDeposit);
+
+        vm.startPrank(owner);
+        yelayLiteVault.grantRole(LibRoles.EMERGENCY_WITHDRAW_OPERATOR, emergencyOperator);
+        yelayLiteVault.revokeRole(LibRoles.FUNDS_OPERATOR, owner);
+        vm.stopPrank();
+
+        vm.prank(emergencyOperator);
+        yelayLiteVault.managedWithdraw(args);
+        assertEq(yelayLiteVault.strategyAssets(0), 0);
     }
 
     // ========== Tests for transformYieldShares ==========

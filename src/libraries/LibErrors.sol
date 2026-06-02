@@ -22,6 +22,15 @@ library LibErrors {
     error SelectorNotSet(bytes4 selector);
     error ForbiddenOwnerSelector(bytes4 selector);
 
+    // ===================== AccessFacet ================================
+    /**
+     * @dev The account has neither of the required roles.
+     * @param account The address of the unauthorized account.
+     * @param roleA The first acceptable role.
+     * @param roleB The second acceptable role.
+     */
+    error AccessControlUnauthorizedAnyRole(address account, bytes32 roleA, bytes32 roleB);
+
     // ===================== ClientsFacet ================================
     /**
      * @dev The owner address is already used by some client.

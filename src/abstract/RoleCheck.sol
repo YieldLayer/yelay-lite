@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {AccessFacet} from "src/facets/AccessFacet.sol";
+import {LibErrors} from "src/libraries/LibErrors.sol";
 
 /**
  * @title RoleCheck
@@ -18,5 +19,27 @@ abstract contract RoleCheck {
     modifier onlyRole(bytes32 role) {
         address(this).functionDelegateCall(abi.encodeWithSelector(AccessFacet.checkRole.selector, role));
         _;
+    }
+
+    /**
+     * @dev Modifier to make a function callable by accounts with either of two roles.
+     * @param roleA The first role identifier.
+     * @param roleB The second role identifier.
+     */
+    modifier onlyAnyRole(bytes32 roleA, bytes32 roleB) {
+        if (!_hasRole(roleA) && !_hasRole(roleB)) {
+            revert LibErrors.AccessControlUnauthorizedAnyRole(msg.sender, roleA, roleB);
+        }
+        _;
+    }
+
+    /**
+     * @dev Queries {AccessFacet.hasRole} via delegatecall.
+     */
+    function _hasRole(bytes32 role) private returns (bool) {
+        return abi.decode(
+            address(this).functionDelegateCall(abi.encodeWithSelector(AccessFacet.hasRole.selector, role, msg.sender)),
+            (bool)
+        );
     }
 }
