@@ -126,6 +126,14 @@ library LibEvents {
      */
     event DeactivateStrategy(address indexed strategy, bytes supplement);
 
+    /**
+     * @dev Emitted when an active strategy is deactivated while it still reports non-zero assets (emergency path).
+     * @param strategy The address of the strategy adapter.
+     * @param supplement Additional data for the strategy.
+     * @param strandedAssets Assets still attributed to the strategy before deactivation; vault share price ignores these. Strategy remains registered and may be re-activated later.
+     */
+    event ForceDeactivateStrategy(address indexed strategy, bytes supplement, uint256 strandedAssets);
+
     // ClientsFacet
     /**
      * @dev Emitted when new project IDs are assigned to a client.

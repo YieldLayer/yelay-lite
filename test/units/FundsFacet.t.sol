@@ -884,4 +884,158 @@ contract FundsFacetTest is Test {
         assertEq(yelayLiteVault.lastTotalAssets(), 1200e18);
         assertEq(yelayLiteVault.totalSupply(), toDeposit + feeShares);
     }
+
+    // ========== Tests for forceDeactivateStrategy & ratio decrease ==========
+
+    /// @dev forceDeactivateStrategy with stranded assets while other strategies still hold funds:
+    /// the user takes the loss on redeem proportional to the stranded amount.
+    function test_forceDeactivate_partialAssets_redeemReceivesReducedAssets() external {
+        vm.startPrank(owner);
+        MockProtocol protocolA = new MockProtocol(address(underlyingAsset));
+        MockProtocol protocolB = new MockProtocol(address(underlyingAsset));
+        MockStrategy stratA = new MockStrategy(address(protocolA));
+        MockStrategy stratB = new MockStrategy(address(protocolB));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(stratA), supplement: "", name: ""}));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(stratB), supplement: "", name: ""}));
+        uint256[] memory queueA = new uint256[](1);
+        queueA[0] = 0;
+        yelayLiteVault.activateStrategy(0, queueA, queueA);
+        uint256[] memory queueAB = new uint256[](2);
+        queueAB[0] = 0;
+        queueAB[1] = 1;
+        yelayLiteVault.activateStrategy(1, queueAB, queueAB);
+        vm.stopPrank();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        vm.prank(user);
+        uint256 userShares = yelayLiteVault.deposit(toDeposit, projectId, user);
+        // All deposit funds go to strategy A (first in queue).
+        assertEq(yelayLiteVault.strategyAssets(0), toDeposit);
+
+        // Move 600 into strategy B so that 400 remains in strategy A.
+        StrategyArgs[] memory withdrawals = new StrategyArgs[](1);
+        withdrawals[0] = StrategyArgs({index: 0, amount: 600e18});
+        StrategyArgs[] memory deposits = new StrategyArgs[](1);
+        deposits[0] = StrategyArgs({index: 1, amount: 600e18});
+        vm.prank(owner);
+        yelayLiteVault.reallocate(withdrawals, deposits);
+        assertEq(yelayLiteVault.strategyAssets(0), 400e18);
+        assertEq(yelayLiteVault.strategyAssets(1), 600e18);
+        assertEq(yelayLiteVault.totalAssets(), toDeposit);
+
+        // Force-deactivate strategy A. 400e18 are stranded inside protocolA.
+        uint256[] memory newQueue = new uint256[](1);
+        newQueue[0] = 0; // After deactivation, strategy B is at index 0.
+        vm.prank(owner);
+        yelayLiteVault.forceDeactivateStrategy(0, newQueue, newQueue);
+
+        assertEq(yelayLiteVault.totalAssets(), 600e18);
+        assertEq(yelayLiteVault.totalSupply(), userShares);
+        // Stranded assets still exist in protocolA but are no longer counted.
+        assertEq(protocolA.assetBalance(address(yelayLiteVault)), 400e18);
+
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.redeem(userShares, projectId, user);
+
+        // User receives only the 600e18 that remained in strategy B.
+        assertEq(assets, 600e18);
+        assertEq(yelayLiteVault.totalSupply(), 0);
+    }
+
+    /// @dev After total loss + accrueFee, lastTotalAssets is zero with shares outstanding. Recovery via
+    /// compoundUnderlyingReward must not brick the vault (this is the key edge case fixed in _mintFee).
+    function test_forceDeactivate_totalLoss_thenAccrueFee_thenRecoverViaCompound() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        uint256 userShares = yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(userShares, toDeposit);
+        assertEq(yelayLiteVault.lastTotalAssets(), toDeposit);
+
+        // Force-deactivate the only strategy: every cent is stranded outside the vault accounting.
+        uint256[] memory queue = new uint256[](0);
+        vm.prank(owner);
+        yelayLiteVault.forceDeactivateStrategy(0, queue, queue);
+
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertGt(yelayLiteVault.totalSupply(), 0);
+
+        // Driving lastTotalAssets to zero is what triggers the previously-bricking path.
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), 0);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // Simulate a rescue (tokens sent directly to the vault, e.g. governance bailout).
+        uint256 rescued = 500e18;
+        deal(address(underlyingAsset), address(yelayLiteVault), rescued);
+
+        vm.startPrank(owner);
+        yelayLiteVault.grantRole(LibRoles.SWAP_REWARDS_OPERATOR, owner);
+        // Pre-fix: this would revert with VaultInsolvent inside _accrueFee -> _mintFee.
+        uint256 compounded = yelayLiteVault.compoundUnderlyingReward();
+        vm.stopPrank();
+
+        assertEq(compounded, rescued);
+        assertEq(yelayLiteVault.totalAssets(), rescued);
+        assertEq(yelayLiteVault.lastTotalAssets(), rescued);
+        // Recovery is absorbed by existing shareholders rather than minted to the extractor
+        // (the share-based fee formula has no baseline to anchor the proportion).
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // Half the original deposit was rescued; existing shares are worth proportionally less.
+        assertEq(yelayLiteVault.balanceOf(user, projectId), userShares);
+        assertEq(yelayLiteVault.convertToAssets(userShares), rescued);
+
+        // The vault is functional again: a fresh deposit succeeds.
+        deal(address(underlyingAsset), user2, 100e18);
+        vm.prank(user2);
+        uint256 user2Shares = yelayLiteVault.deposit(100e18, projectId, user2);
+        assertEq(yelayLiteVault.totalAssets(), rescued + 100e18);
+        // Original holder still owns half the rescued pool; new depositor gets full value for their assets.
+        assertEq(yelayLiteVault.convertToAssets(userShares), rescued);
+        assertEq(yelayLiteVault.convertToAssets(user2Shares), 100e18);
+    }
+
+    /// @dev Same recovery edge case, but assets reappear by re-activating the strategy that still holds them.
+    function test_forceDeactivate_totalLoss_thenAccrueFee_thenRecoverViaReactivation() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        // Deposit pushes funds into the strategy; protocol carries the assets even after deactivation.
+        assertEq(mockProtocol.assetBalance(address(yelayLiteVault)), toDeposit);
+
+        uint256[] memory emptyQueue = new uint256[](0);
+        vm.prank(owner);
+        yelayLiteVault.forceDeactivateStrategy(0, emptyQueue, emptyQueue);
+
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertEq(mockProtocol.assetBalance(address(yelayLiteVault)), toDeposit);
+
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), 0);
+
+        // Re-activate: the registered strategy is still present and its protocol still reports the balance.
+        uint256[] memory newQueue = new uint256[](1);
+        newQueue[0] = 0;
+        vm.prank(owner);
+        yelayLiteVault.activateStrategy(0, newQueue, newQueue);
+
+        assertEq(yelayLiteVault.totalAssets(), toDeposit);
+
+        // Pre-fix this accrue call would revert (lastTotalAssets == 0 with positive totalInterest).
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), toDeposit);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // Original holder can now redeem and recover their full deposit (modulo WITHDRAW_MARGIN).
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.redeem(toDeposit, projectId, user);
+        assertApproxEqAbs(assets, toDeposit, WITHDRAW_MARGIN);
+    }
 }

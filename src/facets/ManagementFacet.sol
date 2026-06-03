@@ -142,4 +142,29 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         _updateDepositQueue(sM, depositQueue_);
         _updateWithdrawQueue(sM, withdrawQueue_);
     }
+
+    /// @inheritdoc IManagementFacet
+    function forceDeactivateStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external
+        notPaused
+        onlyRole(LibRoles.STRATEGY_AUTHORITY)
+    {
+        LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
+        StrategyData memory strategy = sM.activeStrategies[index];
+        bytes32 strategyId = _getStrategyId(strategy);
+
+        uint256 strandedAssets = LibManagement._strategyAssets(index);
+
+        emit LibEvents.ForceDeactivateStrategy(strategy.adapter, strategy.supplement, strandedAssets);
+        emit LibEvents.DeactivateStrategy(strategy.adapter, strategy.supplement);
+
+        sM.strategyIsActive[strategyId] = false;
+        sM.activeStrategies[index].adapter.functionDelegateCall(
+            abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.activeStrategies[index].supplement)
+        );
+        sM.activeStrategies[index] = sM.activeStrategies[sM.activeStrategies.length - 1];
+        sM.activeStrategies.pop();
+        _updateDepositQueue(sM, depositQueue_);
+        _updateWithdrawQueue(sM, withdrawQueue_);
+    }
 }
