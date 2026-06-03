@@ -108,7 +108,7 @@ library Utils {
     }
 
     function managementFacetSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](12);
+        bytes4[] memory selectors = new bytes4[](11);
         selectors[0] = ManagementFacet.addStrategy.selector;
         selectors[1] = ManagementFacet.removeStrategy.selector;
         selectors[2] = ManagementFacet.updateDepositQueue.selector;
@@ -116,10 +116,10 @@ library Utils {
         selectors[4] = ManagementFacet.getDepositQueue.selector;
         selectors[5] = ManagementFacet.getWithdrawQueue.selector;
         selectors[6] = ManagementFacet.getStrategies.selector;
-        selectors[8] = ManagementFacet.activateStrategy.selector;
-        selectors[9] = ManagementFacet.deactivateStrategy.selector;
-        selectors[10] = ManagementFacet.getActiveStrategies.selector;
-        selectors[11] = ManagementFacet.forceDeactivateStrategy.selector;
+        selectors[7] = ManagementFacet.activateStrategy.selector;
+        selectors[8] = ManagementFacet.deactivateStrategy.selector;
+        selectors[9] = ManagementFacet.getActiveStrategies.selector;
+        selectors[10] = ManagementFacet.forceDeactivateStrategy.selector;
         return selectors;
     }
 
