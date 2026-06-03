@@ -11,6 +11,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
+import {IERC4626Plugin} from "src/interfaces/IERC4626Plugin.sol";
 import {IYelayLiteVault} from "src/interfaces/IYelayLiteVault.sol";
 import {ClaimRequest, IYieldExtractor} from "src/interfaces/IYieldExtractor.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
@@ -24,7 +25,7 @@ import {LibRoles} from "src/libraries/LibRoles.sol";
  *      with the YelayLiteVault system. It allows users to deposit assets and receive
  *      shares that represent their proportional ownership of the underlying vault.
  */
-contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable {
+contract ERC4626Plugin is ERC1155HolderUpgradeable, ERC4626Upgradeable, IERC4626Plugin {
     using Math for uint256;
 
     // ============ Constants ============
