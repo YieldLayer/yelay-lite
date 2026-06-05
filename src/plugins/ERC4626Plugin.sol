@@ -17,7 +17,8 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 
 /**
  * @title ERC4626Plugin
- * @notice An ERC4626 vault plugin that wraps YelayLiteVault functionality
+ * @notice An ERC4626 vault plugin that wraps YelayLiteVault functionality.
+ *         EXPERIMENTAL — requires internal audit before production use.
  * @dev This contract implements the ERC4626 standard for tokenized vaults and integrates
  *      with the YelayLiteVault system. It allows users to deposit assets and receive
  *      shares that represent their proportional ownership of the underlying vault.

@@ -14,6 +14,7 @@ import {LibEvents} from "src/libraries/LibEvents.sol";
 
 /**
  * @title DepositLockPlugin
+ * @notice EXPERIMENTAL — requires internal audit before production use.
  * @dev Allows locking of deposits so that funds sent to a vault via this plugin remain locked until
  * some lock period expires. The project owner (as given by the vault's ClientsFacet) may update the project's
  * lock period. In Variable mode, each deposit is recorded with a timestamp.
