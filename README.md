@@ -31,6 +31,8 @@ Deposits and withdrawals are immediate. For deposits, if the deposit queue is em
 
 # Plugins
 
+> **Experimental features:** `DepositLockPlugin` and `ERC4626Plugin` are experimental and require an internal audit before production use.
+
 - **Deposit Locks**: Clients with specific ID ranges will be restricted to creating projects where user deposits must remain in the vault for a predefined period. Only after this period has elapsed can the position be redeemed or migrated.
 
 - **ERC4626 Plugin**: Clients may optionally enable an ERC4626 integration layer. This plugin streamlines interoperability with other smart contracts and simplifies onboarding for retail users. Yield within ERC4626 plugins is distributed periodically, following the standard ERC4626 interface, ensuring compatibility with existing DeFi infrastructure.
