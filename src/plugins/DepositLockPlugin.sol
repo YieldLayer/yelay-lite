@@ -131,6 +131,7 @@ contract DepositLockPlugin is OwnableUpgradeable, ERC1155HolderUpgradeable, UUPS
     function updateGlobalUnlockTime(address vault, uint256 projectId, uint256 unlockTime) external {
         require(_isProjectOwner(vault, projectId), LibErrors.NotProjectOwner(vault, projectId, msg.sender));
         require(_isProjectActivated(vault, projectId), LibErrors.ProjectInactive());
+        require(unlockTime != 0, LibErrors.InvalidGlobalUnlockTime());
         _setOrValidateLockMode(vault, projectId, LockMode.Global);
 
         projectGlobalUnlockTime[vault][projectId] = unlockTime;
