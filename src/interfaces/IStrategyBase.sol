@@ -50,7 +50,8 @@ interface IStrategyBase {
     function onAdd(bytes calldata supplement) external;
 
     /**
-     * @dev Called when the strategy is removed.
+     * @dev Called when the strategy is removed via normal deactivation.
+     * @dev Not called on force deactivation (`forceDeactivateStrategy`).
      * @param supplement Additional data required for the removal.
      */
     function onRemove(bytes calldata supplement) external;

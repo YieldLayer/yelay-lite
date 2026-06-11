@@ -153,15 +153,9 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
         StrategyData memory strategy = sM.activeStrategies[index];
         bytes32 strategyId = _getStrategyId(strategy);
 
-        uint256 strandedAssets = LibManagement._strategyAssets(index);
-
-        emit LibEvents.ForceDeactivateStrategy(strategy.adapter, strategy.supplement, strandedAssets);
-        emit LibEvents.DeactivateStrategy(strategy.adapter, strategy.supplement);
+        emit LibEvents.ForceDeactivateStrategy(strategy.adapter, strategy.supplement);
 
         sM.strategyIsActive[strategyId] = false;
-        sM.activeStrategies[index].adapter.functionDelegateCall(
-            abi.encodeWithSelector(IStrategyBase.onRemove.selector, sM.activeStrategies[index].supplement)
-        );
         sM.activeStrategies[index] = sM.activeStrategies[sM.activeStrategies.length - 1];
         sM.activeStrategies.pop();
         _updateDepositQueue(sM, depositQueue_);
