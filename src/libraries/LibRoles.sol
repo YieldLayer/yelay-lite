@@ -11,6 +11,9 @@ library LibRoles {
     // 0xffd2865c3eadba5ddbf1543e65a692d7001b37f737db7363a54642156548df64
     bytes32 constant FUNDS_OPERATOR = keccak256("FUNDS_OPERATOR");
 
+    // 0x58e488c6b4bc9a5095173ef50c33e9b7c1ae7e39dbc546272670545e89433fad
+    bytes32 constant EMERGENCY_WITHDRAW_OPERATOR = keccak256("EMERGENCY_WITHDRAW_OPERATOR");
+
     // 0xb95e9900cc6e2c54ae5b00d8f86008697b24bf67652a40653ea0c09c6fc4a856
     bytes32 constant QUEUES_OPERATOR = keccak256("QUEUES_OPERATOR");
 
@@ -25,4 +28,7 @@ library LibRoles {
 
     // 0xe1e438f510a6787349796e72348290fc4309699b8925cfe7df77feeaca3b7020
     bytes32 constant YIELD_PUBLISHER = keccak256("YIELD_PUBLISHER");
+
+    // 0xaa792cee953120e0a59b0d50300f15068d6465c1f24402b68efb2681c9a11f02 — granted per ERC4626Plugin, not on vault
+    bytes32 constant ERC4626_ACCRUE_OPERATOR = keccak256("ERC4626_ACCRUE_OPERATOR");
 }

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 
 import {IStrategyBase} from "src/interfaces/IStrategyBase.sol";
 import {IManagementFacet, StrategyData} from "src/interfaces/IManagementFacet.sol";
@@ -10,7 +9,6 @@ import {IManagementFacet, StrategyData} from "src/interfaces/IManagementFacet.so
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
 import {PausableCheck} from "src/abstract/PausableCheck.sol";
 
-import {LibFunds} from "src/libraries/LibFunds.sol";
 import {LibManagement} from "src/libraries/LibManagement.sol";
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibEvents} from "src/libraries/LibEvents.sol";
@@ -22,7 +20,6 @@ import {LibErrors} from "src/libraries/LibErrors.sol";
  */
 contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
     using Address for address;
-    using SafeTransferLib for ERC20;
 
     /// @inheritdoc IManagementFacet
     function getStrategies() external view returns (StrategyData[] memory) {
@@ -147,10 +144,21 @@ contract ManagementFacet is RoleCheck, PausableCheck, IManagementFacet {
     }
 
     /// @inheritdoc IManagementFacet
-    function approveStrategy(uint256 index, uint256 amount) external notPaused onlyRole(LibRoles.STRATEGY_AUTHORITY) {
-        LibFunds.FundsStorage memory sF = LibFunds._getFundsStorage();
+    function forceDeactivateStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external
+        notPaused
+        onlyRole(LibRoles.STRATEGY_AUTHORITY)
+    {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
-        address protocol = IStrategyBase(sM.strategies[index].adapter).protocol(sM.strategies[index].supplement);
-        sF.underlyingAsset.safeApprove(protocol, amount);
+        StrategyData memory strategy = sM.activeStrategies[index];
+        bytes32 strategyId = _getStrategyId(strategy);
+
+        emit LibEvents.ForceDeactivateStrategy(strategy.adapter, strategy.supplement);
+
+        sM.strategyIsActive[strategyId] = false;
+        sM.activeStrategies[index] = sM.activeStrategies[sM.activeStrategies.length - 1];
+        sM.activeStrategies.pop();
+        _updateDepositQueue(sM, depositQueue_);
+        _updateWithdrawQueue(sM, withdrawQueue_);
     }
 }

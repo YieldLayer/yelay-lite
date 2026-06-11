@@ -85,10 +85,14 @@ interface IManagementFacet {
         external;
 
     /**
-     * @dev Function to approve spending of underlying asset by the strategy.
+     * @dev Like `deactivateStrategy`, but allows non-zero strategy assets (emergency path).
      * @dev Callable by STRATEGY_AUTHORITY.
-     * @param index The index of the strategy.
-     * @param amount The amount to approve.
+     * @dev Reported strategy assets are dropped from `totalAssets` while funds may remain in the external protocol, diluting the share price.
+     * @dev Does not call `onRemove` on the strategy adapter.
+     * @param index The index of active strategy.
+     * @param depositQueue_ The new deposit queue.
+     * @param withdrawQueue_ The new withdraw queue.
      */
-    function approveStrategy(uint256 index, uint256 amount) external;
+    function forceDeactivateStrategy(uint256 index, uint256[] calldata depositQueue_, uint256[] calldata withdrawQueue_)
+        external;
 }

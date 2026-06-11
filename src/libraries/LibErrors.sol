@@ -22,6 +22,15 @@ library LibErrors {
     error SelectorNotSet(bytes4 selector);
     error ForbiddenOwnerSelector(bytes4 selector);
 
+    // ===================== AccessFacet ================================
+    /**
+     * @dev The account has neither of the required roles.
+     * @param account The address of the unauthorized account.
+     * @param roleA The first acceptable role.
+     * @param roleB The second acceptable role.
+     */
+    error AccessControlUnauthorizedAnyRole(address account, bytes32 roleA, bytes32 roleB);
+
     // ===================== ClientsFacet ================================
     /**
      * @dev The owner address is already used by some client.
@@ -103,6 +112,11 @@ library LibErrors {
      * @dev Claim request must be for the vault making the call
      */
     error InvalidClaimVault();
+
+    /**
+     * @dev The vault has outstanding shares but no underlying assets.
+     */
+    error VaultInsolvent();
 
     // ===================== SwapWrapper ================================
     /**
@@ -239,6 +253,17 @@ library LibErrors {
      * @notice Thrown when an invalid cycle number is provided
      */
     error InvalidCycle();
+
+    /**
+     * @notice Thrown when plugins and claim request arrays have different lengths
+     */
+    error DataLengthMismatch();
+
+    /**
+     * @notice Thrown when a claim request does not match the new root accrual
+     * @param idx Index of the invalid claim request
+     */
+    error InvalidAccrueRequest(uint256 idx);
 
     // ===================== ERC4626Plugin ================================
 

@@ -54,11 +54,11 @@ contract MockStrategy is IStrategyBase {
         return address(mockProtocol);
     }
 
-    function deposit(uint256 amount, bytes calldata) external {
+    function deposit(uint256 amount, bytes calldata) external virtual {
         mockProtocol.deposit(amount);
     }
 
-    function withdraw(uint256 amount, bytes calldata) external returns (uint256) {
+    function withdraw(uint256 amount, bytes calldata) external virtual returns (uint256) {
         return mockProtocol.withdraw(amount);
     }
 
@@ -72,4 +72,17 @@ contract MockStrategy is IStrategyBase {
     function onRemove(bytes calldata) external {}
     function viewRewards(address, bytes calldata) external view returns (Reward[] memory rewards) {}
     function claimRewards(bytes calldata) external {}
+}
+
+/// @dev Like MockStrategy but `deposit` / `withdraw` always revert (failed delegatecall paths).
+contract FailingMockStrategy is MockStrategy {
+    constructor(address mockProtocol_) MockStrategy(mockProtocol_) {}
+
+    function deposit(uint256, bytes calldata) external override {
+        revert("FailingMockStrategy: deposit");
+    }
+
+    function withdraw(uint256, bytes calldata) external override returns (uint256) {
+        revert("FailingMockStrategy: withdraw");
+    }
 }

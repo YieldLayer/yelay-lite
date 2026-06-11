@@ -44,7 +44,6 @@ contract TwoStrategiesTest is Test {
                 name: "aave"
             });
             yelayLiteVault.addStrategy(strategy);
-            yelayLiteVault.approveStrategy(0, type(uint256).max);
         }
         {
             StrategyData memory strategy = StrategyData({
@@ -54,7 +53,6 @@ contract TwoStrategiesTest is Test {
             });
 
             yelayLiteVault.addStrategy(strategy);
-            yelayLiteVault.approveStrategy(1, type(uint256).max);
         }
         {
             uint256[] memory queue = new uint256[](2);

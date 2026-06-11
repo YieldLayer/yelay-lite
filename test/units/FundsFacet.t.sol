@@ -14,7 +14,7 @@ import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 import {StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 import {ClaimRequest} from "src/interfaces/IYieldExtractor.sol";
 
-import {MockStrategy, MockProtocol} from "test/mocks/MockStrategy.sol";
+import {MockStrategy, MockProtocol, FailingMockStrategy} from "test/mocks/MockStrategy.sol";
 import {MockYieldExtractor} from "test/mocks/MockYieldExtractor.sol";
 
 import {MockToken} from "test/mocks/MockToken.sol";
@@ -64,7 +64,6 @@ contract FundsFacetTest is Test {
         vm.startPrank(owner);
         StrategyData memory strategy = StrategyData({adapter: address(mockStrategy), supplement: "", name: ""});
         yelayLiteVault.addStrategy(strategy);
-        yelayLiteVault.approveStrategy(0, type(uint256).max);
         {
             uint256[] memory queue = new uint256[](1);
             queue[0] = 0;
@@ -165,6 +164,137 @@ contract FundsFacetTest is Test {
         assertEq(yelayLiteVault.underlyingBalance(), underlyingAssetBefore + compounded);
         assertEq(yelayLiteVault.totalAssets(), totalAssetsBefore + compounded);
         assertEq(compounded, 1e18);
+    }
+
+    // ========== Tests for allowance management  ==========
+
+    function test_deposit_clears_protocol_allowance_after_success() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
+    }
+
+    function test_deposit_resets_allowance_when_first_strategy_fails() external {
+        vm.startPrank(owner);
+        MockProtocol protocolA = new MockProtocol(address(underlyingAsset));
+        MockProtocol protocolB = new MockProtocol(address(underlyingAsset));
+        FailingMockStrategy stratA = new FailingMockStrategy(address(protocolA));
+        MockStrategy stratB = new MockStrategy(address(protocolB));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(stratA), supplement: "", name: ""}));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(stratB), supplement: "", name: ""}));
+        uint256[] memory queue = new uint256[](2);
+        queue[0] = 0;
+        queue[1] = 1;
+        yelayLiteVault.activateStrategy(0, new uint256[](0), new uint256[](0));
+        yelayLiteVault.activateStrategy(1, queue, queue);
+        vm.stopPrank();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolA)), 0);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolB)), 0);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolA)), 0);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocolB)), 0);
+        assertEq(yelayLiteVault.strategyAssets(1), toDeposit);
+    }
+
+    function test_deposit_to_strategy_fails_resets_allowance() external {
+        vm.startPrank(owner);
+        MockProtocol protocol = new MockProtocol(address(underlyingAsset));
+        FailingMockStrategy failingStrategy = new FailingMockStrategy(address(protocol));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(failingStrategy), supplement: "", name: ""}));
+        uint256[] memory queue = new uint256[](1);
+        queue[0] = 0;
+        yelayLiteVault.activateStrategy(0, queue, queue);
+        vm.stopPrank();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocol)), 0);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(protocol)), 0);
+        assertEq(yelayLiteVault.underlyingBalance(), toDeposit);
+    }
+
+    function test_managedDeposit_clears_protocol_allowance_after_success() external {
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, 10_000e18);
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(yelayLiteVault.underlyingBalance(), toDeposit);
+
+        vm.startPrank(owner);
+        StrategyData memory strategy = StrategyData({adapter: address(mockStrategy), supplement: "", name: ""});
+        yelayLiteVault.addStrategy(strategy);
+        uint256[] memory queue = new uint256[](1);
+        queue[0] = 0;
+        yelayLiteVault.activateStrategy(0, queue, queue);
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
+
+        yelayLiteVault.managedDeposit(StrategyArgs({index: 0, amount: toDeposit}));
+        vm.stopPrank();
+
+        assertEq(underlyingAsset.allowance(address(yelayLiteVault), address(mockProtocol)), 0);
+        assertEq(yelayLiteVault.underlyingBalance(), 0);
+        assertEq(yelayLiteVault.strategyAssets(0), toDeposit);
+    }
+
+    // ========== Tests for managedWithdraw role access ==========
+
+    function test_managedWithdraw_onlyCallableBySetRoles() external {
+        address stranger = makeAddr("stranger");
+        address emergencyOperator = makeAddr("emergencyOperator");
+        _addStrategy();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit * 2);
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(yelayLiteVault.strategyAssets(0), toDeposit);
+
+        StrategyArgs memory args = StrategyArgs({index: 0, amount: toDeposit});
+
+        vm.prank(stranger);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                LibErrors.AccessControlUnauthorizedAnyRole.selector,
+                stranger,
+                LibRoles.FUNDS_OPERATOR,
+                LibRoles.EMERGENCY_WITHDRAW_OPERATOR
+            )
+        );
+        yelayLiteVault.managedWithdraw(args);
+
+        vm.prank(owner);
+        yelayLiteVault.managedWithdraw(args);
+        assertEq(yelayLiteVault.strategyAssets(0), 0);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(yelayLiteVault.strategyAssets(0), toDeposit);
+
+        vm.startPrank(owner);
+        yelayLiteVault.grantRole(LibRoles.EMERGENCY_WITHDRAW_OPERATOR, emergencyOperator);
+        yelayLiteVault.revokeRole(LibRoles.FUNDS_OPERATOR, owner);
+        vm.stopPrank();
+
+        vm.prank(emergencyOperator);
+        yelayLiteVault.managedWithdraw(args);
+        assertEq(yelayLiteVault.strategyAssets(0), 0);
     }
 
     // ========== Tests for transformYieldShares ==========
@@ -378,6 +508,89 @@ contract FundsFacetTest is Test {
 
     // ========== Tests for convertToShares / convertToAssets ==========
 
+    function test_convertFunctions_emptyVault() external view {
+        uint256 amount = 1000e18;
+
+        assertEq(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertEq(yelayLiteVault.convertToShares(amount), amount);
+        assertEq(yelayLiteVault.convertToAssets(amount), amount);
+        assertEq(yelayLiteVault.convertToShares(0), 0);
+        assertEq(yelayLiteVault.convertToAssets(0), 0);
+    }
+
+    function test_convertFunctions_insolventVault() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        mockProtocol.setAssetBalance(address(yelayLiteVault), 0);
+
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertGt(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.convertToAssets(0), 0);
+        assertEq(yelayLiteVault.convertToAssets(toDeposit / 2), 0);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.convertToShares(0);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.convertToShares(toDeposit / 2);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.previewWithdraw(toDeposit / 2);
+
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.previewRedeem(toDeposit / 2);
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.deposit(toDeposit / 2, projectId, user);
+    }
+
+    /// @dev Same insolvent state as above, but after `accrueFee` has synced `lastTotalAssets` to zero.
+    /// View helpers must not spuriously revert; user actions still fail with meaningful errors.
+    function test_convertFunctions_insolventVault_afterAccrueFee() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        mockProtocol.setAssetBalance(address(yelayLiteVault), 0);
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertGt(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.lastTotalAssets(), 0);
+
+        assertEq(yelayLiteVault.convertToAssets(0), 0);
+        assertEq(yelayLiteVault.convertToAssets(toDeposit / 2), 0);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.convertToShares(toDeposit / 2);
+
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.previewRedeem(toDeposit / 2);
+
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.previewWithdraw(toDeposit / 2);
+
+        vm.prank(user);
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.redeem(toDeposit / 2, projectId, user);
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.VaultInsolvent.selector));
+        yelayLiteVault.deposit(100, projectId, user);
+
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), 0);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+    }
+
     function test_convertFunctions_noYield() external {
         _addStrategy();
         uint256 toDeposit = 1000e18;
@@ -465,6 +678,14 @@ contract FundsFacetTest is Test {
 
     // ========== Tests for previewRedeem / previewWithdraw ==========
 
+    function test_preview_emptyVault() external view {
+        uint256 assets = 1000e18;
+        uint256 shares = 1000e18;
+
+        assertEq(yelayLiteVault.previewWithdraw(assets), assets + WITHDRAW_MARGIN);
+        assertEq(yelayLiteVault.previewRedeem(shares), shares - WITHDRAW_MARGIN);
+    }
+
     function test_preview_noYield() external {
         _addStrategy();
         uint256 toDeposit = 1000e18;
@@ -508,6 +729,28 @@ contract FundsFacetTest is Test {
         assertEq(yelayLiteVault.previewWithdraw(assetsToWithdraw), sharesToRedeem + WITHDRAW_MARGIN);
     }
 
+    function test_previewRedeem_revertsWhenBelowWithdrawMargin() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        mockProtocol.setAssetBalance(address(yelayLiteVault), toDeposit);
+
+        // 0 shares -> 0 assets, which is not > WITHDRAW_MARGIN
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.previewRedeem(0);
+
+        // Exactly WITHDRAW_MARGIN shares -> WITHDRAW_MARGIN assets (1:1 with no yield),
+        // not strictly greater than WITHDRAW_MARGIN, so it must revert
+        vm.expectRevert(LibErrors.MinRedeem.selector);
+        yelayLiteVault.previewRedeem(WITHDRAW_MARGIN);
+
+        // One wei above the margin succeeds and returns the smallest possible asset amount.
+        assertEq(yelayLiteVault.previewRedeem(WITHDRAW_MARGIN + 1), 1);
+    }
+
     function test_preview_withLoss() external {
         _addStrategy();
         uint256 toDeposit = 1000e18;
@@ -537,5 +780,262 @@ contract FundsFacetTest is Test {
         // accounting remains the same after fee accrual
         assertEq(yelayLiteVault.previewRedeem(sharesToRedeem), toDeposit / 2 - WITHDRAW_MARGIN);
         assertEq(yelayLiteVault.previewWithdraw(assetsToWithdraw), shares + 2 * WITHDRAW_MARGIN);
+    }
+
+    // ========== Tests for negative yield / share-to-asset ratio decrease ==========
+
+    /// @dev Negative yield (e.g. an underlying-strategy management fee that exceeds APY) must NOT mint fee shares.
+    /// The lastTotalAssets baseline should track down to the new (lower) value so subsequent yield can be measured.
+    function test_accrueFee_withNegativeYield_doesNotMintFee() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        assertEq(yelayLiteVault.lastTotalAssets(), toDeposit);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // 30% negative yield.
+        uint256 newBalance = toDeposit * 7 / 10;
+        mockProtocol.setAssetBalance(address(yelayLiteVault), newBalance);
+
+        yelayLiteVault.accrueFee();
+
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+        assertEq(yelayLiteVault.lastTotalAssets(), newBalance);
+        assertEq(yelayLiteVault.totalAssets(), newBalance);
+        assertEq(yelayLiteVault.totalSupply(), toDeposit);
+    }
+
+    /// @dev A new deposit made after a loss must mint more shares per asset to reflect the lower price-per-share.
+    function test_deposit_afterNegativeYield_mintsMoreShares() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        deal(address(underlyingAsset), user2, toDeposit);
+
+        vm.prank(user);
+        uint256 userShares = yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(userShares, toDeposit);
+
+        // 50% loss => share price halves.
+        mockProtocol.setAssetBalance(address(yelayLiteVault), toDeposit / 2);
+
+        vm.prank(user2);
+        uint256 user2Shares = yelayLiteVault.deposit(toDeposit, projectId, user2);
+
+        // Same assets in but 2x shares because price-per-share halved.
+        assertEq(user2Shares, toDeposit * 2);
+        assertEq(yelayLiteVault.totalSupply(), 3 * toDeposit);
+        assertEq(yelayLiteVault.totalAssets(), toDeposit + toDeposit / 2);
+
+        // user1 ate the loss; user2 keeps full purchasing power.
+        assertEq(yelayLiteVault.convertToAssets(userShares), toDeposit / 2);
+        assertEq(yelayLiteVault.convertToAssets(user2Shares), toDeposit);
+    }
+
+    /// @dev Redemption after a loss should give proportionally fewer assets than originally deposited.
+    function test_redeem_afterNegativeYield_receivesLessAssets() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        uint256 userShares = yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        // 40% loss reflected by the mock protocol (tokens are still there; the strategy reports less).
+        uint256 newBalance = toDeposit * 6 / 10;
+        mockProtocol.setAssetBalance(address(yelayLiteVault), newBalance);
+
+        uint256 userBalanceBefore = underlyingAsset.balanceOf(user);
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.redeem(userShares, projectId, user);
+
+        assertApproxEqAbs(assets, newBalance, WITHDRAW_MARGIN);
+        assertEq(underlyingAsset.balanceOf(user), userBalanceBefore + assets);
+        assertEq(yelayLiteVault.totalSupply(), 0);
+        assertEq(yelayLiteVault.balanceOf(user, projectId), 0);
+    }
+
+    /// @dev When yield recovers above the post-loss baseline, the formula must mint fee shares correctly
+    /// (this verifies the share-ratio decrease followed by an increase still works end-to-end).
+    function test_yieldRecoveryAboveLastTotalAssets_mintsFee() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+
+        // Partial loss to 800 then accrue (resets lastTotalAssets to the lower baseline).
+        mockProtocol.setAssetBalance(address(yelayLiteVault), 800e18);
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), 800e18);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // Positive yield: 800 -> 1200 (relative to the post-loss baseline, +50%).
+        mockProtocol.setAssetBalance(address(yelayLiteVault), 1200e18);
+        yelayLiteVault.accrueFee();
+
+        // feeShares = 400e18 * 1000e18 / 800e18 = 500e18.
+        uint256 feeShares = yelayLiteVault.balanceOf(address(yieldExtractor), 0);
+        assertEq(feeShares, 500e18);
+        assertEq(yelayLiteVault.lastTotalAssets(), 1200e18);
+        assertEq(yelayLiteVault.totalSupply(), toDeposit + feeShares);
+    }
+
+    // ========== Tests for forceDeactivateStrategy & ratio decrease ==========
+
+    /// @dev forceDeactivateStrategy with stranded assets while other strategies still hold funds:
+    /// the user takes the loss on redeem proportional to the stranded amount.
+    function test_forceDeactivate_partialAssets_redeemReceivesReducedAssets() external {
+        vm.startPrank(owner);
+        MockProtocol protocolA = new MockProtocol(address(underlyingAsset));
+        MockProtocol protocolB = new MockProtocol(address(underlyingAsset));
+        MockStrategy stratA = new MockStrategy(address(protocolA));
+        MockStrategy stratB = new MockStrategy(address(protocolB));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(stratA), supplement: "", name: ""}));
+        yelayLiteVault.addStrategy(StrategyData({adapter: address(stratB), supplement: "", name: ""}));
+        uint256[] memory queueA = new uint256[](1);
+        queueA[0] = 0;
+        yelayLiteVault.activateStrategy(0, queueA, queueA);
+        uint256[] memory queueAB = new uint256[](2);
+        queueAB[0] = 0;
+        queueAB[1] = 1;
+        yelayLiteVault.activateStrategy(1, queueAB, queueAB);
+        vm.stopPrank();
+
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+        vm.prank(user);
+        uint256 userShares = yelayLiteVault.deposit(toDeposit, projectId, user);
+        // All deposit funds go to strategy A (first in queue).
+        assertEq(yelayLiteVault.strategyAssets(0), toDeposit);
+
+        // Move 600 into strategy B so that 400 remains in strategy A.
+        StrategyArgs[] memory withdrawals = new StrategyArgs[](1);
+        withdrawals[0] = StrategyArgs({index: 0, amount: 600e18});
+        StrategyArgs[] memory deposits = new StrategyArgs[](1);
+        deposits[0] = StrategyArgs({index: 1, amount: 600e18});
+        vm.prank(owner);
+        yelayLiteVault.reallocate(withdrawals, deposits);
+        assertEq(yelayLiteVault.strategyAssets(0), 400e18);
+        assertEq(yelayLiteVault.strategyAssets(1), 600e18);
+        assertEq(yelayLiteVault.totalAssets(), toDeposit);
+
+        // Force-deactivate strategy A. 400e18 are stranded inside protocolA.
+        uint256[] memory newQueue = new uint256[](1);
+        newQueue[0] = 0; // After deactivation, strategy B is at index 0.
+        vm.prank(owner);
+        yelayLiteVault.forceDeactivateStrategy(0, newQueue, newQueue);
+
+        assertEq(yelayLiteVault.totalAssets(), 600e18);
+        assertEq(yelayLiteVault.totalSupply(), userShares);
+        // Stranded assets still exist in protocolA but are no longer counted.
+        assertEq(protocolA.assetBalance(address(yelayLiteVault)), 400e18);
+
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.redeem(userShares, projectId, user);
+
+        // User receives only the 600e18 that remained in strategy B.
+        assertEq(assets, 600e18);
+        assertEq(yelayLiteVault.totalSupply(), 0);
+    }
+
+    /// @dev After total loss + accrueFee, lastTotalAssets is zero with shares outstanding. Recovery via
+    /// compoundUnderlyingReward must not brick the vault (this is the key edge case fixed in _mintFee).
+    function test_forceDeactivate_totalLoss_thenAccrueFee_thenRecoverViaCompound() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        uint256 userShares = yelayLiteVault.deposit(toDeposit, projectId, user);
+        assertEq(userShares, toDeposit);
+        assertEq(yelayLiteVault.lastTotalAssets(), toDeposit);
+
+        // Force-deactivate the only strategy: every cent is stranded outside the vault accounting.
+        uint256[] memory queue = new uint256[](0);
+        vm.prank(owner);
+        yelayLiteVault.forceDeactivateStrategy(0, queue, queue);
+
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertGt(yelayLiteVault.totalSupply(), 0);
+
+        // Driving lastTotalAssets to zero is what triggers the previously-bricking path.
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), 0);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // Simulate a rescue (tokens sent directly to the vault, e.g. governance bailout).
+        uint256 rescued = 500e18;
+        deal(address(underlyingAsset), address(yelayLiteVault), rescued);
+
+        vm.startPrank(owner);
+        yelayLiteVault.grantRole(LibRoles.SWAP_REWARDS_OPERATOR, owner);
+        // Pre-fix: this would revert with VaultInsolvent inside _accrueFee -> _mintFee.
+        uint256 compounded = yelayLiteVault.compoundUnderlyingReward();
+        vm.stopPrank();
+
+        assertEq(compounded, rescued);
+        assertEq(yelayLiteVault.totalAssets(), rescued);
+        assertEq(yelayLiteVault.lastTotalAssets(), rescued);
+        // Recovery is absorbed by existing shareholders rather than minted to the extractor
+        // (the share-based fee formula has no baseline to anchor the proportion).
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // Half the original deposit was rescued; existing shares are worth proportionally less.
+        assertEq(yelayLiteVault.balanceOf(user, projectId), userShares);
+        assertEq(yelayLiteVault.convertToAssets(userShares), rescued);
+
+        // The vault is functional again: a fresh deposit succeeds.
+        deal(address(underlyingAsset), user2, 100e18);
+        vm.prank(user2);
+        uint256 user2Shares = yelayLiteVault.deposit(100e18, projectId, user2);
+        assertEq(yelayLiteVault.totalAssets(), rescued + 100e18);
+        // Original holder still owns half the rescued pool; new depositor gets full value for their assets.
+        assertEq(yelayLiteVault.convertToAssets(userShares), rescued);
+        assertEq(yelayLiteVault.convertToAssets(user2Shares), 100e18);
+    }
+
+    /// @dev Same recovery edge case, but assets reappear by re-activating the strategy that still holds them.
+    function test_forceDeactivate_totalLoss_thenAccrueFee_thenRecoverViaReactivation() external {
+        _addStrategy();
+        uint256 toDeposit = 1000e18;
+        deal(address(underlyingAsset), user, toDeposit);
+
+        vm.prank(user);
+        yelayLiteVault.deposit(toDeposit, projectId, user);
+        // Deposit pushes funds into the strategy; protocol carries the assets even after deactivation.
+        assertEq(mockProtocol.assetBalance(address(yelayLiteVault)), toDeposit);
+
+        uint256[] memory emptyQueue = new uint256[](0);
+        vm.prank(owner);
+        yelayLiteVault.forceDeactivateStrategy(0, emptyQueue, emptyQueue);
+
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        assertEq(mockProtocol.assetBalance(address(yelayLiteVault)), toDeposit);
+
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), 0);
+
+        // Re-activate: the registered strategy is still present and its protocol still reports the balance.
+        uint256[] memory newQueue = new uint256[](1);
+        newQueue[0] = 0;
+        vm.prank(owner);
+        yelayLiteVault.activateStrategy(0, newQueue, newQueue);
+
+        assertEq(yelayLiteVault.totalAssets(), toDeposit);
+
+        // Pre-fix this accrue call would revert (lastTotalAssets == 0 with positive totalInterest).
+        yelayLiteVault.accrueFee();
+        assertEq(yelayLiteVault.lastTotalAssets(), toDeposit);
+        assertEq(yelayLiteVault.balanceOf(address(yieldExtractor), 0), 0);
+
+        // Original holder can now redeem and recover their full deposit (modulo WITHDRAW_MARGIN).
+        vm.prank(user);
+        uint256 assets = yelayLiteVault.redeem(toDeposit, projectId, user);
+        assertApproxEqAbs(assets, toDeposit, WITHDRAW_MARGIN);
     }
 }

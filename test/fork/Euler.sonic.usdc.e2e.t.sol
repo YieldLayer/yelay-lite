@@ -26,7 +26,6 @@ contract EulerSonicUsdcTest is AbstractStrategyTest {
             name: "EVK Vault eUSDC.e-3"
         });
         yelayLiteVault.addStrategy(strategy);
-        yelayLiteVault.approveStrategy(0, type(uint256).max);
         {
             uint256[] memory queue = new uint256[](1);
             queue[0] = 0;

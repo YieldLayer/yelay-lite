@@ -138,14 +138,17 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         sF.underlyingAsset.safeTransferFrom(msg.sender, address(this), assets);
         bool success;
         for (uint256 i; i < sM.depositQueue.length; i++) {
-            (success,) = sM.activeStrategies[sM.depositQueue[i]].adapter.delegatecall(
-                abi.encodeWithSelector(
-                    IStrategyBase.deposit.selector, assets, sM.activeStrategies[sM.depositQueue[i]].supplement
-                )
-            );
+            uint256 q = sM.depositQueue[i];
+            address adapter = sM.activeStrategies[q].adapter;
+            bytes memory supplement = sM.activeStrategies[q].supplement;
+            address protocol = IStrategyBase(adapter).protocol(supplement);
+            _setExactAllowance(sF, protocol, assets);
+            (success,) =
+                adapter.delegatecall(abi.encodeWithSelector(IStrategyBase.deposit.selector, assets, supplement));
             if (success) {
                 break;
             }
+            _setExactAllowance(sF, protocol, 0);
         }
         if (!success) {
             sF.underlyingBalance += SafeCast.toUint192(assets);
@@ -264,7 +267,11 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /// @inheritdoc IFundsFacet
-    function managedWithdraw(StrategyArgs calldata strategyArgs) public onlyRole(LibRoles.FUNDS_OPERATOR) notPaused {
+    function managedWithdraw(StrategyArgs calldata strategyArgs)
+        public
+        onlyAnyRole(LibRoles.FUNDS_OPERATOR, LibRoles.EMERGENCY_WITHDRAW_OPERATOR)
+        notPaused
+    {
         LibManagement.ManagementStorage storage sM = LibManagement._getManagementStorage();
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         _managedWithdraw(sM, sF, strategyArgs);
@@ -361,6 +368,21 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
     }
 
     /**
+     * @dev Sets underlying allowance exactly to target using a zero-reset when needed.
+     */
+    function _setExactAllowance(LibFunds.FundsStorage storage sF, address spender, uint256 target) internal {
+        ERC20 asset = sF.underlyingAsset;
+        uint256 current = asset.allowance(address(this), spender);
+        if (current == target) return;
+        if (current != 0) {
+            asset.safeApprove(spender, 0);
+        }
+        if (target != 0) {
+            asset.safeApprove(spender, target);
+        }
+    }
+
+    /**
      * @dev Internal function to deposit assets into a strategy.
      * @param sM The management storage.
      * @param sF The funds storage.
@@ -371,7 +393,11 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF,
         StrategyArgs calldata strategyArgs
     ) internal {
-        sM.activeStrategies[strategyArgs.index].adapter.functionDelegateCall(
+        address adapter = sM.activeStrategies[strategyArgs.index].adapter;
+        bytes memory supplement = sM.activeStrategies[strategyArgs.index].supplement;
+        address protocol = IStrategyBase(adapter).protocol(supplement);
+        _setExactAllowance(sF, protocol, strategyArgs.amount);
+        adapter.functionDelegateCall(
             abi.encodeWithSelector(
                 IStrategyBase.deposit.selector, strategyArgs.amount, sM.activeStrategies[strategyArgs.index].supplement
             )
@@ -412,11 +438,11 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
         uint256 totalInterest = newTotalAssets.zeroFloorSub(sF.lastTotalAssets);
         if (totalInterest > 0) {
-            uint256 feeShares = _convertToShares(totalInterest, totalSupply(), sF.lastTotalAssets);
+            uint256 feeShares = _convertToFeeShares(totalInterest, totalSupply(), sF.lastTotalAssets);
             if (feeShares > 0) {
                 _mint(sF.yieldExtractor, YIELD_PROJECT_ID, feeShares, "");
             }
-            emit LibEvents.AccrueInterest(newTotalAssets, totalInterest, feeShares);
+            emit LibEvents.AccrueInterest(newTotalAssets, totalInterest, feeShares, totalSupply());
         }
     }
 
@@ -432,7 +458,9 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
 
     /// @inheritdoc IFundsFacet
     function previewRedeem(uint256 shares) public view virtual returns (uint256) {
-        return convertToAssets(shares) - WITHDRAW_MARGIN;
+        uint256 assets = convertToAssets(shares);
+        require(assets > WITHDRAW_MARGIN, LibErrors.MinRedeem());
+        return assets - WITHDRAW_MARGIN;
     }
 
     /// @inheritdoc IFundsFacet
@@ -461,8 +489,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         LibFunds.FundsStorage storage sF = LibFunds._getFundsStorage();
         newTotalAssets = totalAssets();
         uint256 totalInterest = FixedPointMathLib.zeroFloorSub(newTotalAssets, sF.lastTotalAssets);
-        feeShares = _convertToShares(totalInterest, totalSupply(), sF.lastTotalAssets);
-        return (newTotalAssets, feeShares);
+        feeShares = _convertToFeeShares(totalInterest, totalSupply(), sF.lastTotalAssets);
     }
 
     /**
@@ -477,7 +504,27 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         pure
         returns (uint256)
     {
-        return newTotalSupply == 0 ? assets : assets.mulDiv(newTotalSupply, newTotalAssets);
+        if (newTotalSupply == 0) return assets;
+        if (newTotalAssets == 0) revert LibErrors.VaultInsolvent();
+        return assets.mulDiv(newTotalSupply, newTotalAssets);
+    }
+
+    /**
+     * @dev Internal function to convert assets to fee shares.
+     *      Unlike _convertToShares, returns 0 when newTotalAssets is 0 and newTotalSupply > 0 instead of reverting.
+     *      This can occur after a previously accrued total loss (e.g. forceDeactivateStrategy or negative yield).
+     * @param assets The amount of assets (accrued interest).
+     * @param newTotalSupply The total supply.
+     * @param newTotalAssets The fee baseline (lastTotalAssets at accrual time).
+     * @return The amount of fee shares.
+     */
+    function _convertToFeeShares(uint256 assets, uint256 newTotalSupply, uint256 newTotalAssets)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (newTotalAssets == 0 && newTotalSupply > 0) return 0;
+        return _convertToShares(assets, newTotalSupply, newTotalAssets);
     }
 
     /**
@@ -492,6 +539,7 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
         pure
         returns (uint256)
     {
+        if (newTotalSupply == 0) return shares;
         return shares.mulDiv(newTotalAssets, newTotalSupply);
     }
 }

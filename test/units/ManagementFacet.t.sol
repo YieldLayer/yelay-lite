@@ -8,6 +8,7 @@ import {StrategyData} from "src/interfaces/IManagementFacet.sol";
 
 import {LibRoles} from "src/libraries/LibRoles.sol";
 import {LibErrors} from "src/libraries/LibErrors.sol";
+import {LibEvents} from "src/libraries/LibEvents.sol";
 
 import {MockStrategy, MockProtocol} from "test/mocks/MockStrategy.sol";
 import {MockToken} from "test/mocks/MockToken.sol";
@@ -139,6 +140,102 @@ contract ManagementFacetTest is Test {
         yelayLiteVault.deactivateStrategy(0, queue, queue);
 
         assertEq(yelayLiteVault.getActiveStrategies().length, 0);
+
+        vm.stopPrank();
+    }
+
+    function test_forceDeactivateStrategy_with_stranded_assets() external {
+        vm.startPrank(owner);
+
+        StrategyData memory strategy1 =
+            StrategyData({adapter: address(mockStrategy1), name: "mockStrategy1", supplement: ""});
+        yelayLiteVault.addStrategy(strategy1);
+
+        uint256[] memory initialQueue = new uint256[](1);
+        initialQueue[0] = 0;
+        yelayLiteVault.activateStrategy(0, initialQueue, initialQueue);
+        assertEq(yelayLiteVault.getDepositQueue(), initialQueue);
+        assertEq(yelayLiteVault.getWithdrawQueue(), initialQueue);
+        assertEq(yelayLiteVault.getActiveStrategies().length, 1);
+
+        uint256 stranded = 100e18;
+        MockProtocol(mockProtocol1).setAssetBalance(address(yelayLiteVault), stranded);
+        assertEq(yelayLiteVault.totalAssets(), stranded);
+        assertEq(yelayLiteVault.strategyAssets(0), stranded);
+
+        uint256[] memory newQueue = new uint256[](0);
+        yelayLiteVault.forceDeactivateStrategy(0, newQueue, newQueue);
+
+        assertEq(yelayLiteVault.getActiveStrategies().length, 0);
+        assertEq(yelayLiteVault.getStrategies().length, 1);
+        assertEq(yelayLiteVault.getStrategies()[0].adapter, strategy1.adapter);
+        assertEq(yelayLiteVault.getDepositQueue(), newQueue);
+        assertEq(yelayLiteVault.getWithdrawQueue(), newQueue);
+        assertEq(yelayLiteVault.totalAssets(), 0);
+        // Funds remain on the mock protocol but are no longer counted toward the vault.
+        assertEq(MockProtocol(mockProtocol1).assetBalance(address(yelayLiteVault)), stranded);
+
+        // Strategy stays registered and can be re-activated; stranded assets count again.
+        yelayLiteVault.activateStrategy(0, initialQueue, initialQueue);
+        assertEq(yelayLiteVault.getActiveStrategies().length, 1);
+        assertEq(yelayLiteVault.getDepositQueue(), initialQueue);
+        assertEq(yelayLiteVault.getWithdrawQueue(), initialQueue);
+        assertEq(yelayLiteVault.totalAssets(), stranded);
+
+        vm.stopPrank();
+    }
+
+    function test_forceDeactivateStrategy_twoStrategies() external {
+        vm.startPrank(owner);
+
+        StrategyData memory strategy1 =
+            StrategyData({adapter: address(mockStrategy1), name: "mockStrategy1", supplement: ""});
+        StrategyData memory strategy2 =
+            StrategyData({adapter: address(mockStrategy2), name: "mockStrategy2", supplement: hex"1234"});
+        yelayLiteVault.addStrategy(strategy1);
+        yelayLiteVault.addStrategy(strategy2);
+
+        uint256[] memory queueA = new uint256[](1);
+        queueA[0] = 0;
+        yelayLiteVault.activateStrategy(0, queueA, queueA);
+
+        uint256[] memory queueAB = new uint256[](2);
+        queueAB[0] = 0;
+        queueAB[1] = 1;
+        yelayLiteVault.activateStrategy(1, queueAB, queueAB);
+        assertEq(yelayLiteVault.getActiveStrategies().length, 2);
+        assertEq(yelayLiteVault.getDepositQueue(), queueAB);
+        assertEq(yelayLiteVault.getWithdrawQueue(), queueAB);
+
+        uint256 stranded = 100e18;
+        uint256 retained = 200e18;
+        MockProtocol(mockProtocol1).setAssetBalance(address(yelayLiteVault), stranded);
+        MockProtocol(mockProtocol2).setAssetBalance(address(yelayLiteVault), retained);
+        assertEq(yelayLiteVault.totalAssets(), stranded + retained);
+        assertEq(yelayLiteVault.strategyAssets(0), stranded);
+        assertEq(yelayLiteVault.strategyAssets(1), retained);
+
+        uint256[] memory newQueue = new uint256[](1);
+        newQueue[0] = 0;
+        yelayLiteVault.forceDeactivateStrategy(0, newQueue, newQueue);
+
+        StrategyData[] memory active = yelayLiteVault.getActiveStrategies();
+        assertEq(active.length, 1);
+        assertEq(active[0].adapter, strategy2.adapter);
+        assertEq(active[0].supplement, strategy2.supplement);
+
+        StrategyData[] memory registered = yelayLiteVault.getStrategies();
+        assertEq(registered.length, 2);
+        assertEq(registered[0].adapter, strategy1.adapter);
+        assertEq(registered[1].adapter, strategy2.adapter);
+
+        assertEq(yelayLiteVault.getDepositQueue(), newQueue);
+        assertEq(yelayLiteVault.getWithdrawQueue(), newQueue);
+        assertEq(yelayLiteVault.totalAssets(), retained);
+        assertEq(yelayLiteVault.strategyAssets(0), retained);
+
+        assertEq(MockProtocol(mockProtocol1).assetBalance(address(yelayLiteVault)), stranded);
+        assertEq(MockProtocol(mockProtocol2).assetBalance(address(yelayLiteVault)), retained);
 
         vm.stopPrank();
     }

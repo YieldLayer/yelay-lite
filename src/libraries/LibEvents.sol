@@ -46,8 +46,9 @@ library LibEvents {
      * @param newTotalAssets The new total assets value.
      * @param interest The amount of interest accrued.
      * @param feeShares The amount of fee shares minted.
+     * @param totalSupply The total supply after fee shares are minted.
      */
-    event AccrueInterest(uint256 newTotalAssets, uint256 interest, uint256 feeShares);
+    event AccrueInterest(uint256 newTotalAssets, uint256 interest, uint256 feeShares, uint256 totalSupply);
 
     /**
      * @dev Emitted when the last total assets value is updated.
@@ -124,6 +125,13 @@ library LibEvents {
      * @param supplement Additional data for the strategy.
      */
     event DeactivateStrategy(address indexed strategy, bytes supplement);
+
+    /**
+     * @dev Emitted when an active strategy is force deactivated.
+     * @param strategy The address of the strategy adapter.
+     * @param supplement Additional data for the strategy.
+     */
+    event ForceDeactivateStrategy(address indexed strategy, bytes supplement);
 
     // ClientsFacet
     /**
