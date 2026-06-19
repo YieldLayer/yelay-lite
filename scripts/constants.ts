@@ -75,6 +75,9 @@ export const ADDRESSES = {
             '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
             '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
         ],
+        VAULT_FUNDS_OPERATORS: {
+            USDC: ['0x60e26Bd94D26Be0cd09b2138257555686C0dEEa0'],
+        },
         QUEUE_OPERATORS: [
             '0x225F31863b892dd747D06c1F46DcebFa73907870',
             '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
@@ -165,12 +168,21 @@ export type ExpectedAddresses = {
     strategyAuthority: string[];
     clientManager: string[];
     fundsOperator: string[];
+    vaultFundsOperators?: Record<string, readonly string[]>;
     queueOperator: string[];
     swapRewardsOperator: string[];
     pauser: string[];
     unpauser: string[];
     yieldPublisher: string;
 };
+
+export const getExpectedFundsOperators = (
+    asset: string,
+    { fundsOperator, vaultFundsOperators }: Pick<
+        ExpectedAddresses,
+        'fundsOperator' | 'vaultFundsOperators'
+    >,
+): string[] => [...fundsOperator, ...(vaultFundsOperators?.[asset] ?? [])];
 
 export const getExpectedAddresses = (chainId: number, test = false): ExpectedAddresses => {
     if (chainId !== 8453 && test) {
@@ -232,6 +244,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             strategyAuthority: [ADDRESSES[chainId].OWNER],
             clientManager: [ADDRESSES[chainId].OWNER],
             fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+            vaultFundsOperators: ADDRESSES[chainId].VAULT_FUNDS_OPERATORS,
             queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
