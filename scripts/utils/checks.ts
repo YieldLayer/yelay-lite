@@ -11,7 +11,7 @@ import {
     VaultWrapper__factory,
     YieldExtractor__factory,
 } from '../../typechain-types';
-import { ExpectedAddresses, IMPLEMENTATION_STORAGE_SLOT, ROLES } from '../constants';
+import { ExpectedAddresses, getExpectedFundsOperators, IMPLEMENTATION_STORAGE_SLOT, ROLES } from '../constants';
 import { warning } from './common';
 import {
     getAccessFacetSelectors,
@@ -73,6 +73,7 @@ export const checkSetup = async (
         strategyAuthority,
         clientManager,
         fundsOperator,
+        vaultFundsOperators,
         queueOperator,
         swapRewardsOperator,
         pauser,
@@ -199,7 +200,11 @@ export const checkSetup = async (
         await checkRoleMembers(yelayLiteVault, 'STRATEGY_AUTHORITY', strategyAuthority);
         await checkRoleMembers(yelayLiteVault, 'CLIENT_MANAGER', clientManager);
         await checkRoleMembers(yelayLiteVault, 'QUEUES_OPERATOR', queueOperator);
-        await checkRoleMembers(yelayLiteVault, 'FUNDS_OPERATOR', fundsOperator);
+        await checkRoleMembers(
+            yelayLiteVault,
+            'FUNDS_OPERATOR',
+            getExpectedFundsOperators(asset, { fundsOperator, vaultFundsOperators }),
+        );
         await checkRoleMembers(yelayLiteVault, 'SWAP_REWARDS_OPERATOR', swapRewardsOperator);
         await checkRoleMembers(yelayLiteVault, 'PAUSER', pauser);
         await checkRoleMembers(yelayLiteVault, 'UNPAUSER', unpauser);
