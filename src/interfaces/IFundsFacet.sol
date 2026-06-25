@@ -225,4 +225,19 @@ interface IFundsFacet is IERC1155, IERC1155MetadataURI {
      */
     function claimMerklRewards(address[] calldata tokens, uint256[] calldata amounts, bytes32[][] calldata proofs)
         external;
+
+    /**
+     * @dev Force deallocates assets from a Morpho V2 vault adapter.
+     * @dev Callable by FORCE_DEALLOCATE_OPERATOR. Should be used in a multicall together with `managedWithdraw` to pull
+     *      the freed assets into this vault's idle balance.
+     * @dev Please be aware that this action might charge a penalty, burning shares from this vault's Morpho position.
+     * @param morphoVault The Morpho V2 vault address.
+     * @param adapter The adapter to force deallocate from.
+     * @param data Adapter-specific deallocation data.
+     * @param assets Amount of assets to force deallocate.
+     * @return penaltyShares Shares burned from this vault as penalty.
+     */
+    function forceDeallocate(address morphoVault, address adapter, bytes calldata data, uint256 assets)
+        external
+        returns (uint256 penaltyShares);
 }

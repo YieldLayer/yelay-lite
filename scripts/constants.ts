@@ -23,6 +23,7 @@ export const ADDRESSES = {
             '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
         ],
         SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
+        FORCE_DEALLOCATE_OPERATORS: [],
         WETH: '0x4200000000000000000000000000000000000006',
         USDC: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
         CB_BTC: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
@@ -62,6 +63,7 @@ export const ADDRESSES = {
             '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
         ],
         SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
+        FORCE_DEALLOCATE_OPERATORS: [],
         URI: 'https://lite.api.yelay.io/sonic/metadata/{id}',
         AAVE_V3_POOL: '0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3',
         YIELD_PUBLISHER: '0xdF8101F15c0317FE5cBaB0fd2C1b05396C6cA94A',
@@ -85,6 +87,7 @@ export const ADDRESSES = {
             '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
         ],
         SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
+        FORCE_DEALLOCATE_OPERATORS: [],
         WETH: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
         USDC: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
         WBTC: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
@@ -125,6 +128,7 @@ export const ADDRESSES = {
             '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
         ],
         SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
+        FORCE_DEALLOCATE_OPERATORS: [],
         WETH: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
         USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
         MERKL: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
@@ -150,6 +154,7 @@ export const ADDRESSES = {
             '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
         ],
         SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
+        FORCE_DEALLOCATE_OPERATORS: [],
         WETH: '0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab',
         WAVAX: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7',
         USDC: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
@@ -171,17 +176,17 @@ export type ExpectedAddresses = {
     vaultFundsOperators?: Record<string, readonly string[]>;
     queueOperator: string[];
     swapRewardsOperator: string[];
+    forceDeallocateOperator: string[];
     pauser: string[];
     unpauser: string[];
     yieldPublisher: string;
 };
-
 export const getExpectedFundsOperators = (
     asset: string,
-    { fundsOperator, vaultFundsOperators }: Pick<
-        ExpectedAddresses,
-        'fundsOperator' | 'vaultFundsOperators'
-    >,
+    {
+        fundsOperator,
+        vaultFundsOperators,
+    }: Pick<ExpectedAddresses, 'fundsOperator' | 'vaultFundsOperators'>,
 ): string[] => [...fundsOperator, ...(vaultFundsOperators?.[asset] ?? [])];
 
 export const getExpectedAddresses = (chainId: number, test = false): ExpectedAddresses => {
@@ -215,6 +220,10 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
                     ADDRESSES[chainId].OWNER,
                     '0xE119693DcAC48d05659065eb82eb51dB6044a528',
                 ],
+                forceDeallocateOperator: [
+                    ADDRESSES[chainId].OWNER,
+                    ...ADDRESSES[chainId].FORCE_DEALLOCATE_OPERATORS,
+                ],
                 pauser: [ADDRESSES[chainId].OWNER],
                 unpauser: [ADDRESSES[chainId].OWNER],
                 yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER_TEST,
@@ -231,6 +240,10 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
                 ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+            ],
+            forceDeallocateOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].FORCE_DEALLOCATE_OPERATORS,
             ],
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
@@ -250,6 +263,10 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
                 ADDRESSES[chainId].OWNER,
                 ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
             ],
+            forceDeallocateOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].FORCE_DEALLOCATE_OPERATORS,
+            ],
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
@@ -266,6 +283,10 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
                 ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+            ],
+            forceDeallocateOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].FORCE_DEALLOCATE_OPERATORS,
             ],
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
@@ -284,6 +305,10 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
                 ADDRESSES[chainId].OWNER,
                 ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
             ],
+            forceDeallocateOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].FORCE_DEALLOCATE_OPERATORS,
+            ],
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
@@ -300,6 +325,10 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             swapRewardsOperator: [
                 ADDRESSES[chainId].OWNER,
                 ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+            ],
+            forceDeallocateOperator: [
+                ADDRESSES[chainId].OWNER,
+                ...ADDRESSES[chainId].FORCE_DEALLOCATE_OPERATORS,
             ],
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
@@ -318,6 +347,7 @@ export const ROLES = {
     FUNDS_OPERATOR: ethers.id('FUNDS_OPERATOR'),
     QUEUES_OPERATOR: ethers.id('QUEUES_OPERATOR'),
     SWAP_REWARDS_OPERATOR: ethers.id('SWAP_REWARDS_OPERATOR'),
+    FORCE_DEALLOCATE_OPERATOR: ethers.id('FORCE_DEALLOCATE_OPERATOR'),
     PAUSER: ethers.id('PAUSER'),
     UNPAUSER: ethers.id('UNPAUSER'),
     YIELD_PUBLISHER: ethers.id('YIELD_PUBLISHER'),

@@ -12,6 +12,7 @@ import {IStrategyBase, Reward} from "src/interfaces/IStrategyBase.sol";
 import {IFundsFacet, StrategyArgs} from "src/interfaces/IFundsFacet.sol";
 import {ISwapper, SwapArgs} from "src/interfaces/ISwapper.sol";
 import {IMerklDistributor} from "src/interfaces/external/merkl/IMerklDistributor.sol";
+import {IMorphoVaultV2} from "src/interfaces/external/morpho/IMorphoVaultV2.sol";
 
 import {RoleCheck} from "src/abstract/RoleCheck.sol";
 import {PausableCheck} from "src/abstract/PausableCheck.sol";
@@ -358,6 +359,16 @@ contract FundsFacet is RoleCheck, PausableCheck, ERC1155SupplyUpgradeable, IFund
             users[i] = address(this);
         }
         _merklDistributor.claim(users, tokens, amounts, proofs);
+    }
+
+    /// @inheritdoc IFundsFacet
+    function forceDeallocate(address morphoVault, address adapter, bytes calldata data, uint256 assets)
+        external
+        notPaused
+        onlyRole(LibRoles.FORCE_DEALLOCATE_OPERATOR)
+        returns (uint256 penaltyShares)
+    {
+        penaltyShares = IMorphoVaultV2(morphoVault).forceDeallocate(adapter, data, assets, address(this));
     }
 
     /**

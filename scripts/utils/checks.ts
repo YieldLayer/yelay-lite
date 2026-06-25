@@ -76,6 +76,7 @@ export const checkSetup = async (
         vaultFundsOperators,
         queueOperator,
         swapRewardsOperator,
+        forceDeallocateOperator,
         pauser,
         unpauser,
     }: ExpectedAddresses,
@@ -206,6 +207,7 @@ export const checkSetup = async (
             getExpectedFundsOperators(asset, { fundsOperator, vaultFundsOperators }),
         );
         await checkRoleMembers(yelayLiteVault, 'SWAP_REWARDS_OPERATOR', swapRewardsOperator);
+        await checkRoleMembers(yelayLiteVault, 'FORCE_DEALLOCATE_OPERATOR', forceDeallocateOperator);
         await checkRoleMembers(yelayLiteVault, 'PAUSER', pauser);
         await checkRoleMembers(yelayLiteVault, 'UNPAUSER', unpauser);
 

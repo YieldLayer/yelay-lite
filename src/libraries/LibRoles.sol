@@ -17,6 +17,9 @@ library LibRoles {
     // 0x8bf6ce5ec02ea9a811a4884ff857c405447f2dfa3ad4c8a5e93888abb5d17ceb
     bytes32 constant SWAP_REWARDS_OPERATOR = keccak256("SWAP_REWARDS_OPERATOR");
 
+    // 0xe388840f4449143610fdd146d4cafa28c6e2bfc6a823f04d507a2c8e09e103ed
+    bytes32 constant FORCE_DEALLOCATE_OPERATOR = keccak256("FORCE_DEALLOCATE_OPERATOR");
+
     // 0x539440820030c4994db4e31b6b800deafd503688728f932addfe7a410515c14c
     bytes32 constant PAUSER = keccak256("PAUSER");
 

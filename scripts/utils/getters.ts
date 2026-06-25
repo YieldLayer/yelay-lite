@@ -48,6 +48,7 @@ export const getFundsFacetSelectors = () => {
         'accrueFee',
         'claimStrategyRewards',
         'claimMerklRewards',
+        'forceDeallocate',
         'balanceOf',
         'uri',
         'transformYieldShares',
