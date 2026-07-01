@@ -171,6 +171,7 @@ export type ExpectedAddresses = {
     pauser: string[];
     unpauser: string[];
     yieldPublisher: string;
+    erc4626AccrueOperator: string[];
 };
 
 export const getExpectedAddresses = (chainId: number, test = false): ExpectedAddresses => {
@@ -208,6 +209,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
                 pauser: [ADDRESSES[chainId].OWNER],
                 unpauser: [ADDRESSES[chainId].OWNER],
                 yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER_TEST,
+                erc4626AccrueOperator: [],
             };
         }
         return {
@@ -226,6 +228,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
+            erc4626AccrueOperator: [],
         };
     } else if (chainId === 1) {
         return {
@@ -244,6 +247,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
+            erc4626AccrueOperator: [],
         };
     } else if (chainId === 146) {
         return {
@@ -262,6 +266,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
+            erc4626AccrueOperator: [],
         };
     } else if (chainId === 42161) {
         return {
@@ -280,6 +285,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
+            erc4626AccrueOperator: [],
         };
     } else if (chainId === 43114) {
         return {
@@ -298,6 +304,7 @@ export const getExpectedAddresses = (chainId: number, test = false): ExpectedAdd
             pauser: [ADDRESSES[chainId].OWNER],
             unpauser: [ADDRESSES[chainId].OWNER],
             yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
+            erc4626AccrueOperator: [],
         };
     }
     throw new Error('Chain not supported');
@@ -316,4 +323,5 @@ export const ROLES = {
     PAUSER: ethers.id('PAUSER'),
     UNPAUSER: ethers.id('UNPAUSER'),
     YIELD_PUBLISHER: ethers.id('YIELD_PUBLISHER'),
+    ERC4626_ACCRUE_OPERATOR: ethers.id('ERC4626_ACCRUE_OPERATOR'),
 };

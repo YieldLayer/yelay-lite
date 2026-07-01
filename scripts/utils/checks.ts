@@ -78,6 +78,7 @@ export const checkSetup = async (
         swapRewardsOperator,
         pauser,
         unpauser,
+        erc4626AccrueOperator,
     }: ExpectedAddresses,
 ) => {
     console.log(`Working on swapper, vaultWrapper, depositLockPlugin, erc4626Plugin...`);
@@ -209,6 +210,7 @@ export const checkSetup = async (
         await checkRoleMembers(yelayLiteVault, 'SWAP_REWARDS_OPERATOR', swapRewardsOperator);
         await checkRoleMembers(yelayLiteVault, 'PAUSER', pauser);
         await checkRoleMembers(yelayLiteVault, 'UNPAUSER', unpauser);
+        await checkRoleMembers(yelayLiteVault, 'ERC4626_ACCRUE_OPERATOR', erc4626AccrueOperator);
 
         await checkSwapper(yelayLiteVault, contracts.swapper.proxy);
     }
