@@ -1,71 +1,7 @@
 import { ethers } from 'hardhat';
-import baseContracts from '../deployments/base-production.json';
-import baseTestContracts from '../deployments/base-testing.json';
 import mainnetContracts from '../deployments/mainnet.json';
-import sonicContracts from '../deployments/sonic.json';
-import arbitrumContracts from '../deployments/arbitrum.json';
-import avalancheContracts from '../deployments/avalanche.json';
 
 export const ADDRESSES = {
-    8453: {
-        OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        FUNDS_OPERATORS: [
-            '0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6',
-            '0x225F31863b892dd747D06c1F46DcebFa73907870',
-            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-        ],
-        QUEUE_OPERATORS: [
-            '0x225F31863b892dd747D06c1F46DcebFa73907870',
-            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-        ],
-        SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
-        WETH: '0x4200000000000000000000000000000000000006',
-        USDC: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
-        CB_BTC: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
-        AAVE_V3_POOL: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
-        MORPHO: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
-        ONE_INCH_ROUTER_V6: '0x111111125421cA6dc452d289314280a0f8842A65',
-        MORHO_VAULTS: {
-            USDC: {
-                'steakhouse-usdc': '0xbeef010f9cb27031ad51e3333f9af9c6b1228183',
-                'gauntlet-usdc-prime': '0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61',
-                'gauntlet-usdc-core': '0xc0c5689e6f4D256E861F65465b691aeEcC0dEb12',
-            },
-            WETH: {
-                'ionic-ecosystem-weth': '0x5A32099837D89E3a794a44fb131CBbAD41f87a8C',
-                'moonwell-flagship-eth': '0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1',
-            },
-        },
-        YIELD_PUBLISHER: '0xdF8101F15c0317FE5cBaB0fd2C1b05396C6cA94A',
-        YIELD_PUBLISHER_TEST: '0x3fe29E638401463d0286da4EbB173230EB5fAA09',
-    },
-    146: {
-        WS: '0x039e2fb66102314ce7b64ce5ce3e5183bc94ad38',
-        WETH: '0x50c42deacd8fc9773493ed674b675be577f2634b',
-        USDCe: '0x29219dd400f2bf60e5a23d13be72b486d4038894',
-        OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        FUNDS_OPERATORS: [
-            '0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6',
-            '0x225F31863b892dd747D06c1F46DcebFa73907870',
-            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-        ],
-        QUEUE_OPERATORS: [
-            '0x225F31863b892dd747D06c1F46DcebFa73907870',
-            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-        ],
-        SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
-        URI: 'https://lite.api.yelay.io/sonic/metadata/{id}',
-        AAVE_V3_POOL: '0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3',
-        YIELD_PUBLISHER: '0xdF8101F15c0317FE5cBaB0fd2C1b05396C6cA94A',
-    },
     1: {
         OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
         FUNDS_OPERATORS: [
@@ -109,56 +45,6 @@ export const ADDRESSES = {
         GEARBOX_TOKEN: `0xBa3335588D9403515223F109EdC4eB7269a9Ab5D`,
         YIELD_PUBLISHER: '0xdF8101F15c0317FE5cBaB0fd2C1b05396C6cA94A',
     },
-    42161: {
-        OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        FUNDS_OPERATORS: [
-            '0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6',
-            '0x225F31863b892dd747D06c1F46DcebFa73907870',
-            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-        ],
-        QUEUE_OPERATORS: [
-            '0x225F31863b892dd747D06c1F46DcebFa73907870',
-            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-        ],
-        SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
-        WETH: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
-        USDC: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
-        MERKL: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
-        AAVE_V3_POOL: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-        URI: 'https://lite.api.yelay.io/arbitrum/metadata/{id}',
-        ONE_INCH_ROUTER_V6: '0x111111125421cA6dc452d289314280a0f8842A65',
-        YIELD_PUBLISHER: '0xdF8101F15c0317FE5cBaB0fd2C1b05396C6cA94A',
-        ARBITRUM_TOKEN: '0x912CE59144191C1204E64559FE8253a0e49E6548',
-    },
-    43114: {
-        OWNER: '0x9909ee4947be39c208607d8d2473d68c05cef8f9',
-        FUNDS_OPERATORS: [
-            '0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6',
-            '0x225F31863b892dd747D06c1F46DcebFa73907870',
-            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-        ],
-        QUEUE_OPERATORS: [
-            '0x225F31863b892dd747D06c1F46DcebFa73907870',
-            '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-            '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-            '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-        ],
-        SWAP_REWARDS_OPERATOR: ['0xB32d12d39b1855b11566Dba07Db7A33f5146b3e6'],
-        WETH: '0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab',
-        WAVAX: '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7',
-        USDC: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
-        MERKL: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
-        AAVE_V3_POOL: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-        URI: 'https://lite.api.yelay.io/avalanche/metadata/{id}',
-        ONE_INCH_ROUTER_V6: '0x111111125421cA6dc452d289314280a0f8842A65',
-        YIELD_PUBLISHER: '0xdF8101F15c0317FE5cBaB0fd2C1b05396C6cA94A',
-    },
 } as const;
 
 export type ExpectedAddresses = {
@@ -178,135 +64,33 @@ export type ExpectedAddresses = {
 
 export const getExpectedFundsOperators = (
     asset: string,
-    { fundsOperator, vaultFundsOperators }: Pick<
-        ExpectedAddresses,
-        'fundsOperator' | 'vaultFundsOperators'
-    >,
+    {
+        fundsOperator,
+        vaultFundsOperators,
+    }: Pick<ExpectedAddresses, 'fundsOperator' | 'vaultFundsOperators'>,
 ): string[] => [...fundsOperator, ...(vaultFundsOperators?.[asset] ?? [])];
 
 export const getExpectedAddresses = (chainId: number, test = false): ExpectedAddresses => {
-    if (chainId !== 8453 && test) {
-        throw new Error('Test only on Base');
+    if (chainId !== 1 || test) {
+        throw new Error('Only mainnet is supported');
     }
-    if (chainId === 8453) {
-        if (test) {
-            return {
-                owner: ADDRESSES[chainId].OWNER,
-                yieldExtractor: baseTestContracts.yieldExtractor.proxy,
-                oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
-                strategyAuthority: [ADDRESSES[chainId].OWNER],
-                clientManager: [ADDRESSES[chainId].OWNER],
-                fundsOperator: [
-                    ADDRESSES[chainId].OWNER,
-                    '0xE119693DcAC48d05659065eb82eb51dB6044a528',
-                    '0x225F31863b892dd747D06c1F46DcebFa73907870',
-                    '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-                    '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-                    '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-                ],
-                queueOperator: [
-                    ADDRESSES[chainId].OWNER,
-                    '0x225F31863b892dd747D06c1F46DcebFa73907870',
-                    '0xbB355ffc23784751f2507c1dFA74aEC4CD7628c8',
-                    '0x46FF1b2B030201F572E22FC18c26974EC8Fe8819',
-                    '0xc7f5a7bC4878fedF51ca7A45444d74D8c4EA952F',
-                ],
-                swapRewardsOperator: [
-                    ADDRESSES[chainId].OWNER,
-                    '0xE119693DcAC48d05659065eb82eb51dB6044a528',
-                ],
-                pauser: [ADDRESSES[chainId].OWNER],
-                unpauser: [ADDRESSES[chainId].OWNER],
-                yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER_TEST,
-            };
-        }
-        return {
-            owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: baseContracts.yieldExtractor.proxy,
-            oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
-            strategyAuthority: [ADDRESSES[chainId].OWNER],
-            clientManager: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
-            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
-            swapRewardsOperator: [
-                ADDRESSES[chainId].OWNER,
-                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
-            ],
-            pauser: [ADDRESSES[chainId].OWNER],
-            unpauser: [ADDRESSES[chainId].OWNER],
-            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
-        };
-    } else if (chainId === 1) {
-        return {
-            owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: mainnetContracts.yieldExtractor.proxy,
-            oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
-            strategyAuthority: [ADDRESSES[chainId].OWNER],
-            clientManager: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
-            vaultFundsOperators: ADDRESSES[chainId].VAULT_FUNDS_OPERATORS,
-            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
-            swapRewardsOperator: [
-                ADDRESSES[chainId].OWNER,
-                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
-            ],
-            pauser: [ADDRESSES[chainId].OWNER],
-            unpauser: [ADDRESSES[chainId].OWNER],
-            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
-        };
-    } else if (chainId === 146) {
-        return {
-            owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: sonicContracts.yieldExtractor.proxy,
-            oneInchRouter: ethers.ZeroAddress,
-            strategyAuthority: [ADDRESSES[chainId].OWNER],
-            clientManager: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
-            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
-            swapRewardsOperator: [
-                ADDRESSES[chainId].OWNER,
-                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
-            ],
-            pauser: [ADDRESSES[chainId].OWNER],
-            unpauser: [ADDRESSES[chainId].OWNER],
-            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
-        };
-    } else if (chainId === 42161) {
-        return {
-            owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: arbitrumContracts.yieldExtractor.proxy,
-            oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
-            strategyAuthority: [ADDRESSES[chainId].OWNER],
-            clientManager: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
-            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
-            swapRewardsOperator: [
-                ADDRESSES[chainId].OWNER,
-                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
-            ],
-            pauser: [ADDRESSES[chainId].OWNER],
-            unpauser: [ADDRESSES[chainId].OWNER],
-            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
-        };
-    } else if (chainId === 43114) {
-        return {
-            owner: ADDRESSES[chainId].OWNER,
-            yieldExtractor: avalancheContracts.yieldExtractor.proxy,
-            oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
-            strategyAuthority: [ADDRESSES[chainId].OWNER],
-            clientManager: [ADDRESSES[chainId].OWNER],
-            fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
-            queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
-            swapRewardsOperator: [
-                ADDRESSES[chainId].OWNER,
-                ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
-            ],
-            pauser: [ADDRESSES[chainId].OWNER],
-            unpauser: [ADDRESSES[chainId].OWNER],
-            yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
-        };
-    }
-    throw new Error('Chain not supported');
+    return {
+        owner: ADDRESSES[chainId].OWNER,
+        yieldExtractor: mainnetContracts.yieldExtractor.proxy,
+        oneInchRouter: ADDRESSES[chainId].ONE_INCH_ROUTER_V6,
+        strategyAuthority: [ADDRESSES[chainId].OWNER],
+        clientManager: [ADDRESSES[chainId].OWNER],
+        fundsOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].FUNDS_OPERATORS],
+        vaultFundsOperators: ADDRESSES[chainId].VAULT_FUNDS_OPERATORS,
+        queueOperator: [ADDRESSES[chainId].OWNER, ...ADDRESSES[chainId].QUEUE_OPERATORS],
+        swapRewardsOperator: [
+            ADDRESSES[chainId].OWNER,
+            ...ADDRESSES[chainId].SWAP_REWARDS_OPERATOR,
+        ],
+        pauser: [ADDRESSES[chainId].OWNER],
+        unpauser: [ADDRESSES[chainId].OWNER],
+        yieldPublisher: ADDRESSES[chainId].YIELD_PUBLISHER,
+    };
 };
 
 export const IMPLEMENTATION_STORAGE_SLOT =

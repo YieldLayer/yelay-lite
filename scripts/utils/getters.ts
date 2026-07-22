@@ -139,21 +139,13 @@ export const getContracts = async (contractsPath: string) => {
 };
 
 export const getContractsPath = (chainId: number, testing = false) => {
-    if (chainId !== 8453 && testing) {
-        throw new Error('Testing is only on Base');
+    if (testing) {
+        throw new Error('Testing deployments are not supported');
     }
 
     let fileName;
-    if (chainId === 8453) {
-        fileName = testing ? 'base-testing.json' : 'base-production.json';
-    } else if (chainId === 1) {
+    if (chainId === 1) {
         fileName = 'mainnet.json';
-    } else if (chainId === 146) {
-        fileName = 'sonic.json';
-    } else if (chainId === 42161) {
-        fileName = 'arbitrum.json';
-    } else if (chainId === 43114) {
-        fileName = 'avalanche.json';
     } else {
         throw new Error(`No contracts for chainId ${chainId}`);
     }

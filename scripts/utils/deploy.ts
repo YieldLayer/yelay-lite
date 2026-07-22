@@ -1,10 +1,29 @@
 import type { Signer } from 'ethers';
 import fs from 'fs';
 import { ethers, upgrades } from 'hardhat';
-import { ERC4626PluginFactory__factory } from '../../typechain-types';
-import { getExpectedAddresses, IMPLEMENTATION_STORAGE_SLOT } from '../constants';
+import {
+    AccessFacet__factory,
+    ERC4626PluginFactory__factory,
+    IClientsFacet__factory,
+    OwnerFacet__factory,
+    YelayLiteDeployer__factory,
+} from '../../typechain-types';
+import {
+    ADDRESSES,
+    getExpectedAddresses,
+    getExpectedFundsOperators,
+    IMPLEMENTATION_STORAGE_SLOT,
+    ROLES,
+} from '../constants';
 import { isTesting } from './common';
-import { getContracts, getContractsPath } from './getters';
+import {
+    getAccessFacetSelectors,
+    getClientFacetSelectors,
+    getContracts,
+    getContractsPath,
+    getFundsFacetSelectors,
+    getManagementFacetSelectors,
+} from './getters';
 
 export const deployAccessFacet = async (deployer: Signer) => {
     return ethers
@@ -253,39 +272,191 @@ export const deployGearboxV3Strategy = async (deployer: Signer, gearToken: strin
         .then((r) => r.getAddress());
 };
 
-// export const deployVault = async (
-//     deployer: Signer,
-//     contracts: any,
-//     deployArgs: { underlyingAsset: string; yieldExtractor: string; uri: string },
-//     assetSymbol: string,
-//     deploymentPath: string,
-// ) => {
-//     const deployerAddress = await deployer.getAddress();
-//     const yelayLiteVault = await ethers
-//         .getContractFactory('YelayLiteVault', deployer)
-//         .then((f) =>
-//             f.deploy(
-//                 deployerAddress,
-//                 contracts.ownerFacet,
-//                 deployArgs.underlyingAsset,
-//                 deployArgs.yieldExtractor,
-//                 deployArgs.uri,
-//             ),
-//         )
-//         .then(async (c) => {
-//             const d = await c.waitForDeployment();
-//             const tx = await ethers.provider.getTransaction(d.deploymentTransaction()!.hash);
-//             console.log(`Vault: ${await c.getAddress()}`);
-//             console.log(`Vault creation blocknumber: ${tx?.blockNumber}`);
-//             const block = await ethers.provider.getBlock(tx!.blockNumber!);
-//             console.log(`Timestamp: ${block?.timestamp}`);
-//             return d.getAddress();
-//         })
-//         .then((a) => IYelayLiteVault__factory.connect(a, deployer));
+const getVaultUri = (chainId: number): string => {
+    const chainAddresses = ADDRESSES[chainId as keyof typeof ADDRESSES] as Record<string, unknown>;
+    if (typeof chainAddresses.URI === 'string') {
+        return chainAddresses.URI;
+    }
+    throw new Error(`No URI for chainId ${chainId}`);
+};
 
-//     contracts.vaults[assetSymbol] = await yelayLiteVault.getAddress();
-//     fs.writeFileSync(deploymentPath, JSON.stringify(contracts, null, 4) + '\n');
-// };
+const getUnderlyingAsset = (chainId: number, assetSymbol: string): string => {
+    const chainAddresses = ADDRESSES[chainId as keyof typeof ADDRESSES] as Record<string, unknown>;
+    const underlyingAsset = chainAddresses[assetSymbol];
+    if (typeof underlyingAsset !== 'string') {
+        throw new Error(`No underlying asset ${assetSymbol} for chainId ${chainId}`);
+    }
+    return underlyingAsset;
+};
+
+const buildVaultInitData = (
+    contracts: {
+        ownerFacet: string;
+        fundsFacet: string;
+        managementFacet: string;
+        accessFacet: string;
+        clientsFacet: string;
+    },
+    expected: ReturnType<typeof getExpectedAddresses>,
+    assetSymbol: string,
+    yelayLiteDeployer: string,
+) => {
+    const selectorsToFacets = [
+        {
+            facet: contracts.fundsFacet,
+            selectors: Object.keys(getFundsFacetSelectors()),
+        },
+        {
+            facet: contracts.managementFacet,
+            selectors: Object.keys(getManagementFacetSelectors()),
+        },
+        {
+            facet: contracts.accessFacet,
+            selectors: Object.keys(getAccessFacetSelectors()),
+        },
+        {
+            facet: contracts.clientsFacet,
+            selectors: Object.keys(getClientFacetSelectors()),
+        },
+    ];
+
+    const ownerFacetInterface = OwnerFacet__factory.createInterface();
+    const accessFacetInterface = AccessFacet__factory.createInterface();
+    const transferClientOwnershipSelector =
+        IClientsFacet__factory.createInterface().getFunction('transferClientOwnership').selector;
+
+    const facets: string[] = [contracts.ownerFacet];
+    const payloads: string[] = [
+        ownerFacetInterface.encodeFunctionData('addSelectors', [selectorsToFacets]),
+    ];
+
+    const roleGrants: { role: string; accounts: string[] }[] = [
+        { role: ROLES.STRATEGY_AUTHORITY, accounts: expected.strategyAuthority },
+        { role: ROLES.CLIENT_MANAGER, accounts: expected.clientManager },
+        {
+            role: ROLES.FUNDS_OPERATOR,
+            accounts: getExpectedFundsOperators(assetSymbol, expected),
+        },
+        { role: ROLES.QUEUES_OPERATOR, accounts: expected.queueOperator },
+        { role: ROLES.SWAP_REWARDS_OPERATOR, accounts: expected.swapRewardsOperator },
+        { role: ROLES.PAUSER, accounts: expected.pauser },
+        { role: ROLES.UNPAUSER, accounts: expected.unpauser },
+    ];
+
+    for (const { role, accounts } of roleGrants) {
+        for (const account of accounts) {
+            facets.push(contracts.accessFacet);
+            payloads.push(accessFacetInterface.encodeFunctionData('grantRole', [role, account]));
+        }
+    }
+
+    // setPaused requires PAUSER on msg.sender (YelayLiteDeployer during initialize)
+    facets.push(contracts.accessFacet);
+    payloads.push(
+        accessFacetInterface.encodeFunctionData('grantRole', [ROLES.PAUSER, yelayLiteDeployer]),
+    );
+    facets.push(contracts.accessFacet);
+    payloads.push(
+        accessFacetInterface.encodeFunctionData('setPaused', [
+            transferClientOwnershipSelector,
+            true,
+        ]),
+    );
+    facets.push(contracts.accessFacet);
+    payloads.push(
+        accessFacetInterface.encodeFunctionData('revokeRole', [ROLES.PAUSER, yelayLiteDeployer]),
+    );
+
+    return { facets, payloads };
+};
+
+export const deployYelayLiteDeployer = async (deployer: Signer) => {
+    const chainId = Number((await deployer.provider!.getNetwork()).chainId);
+    const testing = isTesting();
+    const contractsPath = getContractsPath(chainId, testing);
+    const contracts = await getContracts(contractsPath);
+    const owner = getExpectedAddresses(chainId, testing).owner;
+
+    if (contracts.yelayLiteDeployer) {
+        throw new Error(`YelayLiteDeployer already deployed for ${chainId}`);
+    }
+
+    const yelayLiteDeployer = await new YelayLiteDeployer__factory(deployer)
+        .deploy(owner)
+        .then((r) => r.waitForDeployment())
+        .then((r) => r.getAddress());
+
+    console.log(`YelayLiteDeployer: ${yelayLiteDeployer}`);
+
+    contracts.yelayLiteDeployer = yelayLiteDeployer;
+    fs.writeFileSync(contractsPath, JSON.stringify(contracts, null, 4) + '\n');
+
+    return yelayLiteDeployer;
+};
+
+export const deployVaultViaDeployer = async (
+    deployer: Signer,
+    assetSymbol: string,
+    salt: string,
+) => {
+    const chainId = Number((await deployer.provider!.getNetwork()).chainId);
+    const testing = isTesting();
+    const contractsPath = getContractsPath(chainId, testing);
+    const contracts = await getContracts(contractsPath);
+    const expected = getExpectedAddresses(chainId, testing);
+
+    if (!contracts.yelayLiteDeployer) {
+        throw new Error(`YelayLiteDeployer not deployed for chain ${chainId}`);
+    }
+    if (!contracts.yieldExtractor?.proxy) {
+        throw new Error(`YieldExtractor not deployed for chain ${chainId}`);
+    }
+    if (contracts.vaults?.[assetSymbol]) {
+        throw new Error(`Vault for ${assetSymbol} already deployed on chain ${chainId}`);
+    }
+
+    const underlyingAsset = getUnderlyingAsset(chainId, assetSymbol);
+    const uri = getVaultUri(chainId);
+    const { facets, payloads } = buildVaultInitData(
+        contracts,
+        expected,
+        assetSymbol,
+        contracts.yelayLiteDeployer,
+    );
+
+    const yelayLiteDeployer = YelayLiteDeployer__factory.connect(
+        contracts.yelayLiteDeployer,
+        deployer,
+    );
+
+    const expectedVault = await yelayLiteDeployer.computeAddress(salt);
+    console.log(`Expected vault address: ${expectedVault}`);
+
+    const tx = await yelayLiteDeployer.deploy(
+        salt,
+        contracts.ownerFacet,
+        underlyingAsset,
+        contracts.yieldExtractor.proxy,
+        uri,
+        facets,
+        payloads,
+    );
+    const receipt = await tx.wait();
+    if (!receipt) {
+        throw new Error('Vault deployment transaction failed');
+    }
+
+    console.log(`Vault (${assetSymbol}): ${expectedVault}`);
+    console.log(`Vault creation blocknumber: ${receipt.blockNumber}`);
+    const block = await deployer.provider!.getBlock(receipt.blockNumber);
+    console.log(`Timestamp: ${block?.timestamp}`);
+
+    contracts.vaults = contracts.vaults ?? {};
+    contracts.vaults[assetSymbol] = expectedVault;
+    fs.writeFileSync(contractsPath, JSON.stringify(contracts, null, 4) + '\n');
+
+    return expectedVault;
+};
 
 export const deployDepositLockPlugin = async (deployer: Signer) => {
     const chainId = Number((await deployer.provider!.getNetwork()).chainId);
