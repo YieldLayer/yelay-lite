@@ -13,29 +13,15 @@
     "managementFacet": "0x0A09027643d21F35df24f156694A97776d211907",
     "clientsFacet": "0x45308fd10dEb8bDbe29872BC1FF500d9e6431bF6",
     "vaults": {
-        "USDC": "0x39DAc87bE293DC855b60feDd89667364865378cc",
-        "WETH": "0x4d95E929ABb21b6C6C0FF1ff0Ac69609e02BB368",
-        "WBTC": "0x6545e81356CE709823EA8797E566A60934A9B110"
+        "USDC": "0x615989F57f6da73C3a1f96a347536941D88e7E0A"
     },
     "strategies": {
         "aaveV3": "0xF4a23fC0f9beB15Df3d4e1a44425Ec559f746D4F",
-        "erc4626": "0xa1A32FC1573B8D0532845c833cF4e8eA205345f1",
-        "gearboxV3": "0x7Cdd48a57AD24BcE6195234B153b0b8a0ee3974f",
-        "morpho": "0xFFB90D5599892054dDE4B415Fd827908B376DCf8"
-    },
-    "depositLockPlugin": {
-        "proxy": "0xACa04A50519c831f58E5Aa1C5D8aE942402FB8e1",
-        "implementation": "0xba3b9b1EC758918EBE8A30D56828592Ac3229Ef6"
+        "erc4626": "0xa1A32FC1573B8D0532845c833cF4e8eA205345f1"
     },
     "yieldExtractor": {
-        "proxy": "0x226239384EB7d78Cdf279BA6Fb458E2A4945E275",
+        "proxy": "0xD86A5188094E83B83Aba907E0EAfB0222eb677F4",
         "implementation": "0x195F5dE85b0373d0752E781EABD1c0bfE33C10D5"
     },
-    "erc4626Plugin": {
-        "factory": "0x0aADeF25ac515c6f9cCAD2afD23fCf90209F7346",
-        "implementation": "0x315f5f9EEaD29C3f370233AfebeE99F0adA5297d",
-        "proxies": {
-            "USDC-10": "0xdE3EFDb2d28B92f1C44413f2c353f874FE5c16F5"
-        }
-    }
+    "yelayLiteDeployer": "0xc40C2059e9Dc43fef251Cde69D63425441b733f6"
 }

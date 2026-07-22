@@ -1,16 +1,9 @@
 import { ethers } from 'hardhat';
-import { ADDRESSES } from '../constants';
-import { deployInfra } from './../utils/deploy';
+import { deployYelayLiteDeployer } from './utils/deploy';
 
 async function main() {
     const [deployer] = await ethers.getSigners();
-
-    await deployInfra(
-        deployer,
-        ADDRESSES[1].OWNER,
-        ADDRESSES[1].WETH,
-        './deployments/mainnet.json',
-    );
+    await deployYelayLiteDeployer(deployer);
 }
 
 main()

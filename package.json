@@ -3,10 +3,7 @@
     "version": "1.0.0",
     "license": "MIT",
     "scripts": {
-        "status:mainnet": "npx hardhat run scripts/status.ts --network mainnet",
-        "status:sonic": "npx hardhat run scripts/status.ts --network sonic",
-        "status:base": "npx hardhat run scripts/status.ts --network base",
-        "status:base:test": "TEST=true npx hardhat run scripts/status.ts --network base"
+        "status:mainnet": "npx hardhat run scripts/status.ts --network mainnet"
     },
     "devDependencies": {
         "@nomicfoundation/hardhat-foundry": "1.2.0",

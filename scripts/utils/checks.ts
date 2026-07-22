@@ -9,9 +9,15 @@ import {
     Swapper__factory,
     VaultWrapper,
     VaultWrapper__factory,
+    YelayLiteDeployer__factory,
     YieldExtractor__factory,
 } from '../../typechain-types';
-import { ExpectedAddresses, getExpectedFundsOperators, IMPLEMENTATION_STORAGE_SLOT, ROLES } from '../constants';
+import {
+    ExpectedAddresses,
+    getExpectedFundsOperators,
+    IMPLEMENTATION_STORAGE_SLOT,
+    ROLES,
+} from '../constants';
 import { warning } from './common';
 import {
     getAccessFacetSelectors,
@@ -80,7 +86,9 @@ export const checkSetup = async (
         unpauser,
     }: ExpectedAddresses,
 ) => {
-    console.log(`Working on swapper, vaultWrapper, depositLockPlugin, erc4626Plugin...`);
+    console.log(
+        `Working on swapper, vaultWrapper, yelayLiteDeployer, depositLockPlugin, erc4626Plugin...`,
+    );
     console.log('');
 
     await Swapper__factory.connect(contracts.swapper.proxy, provider)
@@ -99,24 +107,37 @@ export const checkSetup = async (
                 );
             }
         });
-    await DepositLockPlugin__factory.connect(contracts.depositLockPlugin.proxy, provider)
+    await YelayLiteDeployer__factory.connect(contracts.yelayLiteDeployer, provider)
         .owner()
-        .then((depositLockPluginOwner) => {
-            if (depositLockPluginOwner.toLowerCase() !== owner.toLowerCase()) {
+        .then((yelayLiteDeployerOwner) => {
+            if (yelayLiteDeployerOwner.toLowerCase() !== owner.toLowerCase()) {
                 warning(
-                    `DepositLockPlugin owner mismatch! Expected: ${owner}. Actual: ${depositLockPluginOwner}`,
+                    `YelayLiteDeployer owner mismatch! Expected: ${owner}. Actual: ${yelayLiteDeployerOwner}`,
                 );
             }
         });
-    await ERC4626PluginFactory__factory.connect(contracts.erc4626Plugin.factory, provider)
-        .owner()
-        .then((erc4626PluginFactoryOwner) => {
-            if (erc4626PluginFactoryOwner.toLowerCase() !== owner.toLowerCase()) {
-                warning(
-                    `ERC4626PluginFactory owner mismatch! Expected: ${owner}. Actual: ${erc4626PluginFactoryOwner}`,
-                );
-            }
-        });
+    if (contracts.depositLockPlugin) {
+        await DepositLockPlugin__factory.connect(contracts.depositLockPlugin.proxy, provider)
+            .owner()
+            .then((depositLockPluginOwner) => {
+                if (depositLockPluginOwner.toLowerCase() !== owner.toLowerCase()) {
+                    warning(
+                        `DepositLockPlugin owner mismatch! Expected: ${owner}. Actual: ${depositLockPluginOwner}`,
+                    );
+                }
+            });
+    }
+    if (contracts.erc4626Plugin) {
+        await ERC4626PluginFactory__factory.connect(contracts.erc4626Plugin.factory, provider)
+            .owner()
+            .then((erc4626PluginFactoryOwner) => {
+                if (erc4626PluginFactoryOwner.toLowerCase() !== owner.toLowerCase()) {
+                    warning(
+                        `ERC4626PluginFactory owner mismatch! Expected: ${owner}. Actual: ${erc4626PluginFactoryOwner}`,
+                    );
+                }
+            });
+    }
 
     await checkImplementation(
         provider,
@@ -145,22 +166,28 @@ export const checkSetup = async (
         contracts.vaultWrapper.implementation,
     );
 
-    await checkImplementation(
-        provider,
-        contracts.depositLockPlugin.proxy,
-        contracts.depositLockPlugin.implementation,
-    );
+    if (contracts.depositLockPlugin) {
+        await checkImplementation(
+            provider,
+            contracts.depositLockPlugin.proxy,
+            contracts.depositLockPlugin.implementation,
+        );
+    }
 
-    await ERC4626PluginFactory__factory.connect(contracts.erc4626Plugin.factory, provider)
-        .implementation()
-        .then((implementation) => {
-            if (
-                implementation.toLowerCase() !==
-                contracts.erc4626Plugin.implementation.toLowerCase()
-            ) {
-                warning(`Implementation doesn't match for: ${contracts.erc4626Plugin.factory} !`);
-            }
-        });
+    if (contracts.erc4626Plugin) {
+        await ERC4626PluginFactory__factory.connect(contracts.erc4626Plugin.factory, provider)
+            .implementation()
+            .then((implementation) => {
+                if (
+                    implementation.toLowerCase() !==
+                    contracts.erc4626Plugin.implementation.toLowerCase()
+                ) {
+                    warning(
+                        `Implementation doesn't match for: ${contracts.erc4626Plugin.factory} !`,
+                    );
+                }
+            });
+    }
 
     await checkSwapper(
         VaultWrapper__factory.connect(contracts.vaultWrapper.proxy, provider),

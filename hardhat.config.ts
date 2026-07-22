@@ -50,14 +50,7 @@ const config: HardhatUserConfig = {
         },
     },
     etherscan: {
-        apiKey: {
-            mainnet: process.env.ETHERSCAN_API_KEY!,
-            base: process.env.ETHERSCAN_API_KEY!,
-            arbitrum: process.env.ETHERSCAN_API_KEY!,
-            avalanche: process.env.ETHERSCAN_API_KEY!,
-            sonic: process.env.ETHERSCAN_API_KEY!,
-            snowtrace: 'snowtrace',
-        },
+        apiKey: process.env.ETHERSCAN_API_KEY!,
         customChains: [
             {
                 network: 'sonic',
