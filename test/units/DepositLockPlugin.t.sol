@@ -675,4 +675,10 @@ contract DepositLockPluginTest is Test {
         vm.expectRevert(abi.encodeWithSelector(LibErrors.NotProjectOwner.selector, address(mockVault), projectId, user));
         depositLock.updateGlobalUnlockTime(address(mockVault), projectId, newGlobalUnlockTime);
     }
+
+    function test_updateGlobalUnlockTime_zeroReverts() public {
+        vm.prank(projectOwner);
+        vm.expectRevert(abi.encodeWithSelector(LibErrors.InvalidGlobalUnlockTime.selector));
+        depositLock.updateGlobalUnlockTime(address(mockVault), projectId, 0);
+    }
 }

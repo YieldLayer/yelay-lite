@@ -216,6 +216,11 @@ library LibErrors {
      */
     error LockModeMismatch(address vault, uint256 projectId, uint256 lockMode);
 
+    /**
+     * @dev The global unlock time must be non-zero.
+     */
+    error InvalidGlobalUnlockTime();
+
     // ===================== YieldExtractor ================================
 
     /**
